@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from cfbtui.app import CfbApp  # noqa: E402
+from cfbtui.config import Config  # noqa: E402
 from cfbtui.espn.client import EspnClient  # noqa: E402
 from cfbtui.ui.widgets.game_card import GameCard  # noqa: E402
 
@@ -34,8 +35,8 @@ def make_client(fixtures: bool):
     return ScreenClient(load_board("pairs/final_after.json"), rankings=load_rankings())
 
 
-async def shot(out: Path, name: str, client, glyphs: str, keys: tuple[str, ...] = ()) -> None:
-    app = CfbApp(client=client, glyph_set=glyphs)
+async def shot(out: Path, name: str, client, glyphs: str, keys: tuple[str, ...] = (), week: int | None = None) -> None:
+    app = CfbApp(client=client, glyph_set=glyphs, week=week, config=Config())
     async with app.run_test(size=SIZE) as pilot:
         for _ in range(100):
             if len(app.query(GameCard)) > 0:
@@ -51,18 +52,25 @@ async def shot(out: Path, name: str, client, glyphs: str, keys: tuple[str, ...] 
         print("saved", out / f"{name}.svg")
 
 
-async def main(fixtures: bool, out: Path) -> None:
+async def main(fixtures: bool, out: Path, week: int | None) -> None:
     out.mkdir(parents=True, exist_ok=True)
-    await shot(out, "grid", make_client(fixtures), "nerd")
-    await shot(out, "grid-unicode", make_client(fixtures), "unicode")
-    await shot(out, "grid-ascii", make_client(fixtures), "ascii")
-    await shot(out, "detail", make_client(fixtures), "nerd", ("right", "enter"))
-    await shot(out, "rankings", make_client(fixtures), "nerd", ("R",))
+    jobs = (
+        ("grid", "nerd", ()),
+        ("grid-unicode", "unicode", ()),
+        ("grid-ascii", "ascii", ()),
+        ("list", "nerd", ("v",)),
+        ("conferences", "nerd", ("o",)),
+        ("detail", "nerd", ("right", "enter")),
+        ("rankings", "nerd", ("R",)),
+    )
+    for name, glyphs, keys in jobs:
+        await shot(out, name, make_client(fixtures), glyphs, keys, week)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--fixtures", action="store_true", help="render from saved test payloads, not live ESPN")
     parser.add_argument("--out", type=Path, default=ROOT / "docs" / "img")
+    parser.add_argument("--week", type=int, help="capture this week, e.g. last week for finished games")
     args = parser.parse_args()
-    asyncio.run(main(args.fixtures, args.out))
+    asyncio.run(main(args.fixtures, args.out, args.week))

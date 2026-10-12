@@ -42,6 +42,10 @@ how fresh the data is. The ticker above it lists scores, kickoffs and upsets as 
 | `Esc` | Close a screen |
 | `q` | Quit |
 
+![One line per game](docs/img/list.svg)
+
+![Conference picker](docs/img/conferences.svg)
+
 ![Game detail](docs/img/detail.svg)
 
 **Favorites.** Star a team with `1` or `2` and its games move to a Favorites section at the top. Your stars
