@@ -2,6 +2,11 @@
 
 Release notes for cfbtui, kept the way a fortress overseer keeps a journal. Newest first. Versions follow FibVer.
 
+## 1.1.13 (2026-10-12)
+
+- The repository was given a description, a homepage and ten topic tags, and finally has something to say at parties. The wiki, which nobody had opened, was boarded up.
+- The package metadata learned its own address, its issue tracker and a handful of keywords.
+
 ## 1.1.8 (2026-10-12)
 
 - The changelog was caught labelling a page 1.1.4, a number that does not exist in this world. Fibonacci counts 3, 5, 8. The page was renumbered 1.1.5 and has stopped insisting.
