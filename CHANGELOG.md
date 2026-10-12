@@ -2,6 +2,12 @@
 
 Release notes for cfbtui, kept the way a fortress overseer keeps a journal. Newest first. Versions follow FibVer.
 
+## 0.5.3 (2026-10-12)
+
+- Seven new poets moved into the commit hall: a senryu, a cinquain, a shadorma, an etheree, a limerick, a couplet and a clerihew. The etheree arrived at one syllable and has been growing since.
+- A rhyme inspector was given the limerick, the couplet and the clerihew. It checks that the endings agree and, if they do not, sighs once.
+- The inspector was told that "seen" and "been" do not rhyme in the dictionary it reads. It has accepted this and so, reluctantly, have the rest of us.
+
 ## 0.5.2 (2026-10-12)
 
 - The villanelle was retired. Nobody could prove its refrains were being kept, and several were found wandering off mid-sentence.

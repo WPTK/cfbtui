@@ -31,8 +31,8 @@ def test_missing_trailer_is_an_error():
 
 
 def test_unknown_form_is_an_error():
-    errors, _ = poem.check("one line\n\nPoetic-Form: limerick\n")
-    assert errors and "limerick" in errors[0]
+    errors, _ = poem.check("one line\n\nPoetic-Form: ode\n")
+    assert errors and "ode" in errors[0]
 
 
 def test_line_count_mismatch_is_only_a_warning():
@@ -115,3 +115,42 @@ def test_unknown_word_skips_the_line():
     pytest = __import__("pytest")
     pytest.importorskip("pronouncing")
     assert poem.count_syllables("zzxqv blorp") is None
+
+
+def _needs_dict():
+    __import__("pytest").importorskip("pronouncing")
+
+
+def test_senryu_uses_haiku_counts():
+    _needs_dict()
+    errors, warnings = poem.check(HAIKU.replace("haiku", "senryu"))
+    assert errors == [] and warnings == []
+
+
+def test_cinquain_counts():
+    _needs_dict()
+    text = "the cards\nglow crimson red\nwhen the ball is crossing\nand all the ticker remembers\na score\n\nPoetic-Form: cinquain\n"
+    errors, warnings = poem.check(text)
+    assert errors == [] and warnings == []
+
+
+def test_limerick_rhyme_warning():
+    _needs_dict()
+    good = "a card flashed with joy on the screen\nwhen the touchdown was plainly seen\nthe ticker said so\nand the fans said whoa\nthe finest of days we have seen\n\nPoetic-Form: limerick\n"
+    _, w = poem.check(good)
+    assert not any("rhyme" in x for x in w)
+    bad = good.replace("seen", "tall")
+    _, w = poem.check(bad)
+    assert any("rhyme" in x for x in w)
+
+
+def test_couplet_and_clerihew_line_counts():
+    _, w = poem.check("one\ntwo\nthree\n\nPoetic-Form: couplet\n")
+    assert any("2 lines" in x for x in w)
+    _, w = poem.check("one\ntwo\n\nPoetic-Form: clerihew\n")
+    assert any("4 lines" in x for x in w)
+
+
+def test_etheree_has_ten_lines():
+    _, w = poem.check("a\n\nPoetic-Form: etheree\n")
+    assert any("10 lines" in x for x in w)

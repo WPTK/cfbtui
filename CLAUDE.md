@@ -29,12 +29,19 @@ resets the ones below it to 0. Spec: https://github.com/kkokosa/fibver
 
 ### Commits: always a poem, form declared
 
-Every commit message is a poem in one of five forms:
+Every commit message is a poem in one of twelve forms:
 
 | Form | Shape |
 |---|---|
 | haiku | 3 lines, 5-7-5 syllables |
 | tanka | 5 lines, 5-7-5-7-7 |
+| senryu | 3 lines, 5-7-5, about people instead of nature |
+| cinquain | 5 lines, 2-4-6-8-2 syllables |
+| shadorma | 6 lines, 3-5-3-3-7-5 syllables |
+| etheree | 10 lines, one syllable more each line, 1 to 10 |
+| limerick | 5 lines, rhyming AABBA |
+| couplet | 2 rhyming lines |
+| clerihew | 4 lines, AABB, a short comic biography |
 | sestina | 39 lines: six sestets rotating six end-words, plus a three-line envoi |
 | duplex | 14 lines in couplets; each couplet's second line is echoed as the next couplet's first (Jericho Brown) |
 | cleave | two poems side by side; each column reads alone and each full line reads across |
@@ -53,7 +60,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
 ```
 
 The `commit-msg` hook rejects a commit with no valid `Poetic-Form:` trailer and warns when the line count does
-not match the declared form, when a haiku or tanka misses its syllable counts (CMU dictionary via `pronouncing`, a dev dependency), or when the poem ends on a word like "the" or "of" (cut off to fit). Warnings never block a commit. The `pre-push` hook refuses to push any commit lacking the trailer. Haiku and tanka
+not match the declared form, when a syllable form (haiku, tanka and kin) misses its counts, when a rhymed form does not rhyme (CMU dictionary via `pronouncing`, a dev dependency), or when the poem ends on a word like "the" or "of" (cut off to fit). Warnings never block a commit. The `pre-push` hook refuses to push any commit lacking the trailer. Haiku and tanka
 carry ordinary commits; phase-end commits deserve a long form.
 
 ### Release notes: simulation-log voice

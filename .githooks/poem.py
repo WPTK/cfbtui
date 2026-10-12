@@ -18,6 +18,13 @@ FORMS: dict[str, int | None] = {
     "tanka": 5,
     "sestina": 39,
     "duplex": 14,
+    "senryu": 3,
+    "cinquain": 5,
+    "shadorma": 6,
+    "etheree": 10,
+    "limerick": 5,
+    "couplet": 2,
+    "clerihew": 4,
     "cleave": None,
 }
 # Syllable pattern per form, checked with the CMU Pronouncing Dictionary when the
@@ -25,6 +32,17 @@ FORMS: dict[str, int | None] = {
 SYLLABLES: dict[str, tuple[int, ...]] = {
     "haiku": (5, 7, 5),
     "tanka": (5, 7, 5, 7, 7),
+    "senryu": (5, 7, 5),
+    "cinquain": (2, 4, 6, 8, 2),
+    "shadorma": (3, 5, 3, 3, 7, 5),
+    "etheree": tuple(range(1, 11)),
+}
+# Rhyme scheme per form: lines sharing a letter should rhyme, lines with
+# different letters should not be required to.
+RHYMES: dict[str, str] = {
+    "limerick": "AABBA",
+    "couplet": "AA",
+    "clerihew": "AABB",
 }
 # A poem that stops on one of these was probably cut off to fit.
 DANGLERS = frozenset(
@@ -78,6 +96,15 @@ def count_syllables(line: str) -> int | None:
     return total
 
 
+def rhyme_key(word: str) -> str | None:
+    try:
+        import pronouncing
+    except ImportError:
+        return None
+    phones = pronouncing.phones_for_word(word.lower().strip("'"))
+    return pronouncing.rhyming_part(phones[0]) if phones else None
+
+
 def last_word(line: str) -> str:
     words = re.findall(r"[A-Za-z']+", line)
     return words[-1].lower() if words else ""
@@ -107,6 +134,14 @@ def check(text: str) -> tuple[list[str], list[str]]:
             got = count_syllables(line)
             if got is not None and got != want:
                 warnings.append(f"line {n} has {got} syllables, a {form} wants {want}: {line!r}")
+    scheme = RHYMES.get(form)
+    if scheme and len(poem) == len(scheme):
+        for letter in dict.fromkeys(scheme):
+            idx = [i for i, c in enumerate(scheme) if c == letter]
+            keys = [rhyme_key(last_word(poem[i])) for i in idx]
+            if None not in keys and len(set(keys)) > 1:
+                ends = ", ".join(repr(last_word(poem[i])) for i in idx)
+                warnings.append(f"a {form} wants lines {', '.join(str(i + 1) for i in idx)} to rhyme: {ends}")
     if poem and last_word(poem[-1]) in DANGLERS:
         warnings.append(f"the poem ends on {last_word(poem[-1])!r}; did it get cut off?")
     return errors, warnings
