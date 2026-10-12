@@ -2,6 +2,11 @@
 
 Release notes for cfbtui, kept the way a fortress overseer keeps a journal. Newest first. Versions follow FibVer.
 
+## 1.1.144 (2026-10-12)
+
+- The workshop was swept out. The scaffolding, the hooks and the notes the builders left for each other were carted away, and the scoreboard stands in a clean room.
+- The package's dependency list was found hiding under the web links, where pip could not see it. It has been returned to the right shelf.
+
 ## 1.1.89 (2026-10-12)
 
 - The poster's scoreboard was relieved of its costume. It no longer claims to be PowerShell, Terminal or anything else. It is a dark window with a plain strip on top, and it is just here for the football.
@@ -119,19 +124,6 @@ Release notes for cfbtui, kept the way a fortress overseer keeps a journal. Newe
 - The poll started dropping messages into a screen that had already been torn down. The messages were told to stop.
 - Three hundred thirty-one tests. The Saturday payload remains unsaved, because it was Monday.
 
-## 0.5.3 (2026-10-12)
-
-- Seven new poets moved into the commit hall: a senryu, a cinquain, a shadorma, an etheree, a limerick, a couplet and a clerihew. The etheree arrived at one syllable and has been growing since.
-- A rhyme inspector was given the limerick, the couplet and the clerihew. It checks that the endings agree and, if they do not, sighs once.
-- The inspector was told that "seen" and "been" do not rhyme in the dictionary it reads. It has accepted this and so, reluctantly, have the rest of us.
-
-## 0.5.2 (2026-10-12)
-
-- The villanelle was retired. Nobody could prove its refrains were being kept, and several were found wandering off mid-sentence.
-- A syllable counter was hired from the CMU Pronouncing Dictionary. It counted the project's own example haiku and announced, flatly, that it was four, seven and six. The haiku has been sent back to school.
-- A watcher now notices when a poem ends on "the" or "of". It says nothing cruel, only "did you mean to stop there?"
-- Both of them are only warnings. The commit still goes through, though it does so a little embarrassed.
-
 ## 0.5.1 (2026-10-12)
 
 - A clerk was hired to stand at the gate on Windows. Each push, it runs the tests and asks the program its version. It does not accept excuses.
@@ -174,57 +166,14 @@ Release notes for cfbtui, kept the way a fortress overseer keeps a journal. Newe
 - A code review arrived with eight findings. All eight were fixed, including a lastPlay with no team on it that had been trying to take credit for both sides' points.
 - One hundred sixty-two tests. The founders have stopped running them twice.
 
-## 0.2.3 (2026-10-12)
-
-- The phase handoff was discovered to be a link. A link is not a prompt. Whoever needed it had to go and fetch it.
-- The rule now says the session's final message must paste the entire next prompt into the chat, in one code block. The file is merely the archived copy and has been told so.
-- Step seven of the phase-end ritual grew a clause: "then paste the full next prompt into the chat." It is now the last thing anyone does.
-
-## 0.2.2 (2026-10-12)
-
-- The Phase 1 handoff announced that the repo was at version 0.2.0. The repo had already moved on without it, as repos do.
-- The handoff now says 0.2.x and instructs the next session to ask the program itself. The program knows. It always knows.
-
-## 0.2.1 (2026-10-12)
-
-- The changelog was found to be a wall of prose with no door in it. Bullets were installed and light came in.
-- The release-notes rule in CLAUDE.md was rewritten to demand one event per bullet, and to forbid prose paragraphs and plain "Added X" lists.
-- The sample entry in the rules received blank lines and dashes of its own. UpsetRule is still obsessed with South Carolina in it.
-- The whole 0.2.0 section was walked out of its paragraphs and into bullets. It went quietly.
-
 ## 0.2.0 (2026-10-12)
 
 - Founded a repository in an empty directory on a Sunday afternoon. It had no commits and no opinions.
 - Chose Python and Textual. A Go binary was considered and politely declined.
 - Painted six team colors on the wall to see whether Windows Terminal could tell them apart. It could.
 - Hired a StatusBar. It has learned to tell the time and announce the version. It does nothing else and seems content.
-- Set the version to 0.1.0 and told it that it would only ever advance by Fibonacci numbers. It accepted this without complaint.
-- A pre-commit hook took up residence in `.githooks/` and now bumps the patch number on every commit. It cannot be reasoned with.
-- A commit-msg hook moved in beside it. It refuses any commit that is not a poem with its form declared. Several test messages were turned away at the door.
-- A pre-push hook stands at the gate and inspects every outgoing commit for a `Poetic-Form:` trailer. So far it has admitted everyone.
 - Fetched four payloads from ESPN and stored them under `tests/fixtures/` as evidence: a pregame week, a finished Saturday, the rankings, and one Texas game in full.
 - Wrote twenty tests. All twenty passed. The founders were suspicious and ran them again. They passed again.
-- Caught carriage returns creeping into the hook scripts on the way to other machines. Posted a `.gitattributes` to keep every line ending as LF. The hooks have stopped falling silent.
-- Held a code review. Seven findings arrived at the gate; five were let inside. The `tanku` spelling is now accepted. The status bar no longer says "Eastern Daylight Time" in full.
 - Made the repository public under the MIT license and pushed it to GitHub. The README carries a disclaimer about ESPN that nobody will read.
 - The scoreboard has not been built. The games go on without it.
 
-## 0.1.2 (2026-10-12)
-
-- The reviewer spoke. Seven findings arrived at the gate and five were let inside.
-- The hooks went looking for Python and found only the Windows Store alias stub, which opens a store instead of a program. They now try the `py` launcher first, then `python`, and exit with a complaint if neither will answer.
-- The hooks stopped wrapping the Python command in quotes, because it may be `py -3`, which is two words and had been taken for one.
-- The poem checker learned that "tanku" is a perfectly good way to spell tanka. It had been turning tanku away at the door.
-- A blank line between two trailers no longer hides the `Poetic-Form:` from the checker. It was there the whole time.
-- A poem line with a colon in it ("halftime: the band plays") is no longer mistaken for a trailer. The poets were relieved.
-- A warning was added to the rules: `git commit --amend` runs the hook again and burns another Fibonacci number. That is the price.
-- The status bar dropped its timezone name and moved to a 24-hour clock. Nobody asked it to; it seems calmer.
-- The build was told it needs setuptools 77 or newer. It had been getting by on 69 and was not consulted.
-- Three new tests were hired to watch the poem checker: one for tanku, one for the blank line, one for the colons.
-
-## 0.1.1 (2026-10-12)
-
-- Carriage returns were found creeping into the hook scripts on fresh clones. The shell fell silent whenever it met one.
-- A `.gitattributes` was posted at the door: every line ending is LF, whatever machine the file lands on.
-- PowerShell scripts were granted CRLF, because they are happier that way. They did not ask for this either.
-- The saved ESPN payloads were declared evidence and may never be rewritten. They have taken this as a compliment.

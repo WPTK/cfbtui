@@ -12,10 +12,6 @@ requires-python = ">=3.13"
 authors = [{ name = "Bill Kane" }]
 keywords = ["college football", "scoreboard", "tui", "terminal", "textual", "espn"]
 
-[project.urls]
-Homepage = "https://github.com/WPTK/cfbtui"
-Issues = "https://github.com/WPTK/cfbtui/issues"
-Changelog = "https://github.com/WPTK/cfbtui/blob/main/CHANGELOG.md"
 dependencies = [
     "textual>=8.2,<9",
     "httpx>=0.28,<1",
@@ -25,13 +21,17 @@ dependencies = [
     "tzdata>=2024.1; sys_platform == 'win32'",
 ]
 
+[project.urls]
+Homepage = "https://github.com/WPTK/cfbtui"
+Issues = "https://github.com/WPTK/cfbtui/issues"
+Changelog = "https://github.com/WPTK/cfbtui/blob/main/CHANGELOG.md"
+
 [project.optional-dependencies]
 dev = [
     "pytest>=8",
     "pytest-asyncio>=0.24",
     "respx>=0.22",
     "pytest-textual-snapshot>=1.1",
-    "pronouncing>=0.2",
     "pyinstaller>=6.22,<7",
     "ruff>=0.8",
     "vulture>=2.14",
@@ -65,8 +65,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# Long lines in tests are inline fixture payloads and poem text; wrapping them hurts readability.
-# The hook's stop-word list and the PyInstaller version template are likewise literal data.
+# Long lines in tests are inline fixture payloads; wrapping them hurts readability.
+# The PyInstaller version template are likewise literal data.
 "tests/**" = ["E501"]
-".githooks/poem.py" = ["E501"]
 "scripts/version_info.py" = ["E501"]

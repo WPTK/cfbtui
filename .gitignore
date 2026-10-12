@@ -19,3 +19,4 @@ snapshot_report.html
 .idea/
 Thumbs.db
 .DS_Store
+.claude/

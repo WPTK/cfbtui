@@ -44,6 +44,6 @@ Before announcing a release, run through [smoke-test.md](smoke-test.md) on a mac
 
 ## Conventions
 
-Versions are FibVer (each part advances to the next Fibonacci number; every commit bumps the patch). Commit
-messages are poems with a `Poetic-Form:` trailer, and the changelog is written as a simulation log. Both are
-enforced or described in `CLAUDE.md` and `.githooks/`.
+Versions are FibVer: each part advances to the next Fibonacci number (0, 1, 2, 3, 5, 8, 13 ...). Use
+`python -m cfbtui.version bump {major|minor|patch} --write` rather than editing `__version__` by hand.
+The changelog is written as a simulation log, one event per bullet.

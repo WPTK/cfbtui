@@ -1,4 +1,4 @@
-# Normalise line endings so the sh hooks and Python run the same on every clone.
+# Normalise line endings across clones.
 * text=auto eol=lf
 
 # Hooks must be LF or sh chokes on \r.
