@@ -16,12 +16,23 @@ There is nothing to install. Windows may warn about an unrecognized app the firs
 It needs a terminal that can show colors and Unicode. Windows Terminal works well. The old Command Prompt
 window does not.
 
-## Using it
+## What it does
 
-Games are cards: live ones first, then upcoming, then finished. A card gets a heavy yellow border and an UPSET
-label when a ranked team is in trouble, flashes when someone scores, and shows down and distance while the
-game is on. The line at the bottom says
-how fresh the data is. The ticker above it lists scores, kickoffs and upsets as they happen.
+- Shows every FBS and FCS game for the week, live ones first, then upcoming, then finished.
+- Updates on its own: every 20 seconds while a game is on, every 5 minutes otherwise.
+- Live cards show the clock, down and distance, and who has the ball. A card flashes when someone scores.
+- Marks upsets: a ranked team that is losing, or lost, to a worse-ranked or unranked team gets a yellow border and an UPSET label.
+- A ticker lists scores, kickoffs and upsets as they happen.
+- Game detail with every scoring play and win probability.
+- AP and Coaches polls, switching to the CFP ranking once the committee releases it.
+- Starred favorites pinned at the top, saved between runs.
+- Filters for Top 25, live games and favorites, and a conference picker.
+- Cards or a one-line-per-game list.
+- Browses past and future weeks, plus Bowls and the Playoff.
+- Copies a game, or the whole board, ready to paste into Discord.
+- Tells you when a newer version is out.
+
+## Keys
 
 | Key | What it does |
 |---|---|
@@ -48,12 +59,11 @@ how fresh the data is. The ticker above it lists scores, kickoffs and upsets as 
 
 ![Game detail](docs/img/detail.svg)
 
-**Favorites.** Star a team with `1` or `2` and its games move to a Favorites section at the top. Your stars
-are saved and come back next time.
-
 **Rankings.** You see the AP and Coaches polls until the College Football Playoff committee releases its
 first ranking. From then on you see only the CFP ranking, through the end of the season. The FCS board shows
 the FCS Coaches poll.
+
+**Favorites.** Star a team with `1` or `2` and its games move to a Favorites section at the top.
 
 **Discord.** `c` copies one game as a line of text with the winner in bold. `C` copies the board as a
 code block. Discord caps messages at 2,000 characters, so on a big Saturday `C` copies one part at a time:

@@ -2,6 +2,11 @@
 
 Release notes for cfbtui, kept the way a fortress overseer keeps a journal. Newest first. Versions follow FibVer.
 
+## 1.1.3 (2026-10-12)
+
+- The README was asked what the program actually does, and until now had never answered in one place. It now has a list. The list is short and none of it is a boast.
+- The key table has been given its own heading, so it can be found by someone in a hurry.
+
 ## 1.1.2 (2026-10-12)
 
 - The README gained a section for the one-line list and another for the conference picker. Both were photographed looking their best.
