@@ -2,7 +2,11 @@
 
 Release notes for cfbtui, kept the way a fortress overseer keeps a journal. Newest first. Versions follow FibVer.
 
-## 1.1.4 (2026-10-12)
+## 1.1.8 (2026-10-12)
+
+- The changelog was caught labelling a page 1.1.4, a number that does not exist in this world. Fibonacci counts 3, 5, 8. The page was renumbered 1.1.5 and has stopped insisting.
+
+## 1.1.5 (2026-10-12)
 
 - The README was reorganized into the order a stranger reads it: what it is, what it does, how to get it, how to use it, what to do when it breaks. A table of contents was posted at the door.
 - A Troubleshooting corner was built. It currently houses the empty-box icons, the ESPN outage and the board that is empty for a good reason.
