@@ -2,4 +2,4 @@
 # Every commit is a poem with a `Poetic-Form:` trailer. See CLAUDE.md.
 cd "$(git rev-parse --show-toplevel)" || exit 1
 . .githooks/_python.sh
-exec "$PY" .githooks/poem.py check-file "$1"
+exec $PY .githooks/poem.py check-file "$1"

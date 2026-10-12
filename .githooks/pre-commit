@@ -8,5 +8,6 @@ if git diff --cached --name-only | grep -q '^cfbtui/__init__.py$'; then
     exit 0
 fi
 
-"$PY" -m cfbtui.version bump patch --write || exit 1
+# $PY is unquoted on purpose: it may be `py -3`.
+$PY -m cfbtui.version bump patch --write || exit 1
 git add cfbtui/__init__.py

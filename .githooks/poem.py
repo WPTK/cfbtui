@@ -21,41 +21,36 @@ FORMS: dict[str, int | None] = {
     "duplex": 14,
     "cleave": None,
 }
+ALIASES = {"tanku": "tanka", "cleave poem": "cleave"}
 
+# Only these trailer keys are recognised, so a poem line that happens to
+# contain "word: more" is never mistaken for metadata.
+KNOWN_TRAILERS = ("poetic-form", "co-authored-by", "signed-off-by")
 TRAILER_RE = re.compile(r"^([A-Za-z][A-Za-z-]*):\s*(.*)$")
 ZERO_SHA = "0" * 40
 
 
 def normalize_form(value: str) -> str:
-    v = value.strip().lower()
-    v = re.sub(r"\s+poem$", "", v)
-    return v
+    v = " ".join(value.strip().lower().split())
+    return ALIASES.get(v, v)
 
 
 def split_message(text: str) -> tuple[list[str], dict[str, str]]:
-    """Return (poem_lines, trailers). Comment lines are ignored; the trailer
-    block is the final paragraph when every line in it looks like `Key: value`."""
+    """Return (poem_lines, trailers).
+
+    Git comment lines are ignored. A trailer is any line whose key is in
+    KNOWN_TRAILERS, wherever it sits, so a blank line between trailers does
+    not hide the form. Everything else that is non-blank is the poem.
+    """
     lines = [ln.rstrip("\r") for ln in text.splitlines() if not ln.startswith("#")]
-    # Drop trailing blank lines.
-    while lines and not lines[-1].strip():
-        lines.pop()
-    if not lines:
-        return [], {}
-    # Find the last paragraph.
-    idx = len(lines)
-    while idx > 0 and lines[idx - 1].strip():
-        idx -= 1
-    last_para = lines[idx:]
     trailers: dict[str, str] = {}
-    if last_para and all(TRAILER_RE.match(ln) for ln in last_para):
-        for ln in last_para:
-            m = TRAILER_RE.match(ln)
-            assert m
+    poem: list[str] = []
+    for ln in lines:
+        m = TRAILER_RE.match(ln)
+        if m and m.group(1).lower() in KNOWN_TRAILERS:
             trailers[m.group(1).lower()] = m.group(2)
-        body = lines[:idx]
-    else:
-        body = lines
-    poem = [ln for ln in body if ln.strip()]
+        elif ln.strip():
+            poem.append(ln)
     return poem, trailers
 
 

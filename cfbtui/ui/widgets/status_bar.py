@@ -26,4 +26,5 @@ class StatusBar(Static):
 
     def _tick(self) -> None:
         now = datetime.now().astimezone()
-        self.update(f"cfbtui v{__version__}  ·  {now:%a %b %d %I:%M:%S %p %Z}  ·  q quits")
+        # %Z expands to "Eastern Daylight Time" on Windows; keep the line short.
+        self.update(f"cfbtui v{__version__}  ·  {now:%a %b %d %H:%M:%S}  ·  q quits")

@@ -47,6 +47,26 @@ def test_cleave_poem_spelling_and_any_length():
     assert warnings == []
 
 
+def test_tanku_alias_is_accepted():
+    errors, warnings = poem.check("a\n\nb\nc\nd\ne\n\nPoetic-Form: Tanku\n")
+    assert errors == []
+    assert warnings == []
+
+
+def test_blank_line_between_trailers_still_finds_the_form():
+    text = "cards learn to flash\n\ncrimson when the ball crosses\nthe ticker remembers\n\nPoetic-Form: haiku\n\nCo-Authored-By: X <x@y>\n"
+    errors, warnings = poem.check(text)
+    assert errors == []
+    assert warnings == []
+
+
+def test_poem_lines_with_colons_are_not_trailers():
+    text = "halftime: the band plays\n\nscore: nobody remembers\nclock: it runs anyway\n\nPoetic-Form: haiku\n"
+    lines, trailers = poem.split_message(text)
+    assert len(lines) == 3
+    assert list(trailers) == ["poetic-form"]
+
+
 def test_comment_lines_are_ignored():
     text = HAIKU + "# Please enter the commit message\n# On branch main\n"
     errors, warnings = poem.check(text)

@@ -24,6 +24,8 @@ resets the ones below it to 0. Spec: https://github.com/kkokosa/fibver
   config changes.
 - Single source of truth is `__version__` in `cfbtui/__init__.py`. `pyproject.toml` reads it dynamically.
 - Never hand-edit the version; use `python -m cfbtui.version bump {major|minor|patch} --write`.
+- `git commit --amend` runs the hook again and consumes another Fibonacci step. Prefer a new commit over
+  amending; if you must amend, that is the price.
 
 ### Commits: always a poem, form declared
 
