@@ -29,13 +29,12 @@ resets the ones below it to 0. Spec: https://github.com/kkokosa/fibver
 
 ### Commits: always a poem, form declared
 
-Every commit message is a poem in one of six forms:
+Every commit message is a poem in one of five forms:
 
 | Form | Shape |
 |---|---|
 | haiku | 3 lines, 5-7-5 syllables |
 | tanka | 5 lines, 5-7-5-7-7 |
-| villanelle | 19 lines: five tercets and a closing quatrain, two refrains |
 | sestina | 39 lines: six sestets rotating six end-words, plus a three-line envoi |
 | duplex | 14 lines in couplets; each couplet's second line is echoed as the next couplet's first (Jericho Brown) |
 | cleave | two poems side by side; each column reads alone and each full line reads across |
@@ -44,17 +43,17 @@ Message layout: the poem's first line is the subject line, then a blank line, th
 blank line, then trailers. The form goes in a `Poetic-Form:` trailer. Example:
 
 ```
-cards learn to flash
+cards learn to glow red
 
 crimson when the ball crosses
-the ticker remembers
+ticker remembers
 
 Poetic-Form: haiku
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
 ```
 
 The `commit-msg` hook rejects a commit with no valid `Poetic-Form:` trailer and warns when the line count does
-not match the declared form. The `pre-push` hook refuses to push any commit lacking the trailer. Haiku and tanka
+not match the declared form, when a haiku or tanka misses its syllable counts (CMU dictionary via `pronouncing`, a dev dependency), or when the poem ends on a word like "the" or "of" (cut off to fit). Warnings never block a commit. The `pre-push` hook refuses to push any commit lacking the trailer. Haiku and tanka
 carry ordinary commits; phase-end commits deserve a long form.
 
 ### Release notes: simulation-log voice

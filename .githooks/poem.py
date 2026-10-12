@@ -16,11 +16,20 @@ import sys
 FORMS: dict[str, int | None] = {
     "haiku": 3,
     "tanka": 5,
-    "villanelle": 19,
     "sestina": 39,
     "duplex": 14,
     "cleave": None,
 }
+# Syllable pattern per form, checked with the CMU Pronouncing Dictionary when the
+# optional `pronouncing` package is installed (pip install -e ".[dev]").
+SYLLABLES: dict[str, tuple[int, ...]] = {
+    "haiku": (5, 7, 5),
+    "tanka": (5, 7, 5, 7, 7),
+}
+# A poem that stops on one of these was probably cut off to fit.
+DANGLERS = frozenset(
+    "a an the of to and or but in on at by for with from as is are was were be that than so if".split()
+)
 ALIASES = {"tanku": "tanka", "cleave poem": "cleave"}
 
 # Only these trailer keys are recognised, so a poem line that happens to
@@ -54,6 +63,26 @@ def split_message(text: str) -> tuple[list[str], dict[str, str]]:
     return poem, trailers
 
 
+def count_syllables(line: str) -> int | None:
+    """Syllables in a line, or None if `pronouncing` is missing or a word is unknown."""
+    try:
+        import pronouncing
+    except ImportError:
+        return None
+    total = 0
+    for word in re.findall(r"[A-Za-z']+", line):
+        phones = pronouncing.phones_for_word(word.lower().strip("'"))
+        if not phones:
+            return None
+        total += pronouncing.syllable_count(phones[0])
+    return total
+
+
+def last_word(line: str) -> str:
+    words = re.findall(r"[A-Za-z']+", line)
+    return words[-1].lower() if words else ""
+
+
 def check(text: str) -> tuple[list[str], list[str]]:
     """Return (errors, warnings)."""
     errors: list[str] = []
@@ -72,6 +101,14 @@ def check(text: str) -> tuple[list[str], list[str]]:
         errors.append("the commit message has no poem")
     elif expected is not None and len(poem) != expected:
         warnings.append(f"a {form} has {expected} lines; this message has {len(poem)}")
+    pattern = SYLLABLES.get(form)
+    if pattern and len(poem) == len(pattern):
+        for n, (line, want) in enumerate(zip(poem, pattern), 1):
+            got = count_syllables(line)
+            if got is not None and got != want:
+                warnings.append(f"line {n} has {got} syllables, a {form} wants {want}: {line!r}")
+    if poem and last_word(poem[-1]) in DANGLERS:
+        warnings.append(f"the poem ends on {last_word(poem[-1])!r}; did it get cut off?")
     return errors, warnings
 
 

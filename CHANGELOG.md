@@ -2,6 +2,13 @@
 
 Release notes for cfbtui, kept the way a fortress overseer keeps a journal. Newest first. Versions follow FibVer.
 
+## 0.5.2 (2026-10-12)
+
+- The villanelle was retired. Nobody could prove its refrains were being kept, and several were found wandering off mid-sentence.
+- A syllable counter was hired from the CMU Pronouncing Dictionary. It counted the project's own example haiku and announced, flatly, that it was four, seven and six. The haiku has been sent back to school.
+- A watcher now notices when a poem ends on "the" or "of". It says nothing cruel, only "did you mean to stop there?"
+- Both of them are only warnings. The commit still goes through, though it does so a little embarrassed.
+
 ## 0.5.1 (2026-10-12)
 
 - A clerk was hired to stand at the gate on Windows. Each push, it runs the tests and asks the program its version. It does not accept excuses.
