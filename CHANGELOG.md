@@ -2,6 +2,22 @@
 
 Release notes for cfbtui, kept the way a fortress overseer keeps a journal. Newest first. Versions follow FibVer.
 
+## 0.13.0 (2026-10-12)
+
+- A card was found that could be pressed. Pressing `Enter` on it opens a second room, where the game's scoring plays are laid out in order, each with its clock, its team and the score at that moment. `Esc` leads back to the grid. Nobody was lost.
+- A small errand-runner was hired to carry the summary from ESPN every twenty seconds while the game lives. When the game ends, it is thanked and sent home. When the room closes, it is sent home early. Both departures were confirmed by counting.
+- A bar of blocks was drawn to show who is likely to win. It fills from the home side and says the percentage twice, in case anyone doubted it. When ESPN has no opinion, the bar stays in its box and says nothing.
+- The detail room failed to reach ESPN and said so, in yellow, without leaving. It tried again, succeeded, and took the warning down itself.
+- `R` opens the polls: the AP on the left and the Coaches on the right, with the date each was published. On the FCS board it shows the FCS Coaches poll instead, after a reviewer noticed it was showing the wrong division's rankings. A poll that has not been released yet gets a polite shrug.
+- While a room is open, the grid's keys fall asleep. A week cannot turn underneath a detail screen. A `q` pressed in either room still quits, because a reviewer reminded us that is what `q` is for.
+- `c` copies the focused game as a line of Markdown, with the winner in bold. `C` copies every visible game as a code block with the columns lined up. Both use the unicode glyph set, because Discord has never heard of a Nerd Font.
+- A board too long for Discord was cut between games into messages of at most two thousand characters. The clipboard holds only one at a time, so `C` hands over the next part each press. It once started over every time a clock ticked, and was corrected.
+- A kickoff two weeks away was copied without its date and could have been mistaken for this Saturday. It now carries the date the card does.
+- A game copied with a fence inside its name could have escaped its code block. Its fence was replaced with apostrophes, which nobody will miss.
+- A machine with no clipboard was found. The app said so and kept running.
+- The games whose diffs had been quietly failing were finally counted in the status bar. There are none today. It was nice to ask.
+- Thirty-five tests were added. One of them asserted almost nothing and was told to try harder.
+
 ## 0.8.0 (2026-10-12)
 
 - A config file was offered a home under the user's config directory. It declined to exist until someone starred a team, and was praised for its restraint.

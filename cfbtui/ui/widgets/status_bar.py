@@ -26,6 +26,7 @@ class StatusView:
     next_in: float | None = None  # seconds to the next poll; None while fetching or unknown
     polling: bool = False
     glyph_set: str = ""
+    errors: int = 0  # games whose latest diff raised
 
 
 def format_status(view: StatusView, glyphs: Glyphs, now: datetime | None = None) -> str:
@@ -53,6 +54,8 @@ def format_status(view: StatusView, glyphs: Glyphs, now: datetime | None = None)
         parts.append(f"{view.live} live of {view.total}")
     if f.state is FreshnessState.ERROR and f.failures > 1:
         parts.append(f"{f.failures} failed polls")
+    if view.errors:
+        parts.append(f"{glyphs.error} {view.errors} game{'s' if view.errors != 1 else ''} failing to diff")
     parts.append(f"v{__version__}")
     if view.glyph_set:
         parts.append(f"glyphs: {view.glyph_set}")

@@ -8,7 +8,13 @@ cards on screen while the status bar says how old they are.
 Keys: ``q`` quit, ``r`` refresh now, ``g`` cycle the glyph set, ``[`` and ``]``
 previous and next week, ``t`` this week, ``f`` toggle FBS and FCS, arrow keys
 move between cards, ``1`` and ``2`` star or unstar the focused card's away and
-home team.
+home team, ``Enter`` opens the focused game's detail screen, ``R`` the AP and
+Coaches polls (``Esc`` returns from either), ``c`` copies the focused game as
+Discord Markdown and ``C`` copies every visible game.
+
+**Screens.** Detail and rankings are pushed over the grid. Polling keeps
+running underneath, and while one is open the grid's own keys are switched off
+(:meth:`CfbApp.check_action`), so a week cannot change under it.
 
 **Switching.** :meth:`CfbApp._switch` points the scheduler elsewhere, clears
 the cards and the ticker, and shows a loading message. A poll that was already
@@ -23,6 +29,7 @@ the change for this run and says so.
 """
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import replace
 from datetime import datetime
 from pathlib import Path
@@ -33,6 +40,8 @@ from textual.css.query import NoMatches
 from textual.message import Message
 from textual.widgets import Footer
 
+from cfbtui import share
+from cfbtui.clipboard import ClipboardError, copy_text
 from cfbtui.config import MAX_WEEK, MIN_WEEK, Config, favorite_ids, save_config
 from cfbtui.espn.client import GROUP_FBS, GROUP_FCS, EspnClient
 from cfbtui.poll import PollIntervals, PollResult, PollScheduler, ScoreboardSource
@@ -40,6 +49,8 @@ from cfbtui.state.events import Scored
 from cfbtui.state.store import GameStore
 from cfbtui.ui import glyphs as glyph_tables
 from cfbtui.ui.glyphs import Glyphs
+from cfbtui.ui.screens.detail import DetailScreen
+from cfbtui.ui.screens.rankings import RankingsScreen
 from cfbtui.ui.widgets.score_grid import ScoreGrid
 from cfbtui.ui.widgets.status_bar import StatusBar, StatusView
 from cfbtui.ui.widgets.ticker import Ticker
@@ -68,7 +79,16 @@ class CfbApp(App[None]):
         ("f", "toggle_group", "FBS/FCS"),
         Binding("1", "favorite('away')", "Star away"),
         Binding("2", "favorite('home')", "Star home"),
+        Binding("enter", "detail", "Detail"),
+        Binding("R", "rankings", "Rankings"),
+        Binding("c", "copy_game", "Copy game"),
+        Binding("C", "copy_board", "Copy all"),
     ]
+
+    # Actions that belong to the grid; they are off while a detail or rankings screen is on top.
+    GRID_ACTIONS = frozenset(
+        {"refresh", "week", "this_week", "toggle_group", "favorite", "detail", "rankings", "copy_game", "copy_board"}
+    )
 
     def __init__(
         self,
@@ -108,6 +128,15 @@ class CfbApp(App[None]):
         self.last_result: PollResult | None = None
         self.favorites: frozenset[str] = favorite_ids(self.config)
         self._quiet_first_poll = False
+        self.detail_refresh: float | None = None  # seconds between summary fetches; None for the screen's own
+        self.copier: Callable[[str], None] = copy_text
+        self._copy_parts: list[str] = []
+        self._copy_next = 0
+
+    def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
+        if action in self.GRID_ACTIONS and len(self.screen_stack) > 1:
+            return False
+        return True
 
     def compose(self) -> ComposeResult:
         yield ScoreGrid(id="grid")
@@ -154,6 +183,7 @@ class CfbApp(App[None]):
                 for event in result.events:
                     if isinstance(event, Scored):
                         grid.flash(event.game_id, event.team.id)
+            self._feed_detail()
         elif self.scheduler.scoreboard is None:
             grid.set_message(f"{self.glyphs.error} Could not reach ESPN. Retrying. ({result.error})")
         self._tick()
@@ -178,6 +208,7 @@ class CfbApp(App[None]):
             next_in=self.scheduler.seconds_until_next(),
             polling=self.scheduler.polling,
             glyph_set=self.glyphs.name,
+            errors=len(self.store.last_errors),
         )
         self.query_one(StatusBar).show(view, self.glyphs)
         self.query_one(ScoreGrid).set_data_old(freshness.data_old)
@@ -253,6 +284,7 @@ class CfbApp(App[None]):
         self.query_one(ScoreGrid).set_message(f"{self.glyphs.loading} Loading {what}")
         self.query_one(Ticker).clear_log()
         self._quiet_first_poll = True
+        self._copy_parts, self._copy_next = [], 0
         self._tick()
 
     def action_week(self, step: int) -> None:
@@ -277,6 +309,68 @@ class CfbApp(App[None]):
         other = GROUP_FCS if self.scheduler.group == GROUP_FBS else GROUP_FBS
         self._switch(week=self.scheduler.week, group=other, what=GROUP_NAMES[other])
 
+    # --- screens ---------------------------------------------------------------
+
+    def action_detail(self) -> None:
+        card = self.query_one(ScoreGrid).focused_card
+        if card is None:
+            self.notify("Focus a card with the arrow keys first.", timeout=3)
+            return
+        game = self.store.get(card.game.id) or card.game
+        extra = {} if self.detail_refresh is None else {"live_refresh": self.detail_refresh, "idle_refresh": self.detail_refresh}
+        self.push_screen(DetailScreen(self.client, game, self.glyphs, **extra))
+
+    def action_rankings(self) -> None:
+        self.push_screen(RankingsScreen(self.client, self.glyphs, group=self.scheduler.group))
+
+    def _feed_detail(self) -> None:
+        screen = self.screen
+        if isinstance(screen, DetailScreen):
+            game = self.store.get(screen.game.id)
+            if game is not None:
+                screen.update_game(game)
+
+    # --- copy ------------------------------------------------------------------
+
+    def action_copy_game(self) -> None:
+        card = self.query_one(ScoreGrid).focused_card
+        if card is None:
+            self.notify("Focus a card with the arrow keys first.", timeout=3)
+            return
+        game = self.store.get(card.game.id) or card.game
+        self._copy(share.format_game(game, share.UNICODE), "game")
+
+    def action_copy_board(self) -> None:
+        games = [card.game for card in self.query_one(ScoreGrid).cards]
+        board = self.scheduler.scoreboard
+        week = board.week if board and board.week is not None else self.scheduler.week
+        title = f"Week {week} {GROUP_NAMES.get(self.scheduler.group, '')}".strip() if week else None
+        parts = share.format_board(games, share.UNICODE, title=title)
+        if not parts:
+            self.notify("No games to copy yet.", timeout=3)
+            return
+        # One clipboard holds one message. A long board is copied a part at a time:
+        # pressing C again moves to the next part. Scores and clocks change between
+        # presses, so only a change in the number of parts (or a switch) starts over.
+        if len(parts) != len(self._copy_parts):
+            self._copy_next = 0
+        self._copy_parts = parts
+        index = self._copy_next
+        label = "board" if len(parts) == 1 else f"board, part {index + 1} of {len(parts)}"
+        if self._copy(parts[index], label):
+            self._copy_next = (index + 1) % len(parts)
+            if len(parts) > 1:
+                self.notify("Press C again for the next part.", timeout=3)
+
+    def _copy(self, text: str, what: str) -> bool:
+        try:
+            self.copier(text)
+        except ClipboardError as exc:
+            self.notify(f"Could not copy: {exc}. Is a clipboard tool installed?", severity="error", timeout=6)
+            return False
+        self.notify(f"Copied {what} for Discord", timeout=2)
+        return True
+
     # --- actions ---------------------------------------------------------------
 
     def action_refresh(self) -> None:
@@ -284,6 +378,9 @@ class CfbApp(App[None]):
 
     def action_cycle_glyphs(self) -> None:
         self.glyphs = glyph_tables.get(glyph_tables.next_name(self.glyphs.name))
+        for screen in self.screen_stack:
+            if isinstance(screen, DetailScreen):
+                screen.set_glyphs(self.glyphs)
         self.query_one(Ticker).set_glyphs(self.glyphs)
         self._repaint_grid()
         self._tick()

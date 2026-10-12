@@ -61,6 +61,8 @@ class Glyphs:
     at: str
     rank: str
     favorite: str
+    bar_full: str
+    bar_empty: str
 
     def for_score_kind(self, kind: ScoreKind) -> str:
         """The icon for a :class:`ScoreKind`; ``score`` for the unknown kind."""
@@ -111,6 +113,8 @@ ASCII = Glyphs(
     at="@",
     rank="#",
     favorite="*",
+    bar_full="#",
+    bar_empty="-",
 )
 
 UNICODE = Glyphs(
@@ -144,6 +148,8 @@ UNICODE = Glyphs(
     at="@",
     rank="#",
     favorite="★",
+    bar_full="█",
+    bar_empty="░",
 )
 
 EMOJI = Glyphs(
@@ -177,6 +183,8 @@ EMOJI = Glyphs(
     at="@",
     rank="#",
     favorite="⭐",
+    bar_full="🟩",
+    bar_empty="⬜",
 )
 
 # Nerd Fonts, FontAwesome range (U+F000..U+F2E0). Names are nf-fa-*.
@@ -211,6 +219,8 @@ NERD = Glyphs(
     at="@",
     rank="#",
     favorite="",
+    bar_full="█",
+    bar_empty="░",
 )
 
 GLYPH_SETS: dict[str, Glyphs] = {g.name: g for g in (ASCII, UNICODE, EMOJI, NERD)}

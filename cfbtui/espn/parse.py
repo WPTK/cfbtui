@@ -312,6 +312,14 @@ def parse_scoreboard(payload: dict) -> Scoreboard:
 # -------------------------------------------------------------------- rankings
 
 
+def _opt_date(value: Any) -> datetime | None:
+    """A date string as a UTC datetime; ``None`` when absent or unreadable."""
+    if not isinstance(value, str) or not value:
+        return None
+    parsed = parse_date(value)
+    return None if parsed == _EPOCH else parsed
+
+
 def parse_rank_entry(raw: dict) -> RankEntry | None:
     """Build a :class:`RankEntry`; ``None`` when there is no team id."""
     if not isinstance(raw, dict):
@@ -356,6 +364,7 @@ def parse_rankings(payload: dict) -> tuple[Ranking, ...]:
                 type=_str(raw.get("type")),
                 week=_opt_int(_get(raw, "occurrence", "number")),
                 season_year=_opt_int(_get(raw, "season", "year")),
+                date=_opt_date(raw.get("date")),
                 ranks=_entries(raw.get("ranks")),
                 others=_entries(raw.get("others")),
                 dropped_out=_entries(raw.get("droppedOut")),

@@ -231,6 +231,7 @@ class Ranking:
     type: str
     week: int | None = None
     season_year: int | None = None
+    date: datetime | None = None
     ranks: tuple[RankEntry, ...] = ()
     others: tuple[RankEntry, ...] = ()
     dropped_out: tuple[RankEntry, ...] = ()
