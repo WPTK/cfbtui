@@ -2,6 +2,10 @@
 
 Release notes for cfbtui, kept the way a fortress overseer keeps a journal. Newest first. Versions follow FibVer.
 
+## 1.1.55 (2026-10-12)
+
+- The little dropdown arrow on the poster's tab bar was discovered to be the letter V, wearing a hat. It has been replaced by a real chevron and is much happier.
+
 ## 1.1.34 (2026-10-12)
 
 - The poster's scoreboard was found sitting in a window with three little traffic-light dots, which is how Macs dress. It has been moved into a Windows Terminal tab marked "Windows PowerShell" and says it feels more like itself.
