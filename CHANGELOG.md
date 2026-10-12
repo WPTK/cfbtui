@@ -2,6 +2,10 @@
 
 Release notes for cfbtui, kept the way a fortress overseer keeps a journal. Newest first. Versions follow FibVer.
 
+## 1.1.21 (2026-10-12)
+
+- A 1280 by 640 poster was made for the repository's front door. It has the name in large letters, a promise in smaller letters, and a scoreboard peeking in from the right, as though it had been listening.
+
 ## 1.1.13 (2026-10-12)
 
 - The repository was given a description, a homepage and ten topic tags, and finally has something to say at parties. The wiki, which nobody had opened, was boarded up.
