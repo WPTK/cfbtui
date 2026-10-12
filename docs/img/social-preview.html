@@ -5,14 +5,8 @@
   body { position: relative; font-family: "Segoe UI", system-ui, sans-serif; color: #e8edf3; }
   .win { position: absolute; left: 600px; top: 150px; width: 1500px; height: 700px; border-radius: 8px 0 0 0;
          overflow: hidden; background: #0c0c0c; box-shadow: 0 20px 60px rgba(0,0,0,.6); border: 1px solid #2a3442; }
-  .title { height: 40px; background: #202020; position: relative; }
-  .tab { position: absolute; left: 8px; top: 6px; height: 34px; width: 250px; background: #0c0c0c; border-radius: 8px 8px 0 0;
-         font: 13px/34px "Segoe UI", sans-serif; color: #e8e8e8; padding-left: 38px; box-sizing: border-box; }
-  .tab::before { content: ">_"; position: absolute; left: 12px; font: 700 12px/34px Consolas, monospace; color: #5ea0ef; }
-  .tab::after { content: "×"; position: absolute; right: 12px; color: #aaa; font-size: 12px; }
-  .plus { position: absolute; left: 270px; top: 0; font: 20px/38px "Segoe UI", sans-serif; color: #ccc; }
+  .title { height: 26px; background: #202020; position: relative; }
   .body { overflow: hidden; height: 660px; }
-  .chev { position: absolute; left: 306px; top: 15px; width: 7px; height: 7px; border-right: 1.5px solid #ccc; border-bottom: 1.5px solid #ccc; transform: rotate(45deg); }
   .shot { display: block; width: 1500px; margin-top: -38px; }
   .fade { position: absolute; inset: 0; background: linear-gradient(90deg, #0f141b 0 34%, rgba(15,20,27,0) 62%); }
   .text { position: absolute; left: 72px; top: 170px; width: 520px; }
@@ -22,7 +16,7 @@
   .bar { position: absolute; left: 0; right: 0; bottom: 0; height: 10px; background: linear-gradient(90deg, #f5c542, #e5484d); }
 </style>
 <div class="win">
-  <div class="title"><div class="tab">Windows PowerShell</div><div class="plus">+</div><div class="chev"></div></div>
+  <div class="title"></div>
   <div class="body"><img class="shot" src="grid-unicode.svg"></div>
 </div>
 <div class="fade"></div>

@@ -2,6 +2,10 @@
 
 Release notes for cfbtui, kept the way a fortress overseer keeps a journal. Newest first. Versions follow FibVer.
 
+## 1.1.89 (2026-10-12)
+
+- The poster's scoreboard was relieved of its costume. It no longer claims to be PowerShell, Terminal or anything else. It is a dark window with a plain strip on top, and it is just here for the football.
+
 ## 1.1.55 (2026-10-12)
 
 - The little dropdown arrow on the poster's tab bar was discovered to be the letter V, wearing a hat. It has been replaced by a real chevron and is much happier.
