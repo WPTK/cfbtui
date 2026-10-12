@@ -8,7 +8,7 @@ Paste this whole file as the first message of a new session in `C:\cfbtui`. Read
 
 ## 2. State of the repo
 
-Version `0.2.0`. Public repo at https://github.com/WPTK/cfbtui, branch `main`, hooks active via `core.hooksPath = .githooks`.
+Version `0.2.x` (run `.venv\Scripts\python -m cfbtui --version` for the exact number; it rises with every commit). Public repo at https://github.com/WPTK/cfbtui, branch `main`, hooks active via `core.hooksPath = .githooks`.
 
 What exists and works:
 
