@@ -2,6 +2,12 @@
 
 Release notes for cfbtui, kept the way a fortress overseer keeps a journal. Newest first. Versions follow FibVer.
 
+## 1.1.4 (2026-10-12)
+
+- The README was reorganized into the order a stranger reads it: what it is, what it does, how to get it, how to use it, what to do when it breaks. A table of contents was posted at the door.
+- A Troubleshooting corner was built. It currently houses the empty-box icons, the ESPN outage and the board that is empty for a good reason.
+- The screenshots were moved next to the words they illustrate, and stopped queueing up in a row.
+
 ## 1.1.3 (2026-10-12)
 
 - The README was asked what the program actually does, and until now had never answered in one place. It now has a list. The list is short and none of it is a boast.
