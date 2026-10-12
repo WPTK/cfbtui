@@ -14,3 +14,4 @@
 
 # Saved API payloads are data; never rewrite them.
 tests/fixtures/*.json -text
+tests/fixtures/**/*.json -text

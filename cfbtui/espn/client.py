@@ -1,0 +1,152 @@
+"""Async client for ESPN's unofficial college football site API."""
+
+from __future__ import annotations
+
+import asyncio
+import datetime
+from collections.abc import Awaitable, Callable
+from typing import TYPE_CHECKING, Any
+
+import httpx
+
+from cfbtui import __version__
+
+if TYPE_CHECKING:
+    from cfbtui.espn.models import Ranking, Scoreboard, Summary
+
+BASE_URL = "https://site.api.espn.com/apis/site/v2/sports/football/college-football"
+GROUP_FBS = 80
+GROUP_FCS = 81
+
+USER_AGENT = f"cfbtui/{__version__} (+https://github.com/WPTK/cfbtui)"
+
+
+class EspnError(Exception):
+    """Base class for every error raised by the client."""
+
+
+class EspnHttpError(EspnError):
+    """ESPN answered with a non-success HTTP status."""
+
+    def __init__(self, status_code: int, url: str) -> None:
+        super().__init__(f"HTTP {status_code} from {url}")
+        self.status_code = status_code
+        self.url = url
+
+
+class EspnNetworkError(EspnError):
+    """The request never produced a response (transport error or timeout)."""
+
+
+class EspnClient:
+    """Thin retrying wrapper over httpx for the three endpoints cfbtui uses."""
+
+    def __init__(
+        self,
+        *,
+        base_url: str = BASE_URL,
+        timeout: float = 10.0,
+        retries: int = 3,
+        backoff: float = 0.5,
+        client: httpx.AsyncClient | None = None,
+        sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+    ) -> None:
+        self._base_url = base_url.rstrip("/")
+        self._timeout = timeout
+        self._retries = retries
+        self._backoff = backoff
+        self._sleep = sleep
+        self._owns_client = client is None
+        self._client = client or httpx.AsyncClient(timeout=timeout)
+
+    async def __aenter__(self) -> EspnClient:
+        return self
+
+    async def __aexit__(self, *exc_info: object) -> None:
+        await self.aclose()
+
+    async def aclose(self) -> None:
+        """Close the underlying client, but only if this object created it."""
+        if self._owns_client:
+            await self._client.aclose()
+
+    async def _get_json(self, path: str, params: dict[str, Any] | None = None) -> dict:
+        url = f"{self._base_url}{path}"
+        last_error: EspnError | None = None
+        for attempt in range(self._retries + 1):
+            if attempt:
+                await self._sleep(self._backoff * 2 ** (attempt - 1))
+            try:
+                response = await self._client.get(
+                    url, params=params, headers={"User-Agent": USER_AGENT}, timeout=self._timeout
+                )
+            except httpx.TransportError as exc:
+                last_error = EspnNetworkError(f"{type(exc).__name__} fetching {url}: {exc}")
+                last_error.__cause__ = exc
+                continue
+            status = response.status_code
+            if status >= 500:
+                last_error = EspnHttpError(status, str(response.url))
+                continue
+            if status >= 400:
+                raise EspnHttpError(status, str(response.url))
+            try:
+                payload = response.json()
+            except ValueError as exc:
+                raise EspnError(f"Invalid JSON from {url}: {exc}") from exc
+            if not isinstance(payload, dict):
+                raise EspnError(f"Expected a JSON object from {url}")
+            return payload
+        assert last_error is not None
+        raise last_error
+
+    async def scoreboard_raw(
+        self,
+        *,
+        week: int | None = None,
+        date: str | datetime.date | None = None,
+        group: int = GROUP_FBS,
+        limit: int = 200,
+    ) -> dict:
+        if week is not None and date is not None:
+            raise ValueError("pass either week or date, not both")
+        params: dict[str, Any] = {"groups": group, "limit": limit}
+        if week is not None:
+            params["week"] = week
+        if date is not None:
+            if not isinstance(date, str):
+                date = date.strftime("%Y%m%d")
+            if len(date) != 8 or not date.isdigit():
+                raise ValueError(f"date must be YYYYMMDD, got {date!r}")
+            params["dates"] = date
+        return await self._get_json("/scoreboard", params)
+
+    async def rankings_raw(self) -> dict:
+        return await self._get_json("/rankings")
+
+    async def summary_raw(self, event_id: str) -> dict:
+        return await self._get_json("/summary", {"event": event_id})
+
+    async def scoreboard(
+        self,
+        *,
+        week: int | None = None,
+        date: str | datetime.date | None = None,
+        group: int = GROUP_FBS,
+        limit: int = 200,
+    ) -> Scoreboard:
+        from cfbtui.espn.parse import parse_scoreboard
+
+        return parse_scoreboard(
+            await self.scoreboard_raw(week=week, date=date, group=group, limit=limit)
+        )
+
+    async def rankings(self) -> tuple[Ranking, ...]:
+        from cfbtui.espn.parse import parse_rankings
+
+        return parse_rankings(await self.rankings_raw())
+
+    async def summary(self, event_id: str) -> Summary:
+        from cfbtui.espn.parse import parse_summary
+
+        return parse_summary(await self.summary_raw(event_id))
