@@ -2,6 +2,16 @@
 
 Release notes for cfbtui, kept the way a fortress overseer keeps a journal. Newest first. Versions follow FibVer.
 
+## 1.1.2 (2026-10-12)
+
+- The README gained a section for the one-line list and another for the conference picker. Both were photographed looking their best.
+- The changelog was found to be missing a page for 1.1.1. The page has been written. It is short.
+
+## 1.1.1 (2026-10-12)
+
+- The photographer was told that Monday is a poor day to photograph football, and was sent to last week's finished games instead. It took the pictures and came back pleased. Every card says Final.
+- The photographer now accepts a `--week`, and has learned to photograph the list and the picker.
+
 ## 1.1.0 (2026-10-12)
 
 - The games have been offered a second way to sit: a tidy single-file line, one game each, like clerks at a counter. Pressing `v` switches. They have opinions about it.
