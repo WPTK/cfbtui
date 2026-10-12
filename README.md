@@ -5,7 +5,7 @@ A colorful college football scoreboard for the terminal. Windows Terminal first.
 Game cards painted in real team colors, live clock and down-and-distance, AP and Coaches rankings, upset
 flags, and a flash on every touchdown and field goal. Copy any game to Discord with one key.
 
-**Status:** Phase 0. The app boots, proves truecolor, and shows a clock. The scoreboard is next.
+**Status:** Phase 2. The scoreboard works: team-colored game cards, a live event ticker and a status bar that says how fresh the data is. Keys today: `r` refresh, `g` cycle glyph set, `q` quit. Config, week switching and favorites come next.
 
 ## Run from source
 

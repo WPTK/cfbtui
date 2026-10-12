@@ -59,7 +59,8 @@ carry ordinary commits; phase-end commits deserve a long form.
 
 ### Release notes: simulation-log voice
 
-`CHANGELOG.md` has one section per release, headed by the FibVer number and date. Entries are **bullet
+`CHANGELOG.md` has one section per version, patch versions included (every commit bumps patch, so every
+commit adds a section, headed by the FibVer number and date). Entries are **bullet
 points**, one event per bullet, in the deadpan voice of Dwarf Fortress patch notes and The Sims, narrating
 what happened to the inhabitants of the program. Bugs are misfortunes that befell someone; features are
 skills learned or moods acquired. No prose paragraphs, no plain "Added X" lists.
