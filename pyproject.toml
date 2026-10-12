@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cfbtui"
+dynamic = ["version"]
+description = "A colorful college football scoreboard for the terminal."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.13"
+authors = [{ name = "Bill Kane" }]
+dependencies = [
+    "textual>=8.2,<9",
+    "httpx>=0.28,<1",
+    "platformdirs>=4,<5",
+    "tomli-w>=1,<2",
+    "pyperclip>=1.9,<2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.24",
+    "respx>=0.22",
+    "pytest-textual-snapshot>=1.1",
+    "pyinstaller>=6.22,<7",
+]
+
+[project.scripts]
+cfbtui = "cfbtui.__main__:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "cfbtui.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["cfbtui*"]
+
+[tool.setuptools.package-data]
+cfbtui = ["ui/*.tcss"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

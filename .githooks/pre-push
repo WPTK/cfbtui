@@ -1,0 +1,5 @@
+#!/bin/sh
+# Refuse to push any commit that does not declare its poetic form.
+cd "$(git rev-parse --show-toplevel)" || exit 1
+. .githooks/_python.sh
+exec "$PY" .githooks/poem.py check-push

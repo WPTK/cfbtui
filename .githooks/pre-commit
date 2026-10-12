@@ -1,0 +1,12 @@
+#!/bin/sh
+# FibVer: every commit bumps patch to the next Fibonacci number.
+# Skipped when cfbtui/__init__.py is already staged (phase-end minor bumps, the first commit).
+cd "$(git rev-parse --show-toplevel)" || exit 1
+. .githooks/_python.sh
+
+if git diff --cached --name-only | grep -q '^cfbtui/__init__.py$'; then
+    exit 0
+fi
+
+"$PY" -m cfbtui.version bump patch --write || exit 1
+git add cfbtui/__init__.py

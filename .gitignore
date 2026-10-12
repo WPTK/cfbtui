@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# PyInstaller (work dir is redirected to .pyi-build so build/ stays versioned)
+dist/
+.pyi-build/
+
+# Snapshot test reports
+snapshot_report.html
+
+# Editors / OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store

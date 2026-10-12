@@ -1,0 +1,33 @@
+/* cfbtui layout and default theme. Team colors are applied per-widget at runtime. */
+
+Screen {
+    layout: vertical;
+}
+
+#banner {
+    padding: 1 2;
+    text-style: bold;
+    color: $accent;
+}
+
+#swatches {
+    height: 5;
+    padding: 0 2;
+}
+
+Swatch {
+    width: 1fr;
+    height: 100%;
+    margin: 0 1;
+    content-align: center middle;
+    text-style: bold;
+}
+
+#hint {
+    padding: 1 2;
+    color: $text-muted;
+}
+
+#spacer {
+    height: 1fr;
+}
