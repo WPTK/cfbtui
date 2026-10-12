@@ -1,0 +1,16 @@
+# Normalise line endings so the sh hooks and Python run the same on every clone.
+* text=auto eol=lf
+
+# Hooks must be LF or sh chokes on \r.
+.githooks/* text eol=lf
+*.sh text eol=lf
+*.py text eol=lf
+*.tcss text eol=lf
+*.toml text eol=lf
+*.md text eol=lf
+
+# PowerShell is happier with CRLF.
+*.ps1 text eol=crlf
+
+# Saved API payloads are data; never rewrite them.
+tests/fixtures/*.json -text
