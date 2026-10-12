@@ -54,7 +54,7 @@ def test_an_empty_store_passed_in_is_the_store_used():
 
 async def test_first_poll_applies_games_and_reports_fresh():
     client = FakeClient(board("touchdown_before"))
-    sched, clock, results = make(client)
+    sched, _clock, results = make(client)
     assert sched.freshness().state is FreshnessState.LOADING
     result = await sched.poll_once()
     assert result.ok and result.scoreboard is not None
@@ -101,7 +101,7 @@ async def test_rankings_failure_is_quiet_and_retried_later():
 
 async def test_scoring_tick_emits_a_scored_event():
     client = FakeClient(board("touchdown_before"), board("touchdown_after"))
-    sched, clock, results = make(client)
+    sched, clock, _results = make(client)
     await sched.poll_once()
     clock.advance(20)
     result = await sched.poll_once()
@@ -116,7 +116,7 @@ async def test_scoring_tick_emits_a_scored_event():
 
 async def test_error_keeps_last_data_and_marks_error():
     client = FakeClient(board("touchdown_after"), EspnHttpError(503, "http://x"))
-    sched, clock, results = make(client)
+    sched, clock, _results = make(client)
     await sched.poll_once()
     clock.advance(20)
     result = await sched.poll_once()

@@ -12,6 +12,7 @@ from datetime import datetime
 from textual.widgets import Static
 
 from cfbtui import __version__
+from cfbtui.espn.periods import week_label
 from cfbtui.poll import Freshness, FreshnessState, format_age
 from cfbtui.ui.glyphs import Glyphs, get
 
@@ -27,6 +28,7 @@ class StatusView:
     polling: bool = False
     glyph_set: str = ""
     errors: int = 0  # games whose latest diff raised
+    view_note: str = ""  # the active filter, conference and layout, if not the defaults
 
 
 def format_status(view: StatusView, glyphs: Glyphs, now: datetime | None = None) -> str:
@@ -47,9 +49,11 @@ def format_status(view: StatusView, glyphs: Glyphs, now: datetime | None = None)
     elif view.next_in is not None:
         parts.append(f"next {format_age(view.next_in)}")
     if view.week is not None:
-        parts.append(f"Week {view.week}{f' {view.group}' if view.group else ''}")
+        parts.append(f"{week_label(view.week)}{f' {view.group}' if view.group else ''}")
     elif view.group:
         parts.append(view.group)
+    if view.view_note:
+        parts.append(view.view_note)
     if view.total:
         parts.append(f"{view.live} live of {view.total}")
     if f.state is FreshnessState.ERROR and f.failures > 1:

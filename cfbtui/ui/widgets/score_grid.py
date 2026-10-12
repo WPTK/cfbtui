@@ -6,19 +6,26 @@ then game id, which never changes during a game, so cards do not jump around
 between polls. A game only moves when its state moves it to another group.
 
 Games involving a favorite team come first of all, ordered the same way among
-themselves, so the starred teams sit in a block at the top of the grid.
+themselves, under a "Favorites" heading, with the rest under "Other games".
+With no favorites on the board there are no headings.
+
+The ``compact`` layout is one line per game in a single column; the same cards,
+the same focus movement, a different height.
 
 Arrow keys move focus between cards in display order (left and right by one,
 up and down by a row), so a key binding can act on "the focused game".
 """
 from __future__ import annotations
 
+import contextlib
 from collections.abc import Iterable
 
+from rich.text import Text
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Grid, VerticalScroll
 from textual.css.query import NoMatches
+from textual.widget import Widget
 from textual.widgets import Static
 
 from cfbtui.espn.models import Game
@@ -29,8 +36,12 @@ from cfbtui.ui.widgets.game_card import GameCard
 CARD_MIN_WIDTH = 36
 
 
+def is_starred(game: Game, favorites: frozenset[str]) -> bool:
+    return game.away.id in favorites or game.home.id in favorites
+
+
 def sort_key(game: Game, favorites: frozenset[str] = frozenset()) -> tuple[int, int, float, str]:
-    starred = game.away.id in favorites or game.home.id in favorites
+    starred = is_starred(game, favorites)
     group = 0 if game.is_live else 1 if game.is_pregame else 2
     return (0 if starred else 1, group, game.date.timestamp(), game.id)
 
@@ -80,6 +91,12 @@ class ScoreGrid(VerticalScroll):
         grid-size: 1;
         grid-gutter: 0 1;
     }
+    ScoreGrid > Grid > .section {
+        height: 1;
+        padding: 0 1;
+        color: $text-muted;
+        text-style: bold;
+    }
     ScoreGrid > #message {
         height: auto;
         padding: 1 2;
@@ -90,7 +107,10 @@ class ScoreGrid(VerticalScroll):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self._cards: dict[str, GameCard] = {}
+        self._headers: dict[str, Static] = {}
+        self._fillers: list[Static] = []
         self.columns = 1
+        self.compact = False
 
     def compose(self) -> ComposeResult:
         yield Static("", id="message")
@@ -127,12 +147,17 @@ class ScoreGrid(VerticalScroll):
         for card in self._cards.values():
             card.remove()
         self._cards.clear()
+        for header in self._headers.values():
+            header.remove()
+        self._headers.clear()
+        self._drop_fillers()
 
     def set_message(self, text: str) -> None:
-        try:
-            self.query_one("#message", Static).update(text)
-        except NoMatches:  # a poll can land before compose has finished or after teardown began
-            pass
+        # a poll can land before compose has finished or after teardown began
+        with contextlib.suppress(NoMatches):
+            message = self.query_one("#message", Static)
+            message.update(Text(text))
+            message.display = bool(text)
 
     def on_resize(self) -> None:
         self._set_columns()
@@ -142,8 +167,10 @@ class ScoreGrid(VerticalScroll):
             grid = self.query_one("#cards", Grid)
         except NoMatches:  # a resize can arrive before compose has mounted the grid
             return
-        self.columns = columns_for(self.size.width - 2)
+        self.columns = 1 if self.compact else columns_for(self.size.width - 2)
         grid.styles.grid_size_columns = self.columns
+        for header in self._headers.values():
+            header.styles.column_span = self.columns
 
     def update_games(
         self,
@@ -153,8 +180,11 @@ class ScoreGrid(VerticalScroll):
         *,
         data_old: bool = False,
         favorites: frozenset[str] = frozenset(),
+        compact: bool = False,
+        empty_text: str = "No games on the board.",
     ) -> None:
         """Make the grid show exactly ``games``: add, update, remove and reorder cards."""
+        self.compact = compact
         ordered = sorted(games, key=lambda g: sort_key(g, favorites))
         try:
             grid = self.query_one("#cards", Grid)
@@ -167,23 +197,64 @@ class ScoreGrid(VerticalScroll):
             verdict = rule.evaluate(game)
             card = self._cards.get(game.id)
             if card is None:
-                card = GameCard(game, glyphs, verdict=verdict, favorites=favorites)
+                card = GameCard(game, glyphs, verdict=verdict, favorites=favorites, compact=compact)
                 card.set_data_old(data_old)
                 self._cards[game.id] = card
                 grid.mount(card)
             else:
-                card.show(game, glyphs, verdict, data_old=data_old, favorites=favorites)
-        self.call_after_refresh(self._reorder, [g.id for g in ordered])
-        self.set_message("" if ordered else "No games on the board.")
+                card.show(game, glyphs, verdict, data_old=data_old, favorites=favorites, compact=compact)
+        self._set_columns()
+        starred = [g.id for g in ordered if is_starred(g, favorites)]
+        rest = [g.id for g in ordered if not is_starred(g, favorites)]
+        layout: list[Widget] = []
+        if starred:
+            layout.append(self._header(grid, "favorites", f"{glyphs.favorite} Favorites"))
+            layout += [self._cards[i] for i in starred]
+            if rest:
+                layout += self._pad_row(grid, len(starred))
+                layout.append(self._header(grid, "rest", "Other games"))
+        for key in [k for k in self._headers if k not in {"favorites", "rest"} or not starred]:
+            self._headers.pop(key).remove()
+        if "rest" in self._headers and not rest:
+            self._headers.pop("rest").remove()
+        if not (starred and rest):
+            self._drop_fillers()
+        layout += [self._cards[i] for i in rest]
+        self.call_after_refresh(self._reorder, layout)
+        self.set_message("" if ordered else empty_text)
         self._set_columns()
 
-    def _reorder(self, order: list[str]) -> None:
+    def _drop_fillers(self) -> None:
+        for filler in self._fillers:
+            filler.remove()
+        self._fillers.clear()
+
+    def _pad_row(self, grid: Grid, count: int) -> list[Static]:
+        """Blank cells that finish the Favorites block's last row, so the next heading starts a fresh one."""
+        need = (-count) % self.columns
+        if len(self._fillers) != need:
+            self._drop_fillers()
+            self._fillers = [Static("", classes="filler") for _ in range(need)]
+            for filler in self._fillers:
+                grid.mount(filler)
+        return list(self._fillers)
+
+    def _header(self, grid: Grid, key: str, text: str) -> Static:
+        header = self._headers.get(key)
+        if header is None:
+            header = self._headers[key] = Static(text, classes="section")
+            grid.mount(header)
+        else:
+            header.update(text)
+        return header
+
+    def _reorder(self, layout: list[Widget]) -> None:
         grid = self.query_one("#cards", Grid)
-        wanted = [self._cards[i] for i in order if i in self._cards and self._cards[i].is_attached]
-        for index, card in enumerate(wanted):
-            current = self.cards
-            if index < len(current) and current[index] is not card:
-                grid.move_child(card, before=current[index])
+        wanted = [w for w in layout if w.is_attached]
+        for index, widget in enumerate(wanted):
+            current = list(grid.children)
+            if index < len(current) and current[index] is not widget:
+                grid.move_child(widget, before=current[index])
 
     def flash(self, game_id: str, team_id: str) -> None:
         card = self._cards.get(game_id)

@@ -12,10 +12,8 @@ the classes ``live``, ``final``, ``pregame``, ``upset`` and ``flash``.
 """
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
-from zoneinfo import ZoneInfo
+from datetime import UTC, datetime
 
 from rich.console import Group, RenderableType
 from rich.style import Style
@@ -26,13 +24,10 @@ from textual.widgets import Static
 from cfbtui.espn.models import Competitor, Game
 from cfbtui.state.upset import UpsetVerdict
 from cfbtui.ui.glyphs import Glyphs
-from cfbtui.ui.labels import period_name, pretty_status
+from cfbtui.ui.labels import status_text
 from cfbtui.ui.theme import foreground_for
 
-EASTERN = ZoneInfo("America/New_York")
 FLASH_SECONDS = 3.0
-# A kickoff further out than this shows its date, so next week's game never looks like this week's.
-FAR_KICKOFF = timedelta(days=5)
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,46 +65,6 @@ class CardModel:
             self.rows[1].plain(width),
             f"{status}{' ' * pad}{self.extra}" if self.extra else status,
         ]
-
-
-def kickoff_text(when: datetime, now: datetime | None = None) -> str:
-    """``"Sat 12:00 PM ET"``, or ``"Sat Oct 24 12:00 PM ET"`` when the kickoff is over five days away.
-
-    Eastern time, no leading zero on the hour or the day.
-    """
-    local = when.astimezone(EASTERN)
-    far = now is not None and when - now > FAR_KICKOFF
-    text = local.strftime("%a %b %d %I:%M %p" if far else "%a %I:%M %p")
-    return re.sub(r" 0(\d)", r" \1", text) + " ET"
-
-
-def status_text(game: Game, glyphs: Glyphs, now: datetime | None = None) -> str:
-    s = game.status
-    if game.is_pregame:
-        if s.name == "STATUS_SCHEDULED":
-            return f"{glyphs.pregame} {kickoff_text(game.date, now)}"
-        return f"{glyphs.pregame} {s.short_detail or pretty_status(s.name)}"
-    if game.is_live:
-        if s.is_halftime:
-            return f"{glyphs.halftime} Halftime"
-        if s.name == "STATUS_END_PERIOD":
-            return f"{glyphs.live} {s.short_detail or f'End of Q{s.period}'}"
-        if s.name not in _PLAYING:
-            return f"{glyphs.live} {s.short_detail or pretty_status(s.name)}"
-        return f"{glyphs.live} {period_name(s.period)} {s.clock}"
-    if game.is_final:
-        return f"{glyphs.final} Final{'/OT' if s.is_overtime else ''}"
-    return f"{glyphs.final} {s.short_detail or pretty_status(s.name)}"
-
-
-_PLAYING = frozenset(
-    {
-        "STATUS_IN_PROGRESS",
-        "STATUS_FIRST_HALF",
-        "STATUS_SECOND_HALF",
-        "STATUS_OVERTIME",
-    }
-)
 
 
 def _extra_text(game: Game) -> str:
@@ -194,6 +149,38 @@ def build_card(
     )
 
 
+def compact_line(
+    game: Game,
+    glyphs: Glyphs,
+    *,
+    verdict: UpsetVerdict | None = None,
+    flash_team_id: str | None = None,
+    favorites: frozenset[str] = frozenset(),
+    now: datetime | None = None,
+) -> Text:
+    """The list layout: both teams in their colors, then status, odds or down and distance, upset flag."""
+    line = Text(" ")
+    for i, side in enumerate((game.away, game.home)):
+        row = _row(game, side, glyphs, flash_team_id, side.id in favorites)
+        style = Style(color=row.foreground, bgcolor=row.background, bold=row.bold, dim=row.dim)
+        if row.flash:
+            style += Style(reverse=True)
+        score = row.score.strip()
+        line.append(f"{row.left.strip():<14}{score:>3} " if score else f"{row.left.strip():<14}    ", style=style)
+        if i == 0:
+            line.append(f" {glyphs.at} ")
+    line.append(f"  {status_text(game, glyphs, now or datetime.now(UTC))}")
+    extra = _extra_text(game)
+    if extra:
+        line.append(f"  {extra}", style="dim")
+    if verdict is not None:
+        label = f"  {glyphs.upset} UPSET" if verdict.confirmed else f"  {glyphs.upset_watch} UPSET WATCH"
+        line.append(label, style="bold yellow")
+    if game.is_live and game.situation is not None and game.situation.is_red_zone:
+        line.append(f"  {glyphs.red_zone} RED ZONE", style="bold red")
+    return line
+
+
 def render_card(model: CardModel) -> RenderableType:
     parts: list[RenderableType] = []
     for row in model.rows:
@@ -234,6 +221,8 @@ class GameCard(Static):
     GameCard.redzone { border-title-color: $error; }
     GameCard.flash { border: double $accent; }
     GameCard.old { text-opacity: 55%; }
+    GameCard.compact { height: 1; border: none; }
+    GameCard.compact:focus { border: none; background: $boost; text-style: bold; }
     GameCard:focus { border: double $primary; }
     """
 
@@ -246,8 +235,11 @@ class GameCard(Static):
         *,
         verdict: UpsetVerdict | None = None,
         favorites: frozenset[str] = frozenset(),
+        compact: bool = False,
     ) -> None:
         super().__init__()
+        self.compact = compact
+        self.set_class(compact, "compact")
         self.favorites = favorites
         self.game = game
         self.glyphs = glyphs
@@ -270,10 +262,13 @@ class GameCard(Static):
         *,
         data_old: bool = False,
         favorites: frozenset[str] | None = None,
+        compact: bool | None = None,
     ) -> None:
         favorites = self.favorites if favorites is None else favorites
+        compact = self.compact if compact is None else compact
         unchanged = (
-            game == self.game
+            compact == self.compact
+            and game == self.game
             and favorites == self.favorites
             and glyphs is self.glyphs
             and verdict == self.verdict
@@ -281,6 +276,8 @@ class GameCard(Static):
         )
         self.game, self.glyphs, self.verdict, self.data_old = game, glyphs, verdict, data_old
         self.favorites = favorites
+        self.compact = compact
+        self.set_class(compact, "compact")
         if not unchanged:  # most polls change a handful of the 60-odd games
             self.repaint()
 
@@ -310,6 +307,22 @@ class GameCard(Static):
         self.repaint()
 
     def repaint(self) -> None:
+        self.set_class(self.data_old, "old")
+        if self.compact:
+            self.model = None
+            self.border_title = ""
+            for name in ("live", "final", "pregame", "upset", "redzone", "flash"):
+                self.set_class(False, name)
+            self.update(
+                compact_line(
+                    self.game,
+                    self.glyphs,
+                    verdict=self.verdict,
+                    flash_team_id=self._flash_team,
+                    favorites=self.favorites,
+                )
+            )
+            return
         model = build_card(
             self.game, self.glyphs, verdict=self.verdict, flash_team_id=self._flash_team, favorites=self.favorites
         )

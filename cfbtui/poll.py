@@ -31,6 +31,7 @@ cap, and never drops below the normal interval.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -179,6 +180,8 @@ class PollScheduler:
     def next_delay(self) -> float:
         """Seconds to wait before the next poll, including error backoff."""
         base = self.normal_delay()
+        if self._failures and self._last_ok is None:
+            base = min(base, self.intervals.live)  # nothing loaded yet: retry soon, not in five minutes
         if self._failures:
             return max(base, min(self.intervals.backoff_max, base * 2**self._failures))
         return base
@@ -279,10 +282,8 @@ class PollScheduler:
             await self._wait(self.next_delay())
 
     async def _wait(self, delay: float) -> None:
-        try:
+        with contextlib.suppress(TimeoutError):
             await asyncio.wait_for(self._wake.wait(), timeout=delay)
-        except TimeoutError:
-            pass
 
     def refresh(self) -> None:
         """Poll now instead of waiting. Ignored mid-fetch: that fetch is about to be fresh anyway."""

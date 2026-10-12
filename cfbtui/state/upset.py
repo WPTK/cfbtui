@@ -16,8 +16,8 @@ Semantics, in order:
 """
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 from cfbtui.espn.models import Competitor, Game, GameState, Ranking
 

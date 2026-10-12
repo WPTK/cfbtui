@@ -27,6 +27,8 @@ dev = [
     "pytest-textual-snapshot>=1.1",
     "pronouncing>=0.2",
     "pyinstaller>=6.22,<7",
+    "ruff>=0.8",
+    "vulture>=2.14",
 ]
 
 [project.scripts]
@@ -44,3 +46,21 @@ cfbtui = ["ui/*.tcss"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "C4", "RUF"]
+ignore = [
+    # Textual widgets declare BINDINGS/DEFAULT_CSS as plain class attributes by convention.
+    "RUF012",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Long lines in tests are inline fixture payloads and poem text; wrapping them hurts readability.
+# The hook's stop-word list and the PyInstaller version template are likewise literal data.
+"tests/**" = ["E501"]
+".githooks/poem.py" = ["E501"]
+"scripts/version_info.py" = ["E501"]

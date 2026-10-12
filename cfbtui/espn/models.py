@@ -63,10 +63,6 @@ class Competitor:
     def abbreviation(self) -> str:
         return self.team.abbreviation
 
-    @property
-    def is_ranked(self) -> bool:
-        return self.rank is not None
-
 
 @dataclass(frozen=True, slots=True)
 class Status:

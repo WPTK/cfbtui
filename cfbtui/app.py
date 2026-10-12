@@ -29,7 +29,8 @@ the change for this run and says so.
 """
 from __future__ import annotations
 
-from collections.abc import Callable
+import contextlib
+from collections.abc import Awaitable, Callable
 from dataclasses import replace
 from datetime import datetime
 from pathlib import Path
@@ -42,18 +43,23 @@ from textual.widgets import Footer
 
 from cfbtui import share
 from cfbtui.clipboard import ClipboardError, copy_text
-from cfbtui.config import MAX_WEEK, MIN_WEEK, Config, favorite_ids, save_config
+from cfbtui.config import Config, favorite_ids, save_config
 from cfbtui.espn.client import GROUP_FBS, GROUP_FCS, EspnClient
+from cfbtui.espn.models import Game, Ranking
+from cfbtui.espn.periods import MAX_WEEK, MIN_WEEK, week_label
 from cfbtui.poll import PollIntervals, PollResult, PollScheduler, ScoreboardSource
 from cfbtui.state.events import Scored
 from cfbtui.state.store import GameStore
 from cfbtui.ui import glyphs as glyph_tables
+from cfbtui.ui.filters import FILTER_LABELS, conference_name, conferences_on, describe, keep, next_filter
 from cfbtui.ui.glyphs import Glyphs
+from cfbtui.ui.screens.conferences import ConferenceScreen
 from cfbtui.ui.screens.detail import DetailScreen
 from cfbtui.ui.screens.rankings import RankingsScreen
 from cfbtui.ui.widgets.score_grid import ScoreGrid
 from cfbtui.ui.widgets.status_bar import StatusBar, StatusView
 from cfbtui.ui.widgets.ticker import Ticker
+from cfbtui.update import UpdateInfo, update_message
 
 GROUP_NAMES = {GROUP_FBS: "FBS", GROUP_FCS: "FCS"}
 
@@ -83,11 +89,15 @@ class CfbApp(App[None]):
         Binding("R", "rankings", "Rankings"),
         Binding("c", "copy_game", "Copy game"),
         Binding("C", "copy_board", "Copy all"),
+        Binding("v", "toggle_layout", "Grid/list"),
+        Binding("l", "cycle_filter", "Filter"),
+        Binding("o", "conference", "Conference"),
     ]
 
     # Actions that belong to the grid; they are off while a detail or rankings screen is on top.
     GRID_ACTIONS = frozenset(
-        {"refresh", "week", "this_week", "toggle_group", "favorite", "detail", "rankings", "copy_game", "copy_board"}
+        {"refresh", "week", "this_week", "toggle_group", "favorite", "detail", "rankings", "copy_game", "copy_board",
+         "toggle_layout", "cycle_filter", "conference"}
     )
 
     def __init__(
@@ -102,10 +112,14 @@ class CfbApp(App[None]):
         file_config: Config | None = None,
         config_path: Path | None = None,
         warnings: tuple[str, ...] = (),
+        update_check: Callable[[], Awaitable[UpdateInfo | None]] | None = None,
+        detail_refresh: float | None = None,
     ) -> None:
         """Explicit arguments win over ``config``, which wins over the built-in defaults.
 
         ``config_path`` is where favorites are saved; ``None`` means nowhere.
+        ``update_check`` is an async callable that finds a newer release (or ``None``).
+        ``detail_refresh`` is the seconds between the detail screen's fetches; ``None`` keeps its own.
         """
         super().__init__()
         self.config = config if config is not None else Config()
@@ -128,15 +142,18 @@ class CfbApp(App[None]):
         self.last_result: PollResult | None = None
         self.favorites: frozenset[str] = favorite_ids(self.config)
         self._quiet_first_poll = False
-        self.detail_refresh: float | None = None  # seconds between summary fetches; None for the screen's own
+        self.detail_refresh = detail_refresh
         self.copier: Callable[[str], None] = copy_text
         self._copy_parts: list[str] = []
         self._copy_next = 0
+        self.update_check = update_check
+        self.layout = view.layout
+        self.filter = "all"
+        self.conference: str | None = None
+        self.cfp: Ranking | None = None  # the last CFP ranking seen; once released it replaces AP and Coaches
 
-    def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
-        if action in self.GRID_ACTIONS and len(self.screen_stack) > 1:
-            return False
-        return True
+    def check_action(self, action: str, _parameters: tuple[object, ...]) -> bool | None:
+        return not (action in self.GRID_ACTIONS and len(self.screen_stack) > 1)
 
     def compose(self) -> ComposeResult:
         yield ScoreGrid(id="grid")
@@ -149,6 +166,8 @@ class CfbApp(App[None]):
         for warning in self.config_warnings:
             self.notify(warning, title="Config", severity="warning", timeout=10)
         self.run_worker(self.scheduler.run(), name="poll", group="poll", exclusive=True)
+        if self.update_check is not None:
+            self.run_worker(self._look_for_update(), name="update", group="update", exit_on_error=False)
         self.set_interval(1.0, self._tick)
         self._tick()
 
@@ -160,10 +179,9 @@ class CfbApp(App[None]):
     # --- poll results ----------------------------------------------------------
 
     def on_poll_updated(self, message: PollUpdated) -> None:
-        try:
+        # the screen may be torn down while a last poll lands
+        with contextlib.suppress(NoMatches):
             self._show_result(message.result)
-        except NoMatches:  # the screen is being torn down while a last poll lands
-            pass
 
     def _show_result(self, result: PollResult) -> None:
         if result.generation != self.scheduler.generation:
@@ -175,9 +193,7 @@ class CfbApp(App[None]):
             self._quiet_first_poll = False
         if result.ok:
             self._refresh_favorites()
-            grid.update_games(
-                self.store.games, self.glyphs, self.store.rule, data_old=False, favorites=self.favorites
-            )
+            self._paint_grid(data_old=False)
             if not quiet:
                 self.query_one(Ticker).add_events(result.events, stamp=datetime.now())
                 for event in result.events:
@@ -189,10 +205,9 @@ class CfbApp(App[None]):
         self._tick()
 
     def _tick(self) -> None:
-        try:
+        # the screen may be torn down
+        with contextlib.suppress(NoMatches):
             self._update_status()
-        except NoMatches:  # the screen is being torn down
-            pass
 
     def _update_status(self) -> None:
         """Once a second: refresh the status line and dim the cards if the data has gone old."""
@@ -209,6 +224,7 @@ class CfbApp(App[None]):
             polling=self.scheduler.polling,
             glyph_set=self.glyphs.name,
             errors=len(self.store.last_errors),
+            view_note=describe(self.filter, self.conference, self.layout),
         )
         self.query_one(StatusBar).show(view, self.glyphs)
         self.query_one(ScoreGrid).set_data_old(freshness.data_old)
@@ -261,12 +277,24 @@ class CfbApp(App[None]):
             return f" (could not save: {exc.strerror or exc})"
         return ""
 
+    def _visible(self) -> list[Game]:
+        return [g for g in self.store.games if keep(g, self.filter, self.favorites, self.conference)]
+
+    def _paint_grid(self, *, data_old: bool) -> None:
+        plain = self.filter == "all" and self.conference is None
+        self.query_one(ScoreGrid).update_games(
+            self._visible(),
+            self.glyphs,
+            self.store.rule,
+            data_old=data_old,
+            favorites=self.favorites,
+            compact=self.layout == "list",
+            empty_text="No games on the board." if plain else "No games match this view.",
+        )
+
     def _repaint_grid(self) -> None:
         if len(self.store):
-            data_old = self.scheduler.freshness().data_old
-            self.query_one(ScoreGrid).update_games(
-                self.store.games, self.glyphs, self.store.rule, data_old=data_old, favorites=self.favorites
-            )
+            self._paint_grid(data_old=self.scheduler.freshness().data_old)
 
     # --- switching -------------------------------------------------------------
 
@@ -279,6 +307,8 @@ class CfbApp(App[None]):
         return board.week if board is not None else None
 
     def _switch(self, *, week: int | None, group: int, what: str) -> None:
+        while len(self.screen_stack) > 1:  # a screen showing the old week or group has nothing left to show
+            self.pop_screen()
         self.scheduler.switch(week=week, group=group)
         self.query_one(ScoreGrid).clear()
         self.query_one(ScoreGrid).set_message(f"{self.glyphs.loading} Loading {what}")
@@ -294,10 +324,10 @@ class CfbApp(App[None]):
             return
         if (step < 0 and current <= MIN_WEEK) or (step > 0 and current >= MAX_WEEK):
             edge = "first" if step < 0 else "last"
-            self.notify(f"Week {current} is the {edge} week shown here.", timeout=2)
+            self.notify(f"{week_label(current)} is the {edge} week shown here.", timeout=2)
             return
         target = min(max(current + step, MIN_WEEK), MAX_WEEK)
-        self._switch(week=target, group=self.scheduler.group, what=f"week {target}")
+        self._switch(week=target, group=self.scheduler.group, what=week_label(target).lower())
 
     def action_this_week(self) -> None:
         if self.scheduler.week is None:
@@ -307,6 +337,7 @@ class CfbApp(App[None]):
 
     def action_toggle_group(self) -> None:
         other = GROUP_FCS if self.scheduler.group == GROUP_FBS else GROUP_FBS
+        self.conference = None  # a conference from one board means nothing on the other
         self._switch(week=self.scheduler.week, group=other, what=GROUP_NAMES[other])
 
     # --- screens ---------------------------------------------------------------
@@ -317,11 +348,23 @@ class CfbApp(App[None]):
             self.notify("Focus a card with the arrow keys first.", timeout=3)
             return
         game = self.store.get(card.game.id) or card.game
-        extra = {} if self.detail_refresh is None else {"live_refresh": self.detail_refresh, "idle_refresh": self.detail_refresh}
+        refresh = self.detail_refresh
+        extra = {} if refresh is None else {"live_refresh": refresh, "idle_refresh": refresh}
         self.push_screen(DetailScreen(self.client, game, self.glyphs, **extra))
 
     def action_rankings(self) -> None:
-        self.push_screen(RankingsScreen(self.client, self.glyphs, group=self.scheduler.group))
+        self.push_screen(
+            RankingsScreen(
+                self.client,
+                self.glyphs,
+                group=self.scheduler.group,
+                remembered_cfp=self.cfp,
+                on_cfp=self._remember_cfp,
+            )
+        )
+
+    def _remember_cfp(self, poll: Ranking) -> None:
+        self.cfp = poll
 
     def _feed_detail(self) -> None:
         screen = self.screen
@@ -329,6 +372,43 @@ class CfbApp(App[None]):
             game = self.store.get(screen.game.id)
             if game is not None:
                 screen.update_game(game)
+
+    # --- view ------------------------------------------------------------------
+
+    def _view_changed(self, note: str) -> None:
+        self._copy_parts, self._copy_next = [], 0
+        self._repaint_grid()
+        self._tick()
+        self.notify(note, timeout=2)
+
+    def action_toggle_layout(self) -> None:
+        self.layout = "grid" if self.layout == "list" else "list"
+        self._view_changed(f"Layout: {self.layout}")
+
+    def action_cycle_filter(self) -> None:
+        self.filter = next_filter(self.filter)
+        self._view_changed(f"Showing: {FILTER_LABELS[self.filter]}")
+
+    def action_conference(self) -> None:
+        options = conferences_on(self.store.games)
+        if not options:
+            self.notify("No conferences to pick from yet.", timeout=3)
+            return
+        self.push_screen(ConferenceScreen(options, self.conference), self._conference_picked)
+
+    def _conference_picked(self, chosen: str | None) -> None:
+        if chosen is None:
+            return
+        self.conference = chosen or None
+        name = conference_name(chosen) if chosen else "all conferences"
+        self._view_changed(f"Showing: {name}")
+
+    async def _look_for_update(self) -> None:
+        if self.update_check is None:
+            return
+        info = await self.update_check()
+        if info is not None:
+            self.notify(update_message(info), title="Update available", timeout=20)
 
     # --- copy ------------------------------------------------------------------
 
@@ -344,7 +424,7 @@ class CfbApp(App[None]):
         games = [card.game for card in self.query_one(ScoreGrid).cards]
         board = self.scheduler.scoreboard
         week = board.week if board and board.week is not None else self.scheduler.week
-        title = f"Week {week} {GROUP_NAMES.get(self.scheduler.group, '')}".strip() if week else None
+        title = f"{week_label(week)} {GROUP_NAMES.get(self.scheduler.group, '')}".strip() if week else None
         parts = share.format_board(games, share.UNICODE, title=title)
         if not parts:
             self.notify("No games to copy yet.", timeout=3)
@@ -360,7 +440,9 @@ class CfbApp(App[None]):
         if self._copy(parts[index], label):
             self._copy_next = (index + 1) % len(parts)
             if len(parts) > 1:
-                self.notify("Press C again for the next part.", timeout=3)
+                last = index == len(parts) - 1
+                more = "That was the last part; C starts over." if last else "Press C again for the next part."
+                self.notify(more, timeout=3)
 
     def _copy(self, text: str, what: str) -> bool:
         try:

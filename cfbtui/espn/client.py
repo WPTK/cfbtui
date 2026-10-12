@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 import httpx
 
 from cfbtui import __version__
+from cfbtui.espn.periods import espn_request
 
 if TYPE_CHECKING:
     from cfbtui.espn.models import Ranking, Scoreboard, Summary
@@ -62,7 +63,7 @@ class EspnClient:
     async def __aenter__(self) -> EspnClient:
         return self
 
-    async def __aexit__(self, *exc_info: object) -> None:
+    async def __aexit__(self, *_exc_info: object) -> None:
         await self.aclose()
 
     async def aclose(self) -> None:
@@ -107,12 +108,15 @@ class EspnClient:
         date: str | datetime.date | None = None,
         group: int = GROUP_FBS,
         limit: int = 200,
+        season_type: int | None = None,
     ) -> dict:
         if week is not None and date is not None:
             raise ValueError("pass either week or date, not both")
         params: dict[str, Any] = {"groups": group, "limit": limit}
         if week is not None:
             params["week"] = week
+        if season_type is not None:
+            params["seasontype"] = season_type
         if date is not None:
             if not isinstance(date, str):
                 date = date.strftime("%Y%m%d")
@@ -137,8 +141,9 @@ class EspnClient:
     ) -> Scoreboard:
         from cfbtui.espn.parse import parse_scoreboard
 
+        week, season_type = espn_request(week)
         return parse_scoreboard(
-            await self.scoreboard_raw(week=week, date=date, group=group, limit=limit)
+            await self.scoreboard_raw(week=week, date=date, group=group, limit=limit, season_type=season_type)
         )
 
     async def rankings(self) -> tuple[Ranking, ...]:

@@ -23,7 +23,6 @@ from cfbtui.state.events import (
     RedZone,
     ScoreCorrected,
     Scored,
-    ScoreKind,
     StatusChanged,
     Upset,
     UpsetWatch,
@@ -113,7 +112,8 @@ def _body(event: Event, glyphs: Glyphs) -> str:
             return f"{glyphs.halftime} HALFTIME {matchup(game, glyphs)}  {scores(game)}"
         case GameFinal(winner=winner):
             ot = " (OT)" if game.status.is_overtime else ""
-            return f"{glyphs.final} FINAL{ot} {scores(game)}" if winner else f"{glyphs.final} FINAL{ot} TIE {scores(game)}"
+            tie = "" if winner else " TIE"
+            return f"{glyphs.final} FINAL{ot}{tie} {scores(game)}"
         case StatusChanged(before=before, after=after):
             return f"{glyphs.stale} {matchup(game, glyphs)}  {pretty_status(before)} to {pretty_status(after)}"
         case RedZone(team=team):
@@ -121,9 +121,11 @@ def _body(event: Event, glyphs: Glyphs) -> str:
             at = game.situation.possession_text if game.situation else None
             return f"{glyphs.red_zone} RED ZONE {who}{f' at {at}' if at else ''}  {scores(game)}"
         case UpsetWatch(underdog=u, favorite=f):
-            return f"{glyphs.upset_watch} UPSET WATCH {_rank_tag(u.rank, u.abbreviation, glyphs)} leads {_rank_tag(f.rank, f.abbreviation, glyphs)}  {scores(game)}"
+            under, fav = _rank_tag(u.rank, u.abbreviation, glyphs), _rank_tag(f.rank, f.abbreviation, glyphs)
+            return f"{glyphs.upset_watch} UPSET WATCH {under} leads {fav}  {scores(game)}"
         case Upset(underdog=u, favorite=f):
-            return f"{glyphs.upset} UPSET {_rank_tag(u.rank, u.abbreviation, glyphs)} beats {_rank_tag(f.rank, f.abbreviation, glyphs)}  {scores(game)}"
+            under, fav = _rank_tag(u.rank, u.abbreviation, glyphs), _rank_tag(f.rank, f.abbreviation, glyphs)
+            return f"{glyphs.upset} UPSET {under} beats {fav}  {scores(game)}"
         case _:
             return f"{glyphs.score} {matchup(game, glyphs)}  {scores(game)}"
 

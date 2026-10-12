@@ -46,7 +46,7 @@ RHYMES: dict[str, str] = {
 }
 # A poem that stops on one of these was probably cut off to fit.
 DANGLERS = frozenset(
-    "a an the of to and or but in on at by for with from as is are was were be that than so if".split()
+    ["a", "an", "the", "of", "to", "and", "or", "but", "in", "on", "at", "by", "for", "with", "from", "as", "is", "are", "was", "were", "be", "that", "than", "so", "if"]
 )
 ALIASES = {"tanku": "tanka", "cleave poem": "cleave"}
 
@@ -130,7 +130,7 @@ def check(text: str) -> tuple[list[str], list[str]]:
         warnings.append(f"a {form} has {expected} lines; this message has {len(poem)}")
     pattern = SYLLABLES.get(form)
     if pattern and len(poem) == len(pattern):
-        for n, (line, want) in enumerate(zip(poem, pattern), 1):
+        for n, (line, want) in enumerate(zip(poem, pattern, strict=False), 1):
             got = count_syllables(line)
             if got is not None and got != want:
                 warnings.append(f"line {n} has {got} syllables, a {form} wants {want}: {line!r}")
@@ -174,10 +174,7 @@ def check_push() -> int:
         _local_ref, local_sha, _remote_ref, remote_sha = parts
         if local_sha == ZERO_SHA:
             continue  # branch deletion
-        if remote_sha == ZERO_SHA:
-            rev_args = [local_sha, "--not", "--remotes"]
-        else:
-            rev_args = [f"{remote_sha}..{local_sha}"]
+        rev_args = [local_sha, "--not", "--remotes"] if remote_sha == ZERO_SHA else [f"{remote_sha}..{local_sha}"]
         shas = _git("rev-list", *rev_args).split()
         for sha in shas:
             msg = _git("log", "-1", "--format=%B", sha)

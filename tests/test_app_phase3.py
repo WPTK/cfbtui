@@ -5,19 +5,20 @@ import asyncio
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
+import pytest
+
 from cfbtui.app import CfbApp
 from cfbtui.config import Config, FavoritesConfig, ViewConfig, load_config, save_config
 from cfbtui.espn.client import GROUP_FBS, GROUP_FCS
 from cfbtui.espn.models import Ranking, Scoreboard
 from cfbtui.poll import PollIntervals
-from cfbtui.ui.widgets.game_card import GameCard, kickoff_text
+from cfbtui.ui.labels import kickoff_text
+from cfbtui.ui.widgets.game_card import GameCard
 from cfbtui.ui.widgets.score_grid import ScoreGrid, next_index, sort_key
 from cfbtui.ui.widgets.status_bar import StatusBar
 from cfbtui.ui.widgets.ticker import Ticker, format_event
 from tests.fakes import load_board, load_game
 from tests.test_app_smoke import FAST, SIZE, wait_for
-
-import pytest
 
 
 class WeekClient:
@@ -109,7 +110,7 @@ def _started(board: Scoreboard):
 
 
 async def test_a_week_switch_while_a_poll_is_in_flight_drops_the_old_board():
-    boards, live, week7 = two_boards()
+    boards, live, _week7 = two_boards()
     client = WeekClient(boards)
     gate = client.gates[(None, GROUP_FBS)] = asyncio.Event()
     app = CfbApp(client=client, intervals=FAST, glyph_set="ascii", week=None)
@@ -141,7 +142,7 @@ async def test_a_result_queued_for_the_old_week_is_ignored():
 
 
 async def test_week_edges_clamp_with_a_toast_and_no_switch():
-    boards = {(1, GROUP_FBS): pregame(), (15, GROUP_FBS): pregame()}
+    boards = {(1, GROUP_FBS): pregame(), (17, GROUP_FBS): pregame(), (16, GROUP_FBS): pregame()}
     client = WeekClient(boards)
     app = CfbApp(client=client, intervals=FAST, glyph_set="ascii", week=1)
     async with app.run_test(size=SIZE) as pilot:
@@ -151,12 +152,12 @@ async def test_week_edges_clamp_with_a_toast_and_no_switch():
         await pilot.pause()
         assert app.scheduler.generation == generation and app.scheduler.week == 1
         assert any("first week" in n.message for n in app._notifications)
-    app = CfbApp(client=client, intervals=FAST, glyph_set="ascii", week=15)
+    app = CfbApp(client=client, intervals=FAST, glyph_set="ascii", week=17)
     async with app.run_test(size=SIZE) as pilot:
         await wait_for(pilot, lambda: len(client.calls) >= 2)
         await pilot.press("right_square_bracket")
         await pilot.pause()
-        assert app.scheduler.week == 15
+        assert app.scheduler.week == 17
         assert any("last week" in n.message for n in app._notifications)
 
 

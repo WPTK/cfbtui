@@ -12,4 +12,5 @@ def copy_text(text: str) -> None:
     try:
         pyperclip.copy(text)
     except pyperclip.PyperclipException as exc:
-        raise ClipboardError(str(exc).strip().splitlines()[0] if str(exc).strip() else "no clipboard available") from exc
+        message = str(exc).strip()
+        raise ClipboardError(message.splitlines()[0] if message else "no clipboard available") from exc

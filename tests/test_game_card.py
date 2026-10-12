@@ -12,12 +12,11 @@ from textual.app import App, ComposeResult
 from cfbtui.espn.models import Status
 from cfbtui.state.upset import UpsetRule
 from cfbtui.ui import glyphs as g
+from cfbtui.ui.labels import kickoff_text, status_text
 from cfbtui.ui.widgets.game_card import (
     GameCard,
     build_card,
-    kickoff_text,
     render_card,
-    status_text,
 )
 from tests.fakes import load_board, load_game
 

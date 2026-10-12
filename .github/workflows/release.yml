@@ -1,24 +1,28 @@
 name: Release
 
-# Pushing a tag like v1.0.0 tests the code, builds cfbtui.exe on Windows and publishes a public
-# GitHub release carrying the exe, its SHA-256 and that version's CHANGELOG section.
+# Pushing a tag like v1.1.0 tests the code, builds cfbtui.exe on Windows, signs it when signing secrets exist,
+# and publishes a public GitHub release carrying the exe, its SHA-256 and that version's CHANGELOG section.
+# The tag must be on main and must match the version in cfbtui/__init__.py.
 
 on:
   push:
     tags: ["v*"]
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  release:
+  test:
     runs-on: windows-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
@@ -26,52 +30,85 @@ jobs:
       - run: python -m pip install -e ".[dev]"
       - run: python -m pytest
 
-      - name: Tag must match the package version
+  release:
+    needs: test
+    runs-on: windows-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: python -m pip install -e ".[dev]"
+
+      - name: Tag must be on main and match the package version
         shell: pwsh
         run: |
+          git merge-base --is-ancestor $env:GITHUB_SHA origin/main
+          if ($LASTEXITCODE -ne 0) { throw "$env:TAG is not on main" }
           $version = python -c "import cfbtui; print(cfbtui.__version__)"
-          if ("v$version" -ne "${{ github.ref_name }}") {
-            throw "Tag ${{ github.ref_name }} does not match cfbtui.__version__ v$version"
-          }
+          if ("v$version" -ne $env:TAG) { throw "Tag $env:TAG does not match cfbtui.__version__ v$version" }
 
-      - name: Build the exe
+      - name: Build the exe (unsigned; no secrets in this step)
         shell: pwsh
-        run: ./scripts/build_exe.ps1
+        run: ./scripts/build_exe.ps1 -SkipSign
 
       - name: Smoke-test the exe
         shell: pwsh
         run: |
           $out = ./dist/cfbtui.exe --version
           Write-Host $out
-          if ($out -notmatch [regex]::Escape("${{ github.ref_name }}".TrimStart("v"))) { throw "exe reports '$out'" }
+          if ($out -ne "cfbtui $($env:TAG.TrimStart('v'))") { throw "exe reports '$out'" }
           ./dist/cfbtui.exe --help | Out-Null
           if ($LASTEXITCODE -ne 0) { throw "--help failed" }
+          ./dist/cfbtui.exe --selftest
+          if ($LASTEXITCODE -ne 0) { throw "--selftest failed: the frozen app is missing something" }
+
+      - name: Sign the exe
+        shell: pwsh
+        env:
+          SIGN_CERT_BASE64: ${{ secrets.SIGN_CERT_BASE64 }}
+          SIGN_CERT_PASSWORD: ${{ secrets.SIGN_CERT_PASSWORD }}
+        run: ./scripts/sign_exe.ps1
+
+      - name: Hash the exe that will ship
+        shell: pwsh
+        run: |
+          ./scripts/hash_exe.ps1
+          Get-AuthenticodeSignature dist/cfbtui.exe | Select-Object Status, SignerCertificate | Format-List
 
       - name: Extract this version's changelog section
         shell: pwsh
         run: |
-          $version = "${{ github.ref_name }}".TrimStart("v")
-          $lines = Get-Content CHANGELOG.md -Encoding utf8
-          $start = ($lines | Select-String -Pattern "^## $([regex]::Escape($version)) " | Select-Object -First 1).LineNumber
-          if (-not $start) { throw "No '## $version' section in CHANGELOG.md" }
+          $version = $env:TAG.TrimStart("v")
+          $lines = @(Get-Content CHANGELOG.md -Encoding utf8)
+          $index = [array]::FindIndex($lines, [Predicate[string]]{ param($l) $l -like "## $version *" })
+          if ($index -lt 0) { throw "No '## $version' section in CHANGELOG.md" }
           $body = @()
-          foreach ($line in $lines[$start..($lines.Count - 1)]) {
-            if ($line -match "^## ") { break }
-            $body += $line
-          }
-          ($body -join "`n").Trim() | Set-Content -Encoding utf8 release-notes.md
+          for ($i = $index + 1; $i -lt $lines.Count -and $lines[$i] -notmatch "^## "; $i++) { $body += $lines[$i] }
+          $text = ($body -join "`n").Trim()
+          if (-not $text) { throw "The '## $version' section of CHANGELOG.md is empty" }
+          $text | Set-Content -Encoding utf8 release-notes.md
 
       - name: Publish the release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release view "${{ github.ref_name }}" *> $null
-          if ($LASTEXITCODE -eq 0) {
-            gh release upload "${{ github.ref_name }}" dist/cfbtui.exe dist/cfbtui.exe.sha256 --clobber
-            gh release edit "${{ github.ref_name }}" --notes-file release-notes.md
-          } else {
-            gh release create "${{ github.ref_name }}" dist/cfbtui.exe dist/cfbtui.exe.sha256 `
-              --title "cfbtui ${{ github.ref_name }}" `
-              --notes-file release-notes.md
-          }
+          gh release view $env:TAG *> $null
+          if ($LASTEXITCODE -eq 0) { throw "A release for $env:TAG already exists. Delete it and re-run if it should be rebuilt." }
+          # Draft first, upload, then publish, so nobody sees a release without its files.
+          gh release create $env:TAG --draft --title "cfbtui $env:TAG" --notes-file release-notes.md
+          if ($LASTEXITCODE -ne 0) { throw "could not create the release" }
+          gh release upload $env:TAG dist/cfbtui.exe dist/cfbtui.exe.sha256
+          if ($LASTEXITCODE -ne 0) { throw "upload failed; the draft release is left in place" }
+          gh release edit $env:TAG --draft=false
+          if ($LASTEXITCODE -ne 0) { throw "could not publish the draft" }

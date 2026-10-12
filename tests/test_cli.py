@@ -45,8 +45,24 @@ def test_a_corrupt_file_still_resolves_with_a_warning(tmp_path):
     assert loaded.warnings
 
 
-@pytest.mark.parametrize("bad", [["--week", "0"], ["--week", "16"], ["--week", "x"], ["--group", "d3"], ["--glyphs", "wingdings"]])
+@pytest.mark.parametrize("bad", [["--week", "0"], ["--week", "18"], ["--week", "x"], ["--group", "d3"], ["--glyphs", "wingdings"]])
 def test_bad_flag_values_are_rejected(bad, capsys):
     with pytest.raises(SystemExit) as exit_info:
         build_parser().parse_args(bad)
     assert exit_info.value.code == 2
+
+
+def test_no_update_check_flag_is_for_this_run_only(cfg_file):
+    before = cfg_file.read_text(encoding="utf-8")
+    config, _, _ = resolve(["--config", str(cfg_file), "--no-update-check"])
+    assert config.updates.check is False
+    assert cfg_file.read_text(encoding="utf-8") == before
+    config, _, _ = resolve(["--config", str(cfg_file)])
+    assert config.updates.check is True
+
+
+def test_selftest_runs_the_app_headless(capsys):
+    from cfbtui.__main__ import selftest
+
+    assert selftest() == 0
+    assert "selftest ok" in capsys.readouterr().out

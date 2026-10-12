@@ -24,7 +24,7 @@ Event order within one poll, per game: ``GameStarted``, ``Scored``/
 """
 from __future__ import annotations
 
-from typing import Iterable
+from collections.abc import Iterable
 
 from cfbtui.espn.models import Competitor, Game, GameState, LastPlay, Scoreboard
 from cfbtui.state.events import (
@@ -86,9 +86,9 @@ def kind_from_play(play: LastPlay, points: int) -> ScoreKind | None:
     text = f"{type_text} {play.text.lower()}"
     conversion = "extra point" in text or "point after" in text
     kind: ScoreKind | None = None
-    if "touchdown" in type_text and not conversion:
-        kind = ScoreKind.TOUCHDOWN
-    elif "touchdown" in text and not conversion and "two-point" not in type_text:
+    if ("touchdown" in type_text and not conversion) or (
+        "touchdown" in text and not conversion and "two-point" not in type_text
+    ):
         kind = ScoreKind.TOUCHDOWN
     elif "field goal" in text:
         kind = ScoreKind.FIELD_GOAL

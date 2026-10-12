@@ -15,7 +15,7 @@ from datetime import UTC, datetime
 
 from cfbtui.espn.models import Competitor, Game
 from cfbtui.ui.glyphs import UNICODE, Glyphs
-from cfbtui.ui.widgets.game_card import status_text
+from cfbtui.ui.labels import status_text
 
 DISCORD_LIMIT = 2000
 FENCE = "```"
@@ -33,10 +33,6 @@ def _side(side: Competitor, glyphs: Glyphs) -> str:
     return f"{rank}{side.abbreviation}"
 
 
-def _status(game: Game, glyphs: Glyphs, now: datetime | None) -> str:
-    return status_text(game, glyphs, now)
-
-
 def format_game(game: Game, glyphs: Glyphs = UNICODE, *, now: datetime | None = None) -> str:
     """One Markdown line: ``**#2 TEX** 24 @ OU 27 · ■ Final``. Pregame games carry no score."""
     now = now or datetime.now(UTC)
@@ -48,7 +44,7 @@ def format_game(game: Game, glyphs: Glyphs = UNICODE, *, now: datetime | None = 
         return name if game.is_pregame else f"{name} {side.score}"
 
     sep = f" {glyphs.sep.strip()} " if glyphs.sep.strip() else " "
-    return f"{part(game.away)} {glyphs.at} {part(game.home)}{sep}{escape(_status(game, glyphs, now))}"
+    return f"{part(game.away)} {glyphs.at} {part(game.home)}{sep}{escape(status_text(game, glyphs, now))}"
 
 
 def _board_lines(games: Sequence[Game], glyphs: Glyphs, now: datetime | None) -> list[str]:
@@ -56,13 +52,10 @@ def _board_lines(games: Sequence[Game], glyphs: Glyphs, now: datetime | None) ->
     lines = []
     for game in games:
         away, home = _side(game.away, glyphs), _side(game.home, glyphs)
-        if game.is_pregame:
-            scores = ("", "")
-        else:
-            scores = (str(game.away.score), str(game.home.score))
+        scores = ("", "") if game.is_pregame else (str(game.away.score), str(game.home.score))
         line = (
             f"{away:<{width}} {scores[0]:>3}  {glyphs.at}  {home:<{width}} {scores[1]:>3}   "
-            f"{_status(game, glyphs, now)}"
+            f"{status_text(game, glyphs, now)}"
         )
         lines.append(line.rstrip().replace(FENCE, "'''"))
     return lines
@@ -88,7 +81,8 @@ def format_board(
     room = limit - 2 * len(FENCE) - 2  # the fences and their two newlines
     if title:
         lines.insert(0, title.replace(FENCE, "'''"))
-    lines = [line if len(line) <= room else line[: room - 1] + glyphs.loading for line in lines]
+    cut = max(1, room - len(glyphs.loading))
+    lines = [line if len(line) <= room else line[:cut] + glyphs.loading for line in lines]
     messages: list[str] = []
     current: list[str] = []
     size = 0

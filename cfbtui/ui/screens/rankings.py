@@ -1,6 +1,7 @@
 """RankingsScreen: the AP and Coaches polls side by side, fetched once on open."""
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Protocol
 
 from rich.table import Table
@@ -11,8 +12,7 @@ from textual.containers import Horizontal, VerticalScroll
 from textual.screen import Screen
 from textual.widgets import Footer, Static
 
-from cfbtui.espn.client import EspnError
-from cfbtui.espn.client import GROUP_FBS, GROUP_FCS
+from cfbtui.espn.client import GROUP_FBS, GROUP_FCS, EspnError
 from cfbtui.espn.models import Ranking
 from cfbtui.ui.glyphs import Glyphs
 
@@ -21,10 +21,24 @@ class RankingsSource(Protocol):
     async def rankings(self) -> tuple[Ranking, ...]: ...
 
 
-def pick_polls(polls: tuple[Ranking, ...], group: int = GROUP_FBS) -> list[Ranking]:
-    """The FBS AP and Coaches polls, in that order, or the FCS Coaches poll for the FCS board."""
+def is_cfp(poll: Ranking) -> bool:
+    return poll.type.lower() == "cfp" or "playoff" in poll.name.lower() or "cfp" in poll.name.lower()
+
+
+def pick_polls(
+    polls: tuple[Ranking, ...], group: int = GROUP_FBS, remembered_cfp: Ranking | None = None
+) -> list[Ranking]:
+    """What the rankings screen shows.
+
+    FBS: the AP and Coaches polls, in that order, until the College Football Playoff committee
+    has ranked the teams; from its first ranking on, only the CFP ranking (``remembered_cfp`` is the last
+    one seen this run, for a payload that stops listing it). FCS: the FCS Coaches poll.
+    """
     if group == GROUP_FCS:
         return [p for p in polls if p.type.lower() == "fcs"][:1]
+    cfp = next((p for p in polls if is_cfp(p) and p.ranks), None) or remembered_cfp
+    if cfp is not None:
+        return [cfp]
     ap = next((p for p in polls if p.type.lower() == "ap"), None)
     coaches = next((p for p in polls if p.type.lower() == "usa"), None)
     if coaches is None:
@@ -79,8 +93,18 @@ class RankingsScreen(Screen[None]):
     RankingsScreen .poll { width: 1fr; height: auto; padding: 0 1; border: round $panel-lighten-2; }
     """
 
-    def __init__(self, client: RankingsSource, glyphs: Glyphs, group: int = GROUP_FBS) -> None:
+    def __init__(
+        self,
+        client: RankingsSource,
+        glyphs: Glyphs,
+        group: int = GROUP_FBS,
+        *,
+        remembered_cfp: Ranking | None = None,
+        on_cfp: Callable[[Ranking], None] | None = None,
+    ) -> None:
         super().__init__()
+        self.remembered_cfp = remembered_cfp
+        self.on_cfp = on_cfp
         self.group = group
         self.client = client
         self.glyphs = glyphs
@@ -105,7 +129,9 @@ class RankingsScreen(Screen[None]):
         except Exception as exc:  # a malformed payload must not kill the screen
             self.error = f"{type(exc).__name__}: {exc}"
         else:
-            self.polls = pick_polls(polls, self.group)
+            self.polls = pick_polls(polls, self.group, self.remembered_cfp)
+            if self.group == GROUP_FBS and self.on_cfp is not None and len(self.polls) == 1 and is_cfp(self.polls[0]):
+                self.on_cfp(self.polls[0])
         await self._paint()
         self.loaded = True
 
@@ -114,7 +140,7 @@ class RankingsScreen(Screen[None]):
         holder = self.query_one("#polls", Horizontal)
         await holder.remove_children()
         if self.error:
-            status.update(f"{self.glyphs.error} Could not load the polls ({self.error}). Press Esc and try again.")
+            status.update(Text(f"{self.glyphs.error} Could not load the polls ({self.error}). Press Esc to retry."))
         elif not self.polls:
             status.update("No polls have been released yet.")
         else:

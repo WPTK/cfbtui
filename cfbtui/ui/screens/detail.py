@@ -12,6 +12,7 @@ table (:func:`win_bar`, :func:`play_line`, :func:`build_detail`).
 from __future__ import annotations
 
 import asyncio
+from datetime import UTC, datetime
 from typing import Protocol
 
 from rich.console import Group, RenderableType
@@ -25,8 +26,7 @@ from textual.widgets import Footer, Static
 from cfbtui.espn.client import EspnError
 from cfbtui.espn.models import Competitor, Game, ScoringPlay, Summary
 from cfbtui.ui.glyphs import Glyphs
-from cfbtui.ui.labels import period_name
-from cfbtui.ui.widgets.game_card import status_text
+from cfbtui.ui.labels import period_name, status_text
 
 LIVE_REFRESH = 20.0
 IDLE_REFRESH = 60.0
@@ -80,7 +80,7 @@ def header_lines(game: Game, glyphs: Glyphs) -> list[str]:
         score = "" if game.is_pregame else f"  {c.score}"
         return f"{rank}{c.team.display_name}{record}{score}"
 
-    lines = [side(game.away), f"{glyphs.at} {side(game.home)}", status_text(game, glyphs)]
+    lines = [side(game.away), f"{glyphs.at} {side(game.home)}", status_text(game, glyphs, datetime.now(UTC))]
     if game.venue:
         lines.append(game.venue)
     return lines
@@ -139,7 +139,6 @@ class DetailScreen(Screen[None]):
         self.idle_refresh = idle_refresh
         self.summary: Summary | None = None
         self.error: str | None = None
-        self.fetches = 0
 
     def compose(self) -> ComposeResult:
         with VerticalScroll():
@@ -177,7 +176,6 @@ class DetailScreen(Screen[None]):
             await asyncio.sleep(self.live_refresh if self.game.is_live else self.idle_refresh)
 
     async def _fetch_once(self) -> None:
-        self.fetches += 1
         try:
             summary = await self.client.summary(self.game.id)
         except EspnError as exc:

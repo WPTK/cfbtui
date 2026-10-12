@@ -2,8 +2,8 @@
 from __future__ import annotations
 
 import io
-from dataclasses import replace
 import json
+from dataclasses import replace
 
 from rich.console import Console
 from textual.widgets import Static
@@ -139,8 +139,7 @@ async def test_enter_with_nothing_focused_only_says_so():
 async def test_a_live_game_refreshes_until_the_screen_closes_and_then_stops():
     live = replace(fixture_summary(), status=Status(state=GameState.IN, name="STATUS_IN_PROGRESS"))
     client = ScreenClient(load_board("pairs/touchdown_before.json"), summaries=[live])
-    app = CfbApp(client=client, intervals=FAST, glyph_set="ascii")
-    app.detail_refresh = 0.05
+    app = CfbApp(client=client, intervals=FAST, glyph_set="ascii", detail_refresh=0.05)
     async with app.run_test(size=SIZE) as pilot:
         await open_detail(pilot, app)
         await wait_for(pilot, lambda: client.summary_calls >= 3)
@@ -155,8 +154,7 @@ async def test_a_live_game_refreshes_until_the_screen_closes_and_then_stops():
 
 async def test_a_final_game_is_fetched_once():
     client = ScreenClient(load_board("pairs/final_after.json"))
-    app = CfbApp(client=client, intervals=FAST, glyph_set="ascii")
-    app.detail_refresh = 0.05
+    app = CfbApp(client=client, intervals=FAST, glyph_set="ascii", detail_refresh=0.05)
     async with app.run_test(size=SIZE) as pilot:
         await open_detail(pilot, app)
         await wait_for(pilot, lambda: "Scoring plays" in screen_text(app))
@@ -169,21 +167,19 @@ async def test_a_failed_fetch_says_so_and_recovers():
         load_board("pairs/touchdown_before.json"),
         summaries=[EspnNetworkError("cable pulled"), fixture_summary()],
     )
-    app = CfbApp(client=client, intervals=FAST, glyph_set="ascii")
-    app.detail_refresh = 0.05
+    app = CfbApp(client=client, intervals=FAST, glyph_set="ascii", detail_refresh=0.05)
     async with app.run_test(size=SIZE) as pilot:
         await open_detail(pilot, app)
         await wait_for(pilot, lambda: "Scoring plays" in screen_text(app))
         assert "Could not refresh" not in screen_text(app), "a good fetch clears the warning"
     failing = ScreenClient(load_board("pairs/final_after.json"), summaries=[EspnNetworkError("cable pulled")])
-    app = CfbApp(client=failing, intervals=FAST, glyph_set="ascii")
-    app.detail_refresh = 0.05
+    app = CfbApp(client=failing, intervals=FAST, glyph_set="ascii", detail_refresh=0.05)
     async with app.run_test(size=SIZE) as pilot:
         await open_detail(pilot, app)
         await wait_for(pilot, lambda: "Could not refresh" in screen_text(app))
 
 
-async def test_a_week_switch_underneath_leaves_the_open_detail_alone():
+async def test_a_week_switch_from_code_closes_the_open_detail():
     client = ScreenClient(load_board("pairs/touchdown_before.json"))
     app = CfbApp(client=client, intervals=FAST, glyph_set="ascii", week=7)
     async with app.run_test(size=SIZE) as pilot:
@@ -193,17 +189,14 @@ async def test_a_week_switch_underneath_leaves_the_open_detail_alone():
         await pilot.press("f")
         await pilot.pause(0.1)
         assert app.week == before, "grid keys are off while a screen is open"
-        app.action_week(1)  # a switch from code still must not hurt the screen on top
-        await pilot.pause(0.3)
-        assert isinstance(app.screen, DetailScreen)
-        await pilot.press("escape")
+        app.action_week(1)  # a switch from code closes the screen showing the old week
         await wait_for(pilot, lambda: not isinstance(app.screen, DetailScreen))
+        assert len(app.screen_stack) == 1
 
 
 async def test_poll_updates_reach_the_open_detail_header():
     client = ScreenClient(load_board("pairs/touchdown_before.json"), load_board("pairs/touchdown_after.json"))
-    app = CfbApp(client=client, intervals=FAST, glyph_set="ascii")
-    app.detail_refresh = 10
+    app = CfbApp(client=client, intervals=FAST, glyph_set="ascii", detail_refresh=10)
     async with app.run_test(size=SIZE) as pilot:
         await open_detail(pilot, app)
         await wait_for(pilot, lambda: app.screen.game.away.score == 14)

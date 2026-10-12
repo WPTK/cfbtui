@@ -1,110 +1,122 @@
 # cfbtui
 
-A colorful college football scoreboard for the terminal. Windows Terminal first.
-
-Game cards painted in real team colors, live clock and down-and-distance, AP and Coaches rankings, upset
-flags, a flash on every touchdown and field goal, a live event ticker, per-game scoring plays with win
-probability, and one key to copy any game to Discord.
+A college football scoreboard that runs in your terminal. Every FBS and FCS game for the week, with live
+scores, clock, down and distance, rankings and a ticker of what just happened.
 
 ![The scoreboard](docs/img/grid.svg)
 
-## Install
+## Get it
 
-**Download the exe.** Grab `cfbtui.exe` from the [latest release](https://github.com/WPTK/cfbtui/releases/latest)
-and run it from Windows Terminal. No Python needed. Each release also carries `cfbtui.exe.sha256`; compare it with
+1. Download `cfbtui.exe` from the [latest release](https://github.com/WPTK/cfbtui/releases/latest).
+2. Open Windows Terminal, go to the folder you saved it in, and run `.\cfbtui.exe`.
 
-```powershell
-(Get-FileHash cfbtui.exe -Algorithm SHA256).Hash
-```
+There is nothing to install. Windows may warn about an unrecognized app the first time; choose
+"More info", then "Run anyway". The file isn't code-signed yet.
 
-The exe is not code-signed, so Windows SmartScreen may ask you to confirm the first run.
+It needs a terminal that can show colors and Unicode. Windows Terminal works well. The old Command Prompt
+window does not.
 
-**Or run from source** (Python 3.13):
+## Using it
 
-```powershell
-python -m venv .venv
-.venv\Scripts\python -m pip install -e .[dev]
-.venv\Scripts\python -m cfbtui
-```
+Games are cards: live ones first, then upcoming, then finished. A card gets a heavy yellow border and an UPSET
+label when a ranked team is in trouble, flashes when someone scores, and shows down and distance while the
+game is on. The line at the bottom says
+how fresh the data is. The ticker above it lists scores, kickoffs and upsets as they happen.
 
-Tests: `.venv\Scripts\python -m pytest`. Build the exe yourself: `scripts\build_exe.ps1`.
-
-## Keys
-
-| Key | Action |
+| Key | What it does |
 |---|---|
-| arrows | Move between cards |
-| `Enter` | Game detail: scoring plays and win probability |
-| `R` | Rankings: AP and AFCA Coaches (the FCS poll on the FCS board) |
-| `[` `]` | Previous week, next week |
+| arrow keys | Move between games |
+| `Enter` | Open the game: every scoring play and win probability |
+| `R` | Rankings |
+| `[` `]` | Previous / next week. After week 15 come **Bowls** and the **Playoff** |
 | `t` | Back to this week |
-| `f` | Toggle FBS / FCS |
-| `1` `2` | Star the away / home team of the focused game |
-| `c` | Copy the focused game as Discord Markdown |
-| `C` | Copy every visible game; a board over Discord's 2000 characters is copied one part per press |
+| `f` | Switch between FBS and FCS |
+| `l` | Filter: all games, Top 25, live only, favorites |
+| `o` | Pick a conference |
+| `v` | Switch between cards and a one-line-per-game list |
+| `1` `2` | Star the away / home team of the selected game |
+| `c` | Copy the selected game for Discord |
+| `C` | Copy every game on screen for Discord |
 | `r` | Refresh now |
-| `g` | Cycle the glyph set |
-| `Esc` | Close the detail or rankings screen |
+| `g` | Change the icon style |
+| `Esc` | Close a screen |
 | `q` | Quit |
 
 ![Game detail](docs/img/detail.svg)
 
+**Favorites.** Star a team with `1` or `2` and its games move to a Favorites section at the top. Your stars
+are saved and come back next time.
+
+**Rankings.** You see the AP and Coaches polls until the College Football Playoff committee releases its
+first ranking. From then on you see only the CFP ranking, through the end of the season. The FCS board shows
+the FCS Coaches poll.
+
+**Discord.** `c` copies one game as a line of text with the winner in bold. `C` copies the board as a
+code block. Discord caps messages at 2,000 characters, so on a big Saturday `C` copies one part at a time:
+press it again for the next part.
+
 ![Rankings](docs/img/rankings.svg)
 
-## Command line
+## Icons
+
+Icons come in four styles: `nerd` (the default), `unicode`, `emoji` and `ascii`. `nerd` needs a
+[Nerd Font](https://www.nerdfonts.com/) set as your terminal's font. If you see empty boxes where icons
+should be, press `g` to cycle styles or start with `--glyphs unicode`.
+
+![Unicode icons](docs/img/grid-unicode.svg)
+
+## Starting options
 
 ```
-cfbtui [--week N] [--group fbs|fcs] [--glyphs NAME] [--config PATH] [--no-config] [--version]
+cfbtui.exe --week 9              start on week 9 (also: --week bowls, --week playoff)
+cfbtui.exe --group fcs           start on the FCS board
+cfbtui.exe --glyphs unicode      icon style: ascii, unicode, emoji, nerd
+cfbtui.exe --layout list         one line per game
+cfbtui.exe --no-update-check     don't look for a newer version
+cfbtui.exe --no-config           ignore and never touch the settings file
+cfbtui.exe --version
 ```
 
-Flags apply to that run only and are never written to the config file.
+These apply to that run only.
 
-## Config
+## Settings file
 
-The file is created only when you star a favorite. It lives at `%LOCALAPPDATA%\cfbtui\config.toml`
-(run `cfbtui --help` to see the exact path). Every key is optional; a bad value is dropped with a warning
-and the default stands.
+cfbtui creates `%LOCALAPPDATA%\cfbtui\config.toml` the first time you star a team. You can edit it in
+Notepad. Anything you leave out uses the default; a bad value is ignored with a warning.
 
 ```toml
 [poll]
-live = 20          # seconds between polls while a game is live
-idle = 300         # seconds between polls otherwise
-backoff_max = 120  # longest wait after errors
+live = 20          # seconds between updates while a game is on
+idle = 300         # seconds between updates otherwise
 
 [view]
 glyph_set = "nerd" # ascii, unicode, emoji, nerd
-week = 7           # omit for ESPN's current week
+layout = "grid"    # grid or list
+week = 7           # 1-15, 16 for Bowls, 17 for the Playoff; leave out for the current week
 group = "fbs"      # fbs or fcs
 
 [favorites]
 team_ids = ["251"]
-abbreviations = ["TEX"]
+abbreviations = ["TEX"]   # you can also list teams by abbreviation
+
+[updates]
+check = true       # set to false to never check for a newer version
 ```
 
-## Glyph sets
+## Updates
 
-Every icon comes from one table, in four sets: `ascii`, `unicode`, `emoji` and `nerd` (the default).
-`nerd` needs a [Nerd Font](https://www.nerdfonts.com/) in your terminal; without one you will see boxes, so
-press `g` or start with `--glyphs unicode`. Box-drawing borders are the same in all sets. Copied Discord text
-always uses the `unicode` set.
+When it starts, cfbtui asks GitHub whether a newer release exists and shows a notice if so. That is the only
+thing it sends besides asking ESPN for scores, and it sends no personal information. Turn it off with
+`--no-update-check` or `check = false` in the settings file.
 
-![Unicode glyphs](docs/img/grid-unicode.svg)
+## Where the scores come from
 
-![ASCII glyphs](docs/img/grid-ascii.svg)
+ESPN's public scoreboard service, which is unofficial and undocumented. It can change or disappear without
+warning. cfbtui is an independent project, not affiliated with ESPN or the NCAA.
 
-## Data
+## For developers
 
-Scores come from ESPN's unofficial, undocumented site API. It needs no key, can change or vanish without
-notice, and is not affiliated with this project. cfbtui is an independent hobby project and is not
-affiliated with or endorsed by ESPN or the NCAA. Team names and colors belong to their owners.
-
-Screenshots in `docs/img/` are rendered by `scripts/screenshots.py` from live ESPN data at the time they
-were taken; `--fixtures` renders from saved test payloads instead.
-
-## Versions
-
-Versions follow FibVer: each part advances to the next Fibonacci number (0, 1, 2, 3, 5, 8, 13 ...) instead
-of adding one. Every release's story is in [CHANGELOG.md](CHANGELOG.md).
+Building from source, running the tests and cutting a release: [docs/development.md](docs/development.md).
 
 ## License
 

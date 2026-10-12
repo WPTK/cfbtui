@@ -25,6 +25,7 @@ from cfbtui.espn.models import (
     Summary,
     Team,
 )
+from cfbtui.espn.periods import from_espn
 from cfbtui.ui.theme import hex_color
 
 _EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
@@ -306,6 +307,7 @@ def parse_scoreboard(payload: dict) -> Scoreboard:
     week = _opt_int(_get(payload, "week", "number"))
     if week is None:
         week = next((g.week for g in games if g.week is not None), None)
+    week = from_espn(week, _opt_int(_get(payload, "season", "type")))
     return Scoreboard(games=games, week=week, season_year=season_year)
 
 

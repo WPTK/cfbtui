@@ -2,6 +2,29 @@
 
 Release notes for cfbtui, kept the way a fortress overseer keeps a journal. Newest first. Versions follow FibVer.
 
+## 1.1.0 (2026-10-12)
+
+- The games have been offered a second way to sit: a tidy single-file line, one game each, like clerks at a counter. Pressing `v` switches. They have opinions about it.
+- A filter was installed on the front door. It admits everyone, then only the Top 25, then only the live, then only the favorites. The rest wait outside and are told "No games match this view".
+- A conference picker appeared. Someone chose the SEC. The Big Ten took this personally and was added to the list.
+- Favorites now have their own heading and a seat at the front. The other games have been given a heading too, to avoid hurt feelings.
+- Two new weeks were discovered past the end of the calendar: Bowls and the Playoff. They had always been there. Nobody had looked.
+- The College Football Playoff committee published its first ranking. The AP and Coaches polls were thanked for their service and shown out. The CFP ranking remembers it was invited for the rest of the run.
+- A messenger now walks to GitHub at startup to ask whether a newer cfbtui exists. It carries no personal belongings. It may be told to stay home with `--no-update-check`.
+- A signing desk was set up for the exe. It is currently unstaffed, as no certificate has been hired, and it says so quietly rather than pretending.
+- A rumor that December week 15 was a bowl game was traced to a missing season type and corrected. Regular weeks now say they are regular.
+- A first poll that failed on a Saturday used to wait five minutes before trying again. It now waits a few seconds and tries to look less embarrassed.
+- Poll intervals set to 0.05 seconds, or to infinity, were noticed by the settings file and gently clamped.
+- The update messenger, when handed a bad proxy, now returns empty-handed instead of falling over in the lobby.
+- A long Discord board that is copied in parts now says when the last part has been handed over.
+- An error message containing square brackets used to be read as instructions. It is now read as a message.
+- The empty message banner stopped taking up three rows of floor space while saying nothing.
+- Switching from FBS to FCS no longer carries a conference across the border without papers.
+- The detail room learned the date of a game, so "Sat 12:00 PM ET" is no longer a mystery about which Saturday.
+- A hidden `--selftest` was added so the built exe can prove it starts without anyone watching.
+- A linter and a dead-code hunter went through the whole building with clipboards. Unused things were escorted out.
+- The README was rewritten for the people who just want to watch football.
+
 ## 1.0.0 (2026-10-12)
 
 - The scoreboard has been packed into a single suitcase called `cfbtui.exe`. It carries its own Python, its own stylesheet and its own timezone database, and it asked nobody for anything on arrival. It was opened in an empty folder and was fine.

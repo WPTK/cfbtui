@@ -23,12 +23,16 @@ matched against each team's abbreviation as games arrive.
 
     [view]
     glyph_set = "nerd"   # ascii, unicode, emoji, nerd
-    week = 7             # omit for ESPN's current week
+    week = 7             # 1-15, 16 for Bowls, 17 for the Playoff; omit for ESPN's current week
     group = "fbs"        # fbs or fcs
+    layout = "grid"      # grid or list
 
     [favorites]
     team_ids = ["251"]
     abbreviations = ["TEX"]
+
+    [updates]
+    check = true         # look for a newer release at startup
 """
 from __future__ import annotations
 
@@ -42,12 +46,12 @@ import tomli_w
 from platformdirs import user_config_dir
 
 from cfbtui.espn.client import GROUP_FBS, GROUP_FCS
+from cfbtui.espn.periods import MAX_WEEK, MIN_WEEK
 from cfbtui.poll import PollIntervals
 from cfbtui.ui.glyphs import DEFAULT_SET, GLYPH_SET_NAMES
 
 GROUPS: dict[str, int] = {"fbs": GROUP_FBS, "fcs": GROUP_FCS}
-MIN_WEEK = 1
-MAX_WEEK = 15
+LAYOUTS = ("grid", "list")
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,6 +59,7 @@ class ViewConfig:
     glyph_set: str = DEFAULT_SET
     week: int | None = None  # None means ESPN's current week
     group: str = "fbs"
+    layout: str = "grid"  # "grid" cards or "list" one line per game
 
     @property
     def group_id(self) -> int:
@@ -68,10 +73,16 @@ class FavoritesConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class UpdatesConfig:
+    check: bool = True
+
+
+@dataclass(frozen=True, slots=True)
 class Config:
     poll: PollIntervals = field(default_factory=PollIntervals)
     view: ViewConfig = field(default_factory=ViewConfig)
     favorites: FavoritesConfig = field(default_factory=FavoritesConfig)
+    updates: UpdatesConfig = field(default_factory=UpdatesConfig)
 
 
 @dataclass(frozen=True, slots=True)
@@ -108,6 +119,10 @@ def _strings(value: Any, where: str, warnings: list[str]) -> tuple[str, ...]:
     return good
 
 
+MIN_LIVE = 5.0
+MAX_INTERVAL = 3600.0
+
+
 def parse_config(data: dict) -> tuple[Config, list[str]]:
     """Build a :class:`Config` from parsed TOML, collecting a warning per value it had to drop."""
     warnings: list[str] = []
@@ -120,7 +135,10 @@ def parse_config(data: dict) -> tuple[Config, list[str]]:
             continue
         v = section[name]
         if _is_number(v) and v > 0:
-            values[name] = float(v)
+            clamped = min(max(float(v), MIN_LIVE if name == "live" else 1.0), MAX_INTERVAL)
+            if clamped != float(v):
+                warnings.append(f"poll.{name} was out of range; using {clamped:g}")
+            values[name] = clamped
         else:
             warnings.append(f"poll.{name} should be a positive number of seconds; using {getattr(poll, name):g}")
     poll = replace(poll, **values)
@@ -146,12 +164,30 @@ def parse_config(data: dict) -> tuple[Config, list[str]]:
         else:
             warnings.append('view.group should be "fbs" or "fcs"; using fbs')
 
+    if "layout" in section:
+        v = section["layout"]
+        if isinstance(v, str) and v.strip().lower() in LAYOUTS:
+            view = replace(view, layout=v.strip().lower())
+        else:
+            warnings.append('view.layout should be "grid" or "list"; using grid')
+
     section = _section(data, "favorites", warnings)
     ids = _strings(section["team_ids"], "favorites.team_ids", warnings) if "team_ids" in section else ()
-    abbrs = _strings(section["abbreviations"], "favorites.abbreviations", warnings) if "abbreviations" in section else ()
+    abbrs = ()
+    if "abbreviations" in section:
+        abbrs = _strings(section["abbreviations"], "favorites.abbreviations", warnings)
     favorites = FavoritesConfig(tuple(dict.fromkeys(ids)), tuple(dict.fromkeys(a.upper() for a in abbrs)))
 
-    return Config(poll, view, favorites), warnings
+    updates = UpdatesConfig()
+    section = _section(data, "updates", warnings)
+    if "check" in section:
+        v = section["check"]
+        if isinstance(v, bool):
+            updates = UpdatesConfig(check=v)
+        else:
+            warnings.append("updates.check should be true or false; using true")
+
+    return Config(poll, view, favorites, updates), warnings
 
 
 def load_config(path: Path | None = None) -> LoadResult:
@@ -176,7 +212,11 @@ def _num(x: float) -> int | float:
 
 
 def to_toml_data(config: Config) -> dict:
-    view: dict[str, Any] = {"glyph_set": config.view.glyph_set, "group": config.view.group}
+    view: dict[str, Any] = {
+        "glyph_set": config.view.glyph_set,
+        "group": config.view.group,
+        "layout": config.view.layout,
+    }
     if config.view.week is not None:
         view["week"] = config.view.week
     return {
@@ -190,6 +230,7 @@ def to_toml_data(config: Config) -> dict:
             "team_ids": list(config.favorites.team_ids),
             "abbreviations": list(config.favorites.abbreviations),
         },
+        "updates": {"check": config.updates.check},
     }
 
 
@@ -209,6 +250,8 @@ def apply_overrides(
     week: int | None = None,
     group: str | None = None,
     glyph_set: str | None = None,
+    layout: str | None = None,
+    check_updates: bool | None = None,
 ) -> Config:
     """Command-line flags on top of the file, for this run only."""
     view = config.view
@@ -218,7 +261,12 @@ def apply_overrides(
         view = replace(view, group=group)
     if glyph_set is not None:
         view = replace(view, glyph_set=glyph_set)
-    return replace(config, view=view)
+    if layout is not None:
+        view = replace(view, layout=layout)
+    updates = config.updates
+    if check_updates is False:
+        updates = replace(updates, check=False)
+    return replace(config, view=view, updates=updates)
 
 
 def favorite_ids(config: Config, teams: Iterable[tuple[str, str]] = ()) -> frozenset[str]:
