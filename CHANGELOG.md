@@ -2,6 +2,10 @@
 
 Release notes for cfbtui, kept the way a fortress overseer keeps a journal. Newest first. Versions follow FibVer.
 
+## 1.1.34 (2026-10-12)
+
+- The poster's scoreboard was found sitting in a window with three little traffic-light dots, which is how Macs dress. It has been moved into a Windows Terminal tab marked "Windows PowerShell" and says it feels more like itself.
+
 ## 1.1.21 (2026-10-12)
 
 - A 1280 by 640 poster was made for the repository's front door. It has the name in large letters, a promise in smaller letters, and a scoreboard peeking in from the right, as though it had been listening.
