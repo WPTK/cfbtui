@@ -75,8 +75,10 @@ skills learned or moods acquired. No prose paragraphs, no plain "Added X" lists.
 ### Phase handoffs
 
 Work is split into phases. Each phase ends with a self-contained prompt for the next phase at
-`docs/handoff/phase-N.md`. A new session is started by pasting that prompt; the current session stops after
-the phase-end ritual. Every handoff prompt has, in order:
+`docs/handoff/phase-N.md`. **The session's final message pastes the entire prompt into the chat, verbatim,
+in one code block**, so Bill can copy it straight into a new session; the file is the archived copy, not the
+delivery. Do not just link the file. The current session stops after that message. Every handoff prompt has,
+in order:
 
 1. **Session model**: which model should drive the session, one line of reasoning.
 2. **State of the repo**: version, what works, what is known-broken, where fixtures are, how to run and test.
@@ -86,7 +88,7 @@ the phase-end ritual. Every handoff prompt has, in order:
    AskUserQuestion as its first action, then starts work automatically on the answers. If none, say so.
 6. **Verification**: which tests must pass and what to check against live data on the next Saturday.
 7. **Phase-end ritual**: changelog section, minor bump, `/code-review` at medium effort, next handoff prompt,
-   commit poem with `Poetic-Form:` trailer, push.
+   commit poem with `Poetic-Form:` trailer, push, then paste the full next prompt into the chat.
 8. **Conventions reminder**: one paragraph pointing here.
 
 ### Models
