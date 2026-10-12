@@ -2,6 +2,12 @@
 
 Release notes for cfbtui, kept the way a fortress overseer keeps a journal. Newest first. Versions follow FibVer.
 
+## 0.5.1 (2026-10-12)
+
+- A clerk was hired to stand at the gate on Windows. Each push, it runs the tests and asks the program its version. It does not accept excuses.
+- A bot was given a weekly beat. It knocks on the dependencies' doors and reports who has moved on.
+- The workflows were sworn in. Nobody has yet seen them fail, which they find suspicious.
+
 ## 0.5.0 (2026-10-12)
 
 - The hello-world swatches were taken down from the wall. A scoreboard was hung in their place, and nobody asked where the swatches went.
