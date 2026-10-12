@@ -156,6 +156,7 @@ class GameStore:
         self.rule = rule or UpsetRule()
         self.emit_on_first_sight = emit_on_first_sight
         self.polls = 0
+        self.last_errors: list[tuple[str, Exception]] = []  # (game id, error) from the latest apply
         self._games: dict[str, Game] = {}
         self._seen: dict[str, Game] = {}
         self._pat_pending: dict[str, str] = {}  # game id -> team id owed a conversion
@@ -195,13 +196,23 @@ class GameStore:
     def apply(self, games: Iterable[Game]) -> list[Event]:
         events: list[Event] = []
         latest: dict[str, Game] = {}
+        self.last_errors = []
         for game in games:
             latest[game.id] = game
             prev = self._seen.get(game.id)
-            if prev is None:
-                events.extend(self._first_sight(game))
-            elif prev is not game:
-                events.extend(self._diff(prev, game))
+            try:
+                if prev is None:
+                    new = self._first_sight(game)
+                elif prev is not game:
+                    new = self._diff(prev, game)
+                else:
+                    new = []
+            except Exception as exc:
+                # One game that cannot be diffed must not cost the events of the others.
+                # Leave its previous snapshot in place so the next poll diffs against it again.
+                self.last_errors.append((game.id, exc))
+                continue
+            events.extend(new)
             self._seen[game.id] = game
         self._games = latest
         self.polls += 1

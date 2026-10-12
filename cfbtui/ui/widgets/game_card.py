@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from rich.console import Group, RenderableType
@@ -26,10 +26,13 @@ from textual.widgets import Static
 from cfbtui.espn.models import Competitor, Game
 from cfbtui.state.upset import UpsetVerdict
 from cfbtui.ui.glyphs import Glyphs
+from cfbtui.ui.labels import period_name, pretty_status
 from cfbtui.ui.theme import foreground_for
 
 EASTERN = ZoneInfo("America/New_York")
 FLASH_SECONDS = 3.0
+# A kickoff further out than this shows its date, so next week's game never looks like this week's.
+FAR_KICKOFF = timedelta(days=5)
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,31 +72,34 @@ class CardModel:
         ]
 
 
-def kickoff_text(when: datetime) -> str:
-    """``"Sat 12:00 PM ET"``: Eastern time, no leading zero on the hour."""
+def kickoff_text(when: datetime, now: datetime | None = None) -> str:
+    """``"Sat 12:00 PM ET"``, or ``"Sat Oct 24 12:00 PM ET"`` when the kickoff is over five days away.
+
+    Eastern time, no leading zero on the hour or the day.
+    """
     local = when.astimezone(EASTERN)
-    text = local.strftime("%a %I:%M %p")
-    return re.sub(r" 0(\d:)", r" \1", text) + " ET"
+    far = now is not None and when - now > FAR_KICKOFF
+    text = local.strftime("%a %b %d %I:%M %p" if far else "%a %I:%M %p")
+    return re.sub(r" 0(\d)", r" \1", text) + " ET"
 
 
-def status_text(game: Game, glyphs: Glyphs) -> str:
+def status_text(game: Game, glyphs: Glyphs, now: datetime | None = None) -> str:
     s = game.status
     if game.is_pregame:
         if s.name == "STATUS_SCHEDULED":
-            return f"{glyphs.pregame} {kickoff_text(game.date)}"
-        return f"{glyphs.pregame} {s.short_detail or _pretty_status(s.name)}"
+            return f"{glyphs.pregame} {kickoff_text(game.date, now)}"
+        return f"{glyphs.pregame} {s.short_detail or pretty_status(s.name)}"
     if game.is_live:
         if s.is_halftime:
             return f"{glyphs.halftime} Halftime"
         if s.name == "STATUS_END_PERIOD":
             return f"{glyphs.live} {s.short_detail or f'End of Q{s.period}'}"
         if s.name not in _PLAYING:
-            return f"{glyphs.live} {s.short_detail or _pretty_status(s.name)}"
-        period = f"OT{s.period - 4}" if s.is_overtime and s.period > 5 else ("OT" if s.is_overtime else f"Q{s.period}")
-        return f"{glyphs.live} {period} {s.clock}"
+            return f"{glyphs.live} {s.short_detail or pretty_status(s.name)}"
+        return f"{glyphs.live} {period_name(s.period)} {s.clock}"
     if game.is_final:
         return f"{glyphs.final} Final{'/OT' if s.is_overtime else ''}"
-    return f"{glyphs.final} {s.short_detail or _pretty_status(s.name)}"
+    return f"{glyphs.final} {s.short_detail or pretty_status(s.name)}"
 
 
 _PLAYING = frozenset(
@@ -104,10 +110,6 @@ _PLAYING = frozenset(
         "STATUS_OVERTIME",
     }
 )
-
-
-def _pretty_status(name: str) -> str:
-    return name.removeprefix("STATUS_").replace("_", " ").title()
 
 
 def _extra_text(game: Game) -> str:
@@ -125,13 +127,15 @@ def _row(
     side: Competitor,
     glyphs: Glyphs,
     flash_team_id: str | None,
+    favorite: bool = False,
 ) -> RowModel:
     live = game.is_live
     sit = game.situation if live else None
     lead = glyphs.possession if sit is not None and sit.possession == side.id else " "
     rank = f"{glyphs.rank}{side.rank}" if side.rank is not None else ""
     record = f" {side.record}" if side.record else ""
-    left = f" {lead} {rank:>3} {side.abbreviation:<5}{record}"
+    star = glyphs.favorite if favorite else " "
+    left = f" {lead}{star}{rank:>3} {side.abbreviation:<5}{record}"
     timeouts = ""
     if sit is not None:
         remaining = sit.home_timeouts if side.home_away == "home" else sit.away_timeouts
@@ -161,6 +165,8 @@ def build_card(
     *,
     verdict: UpsetVerdict | None = None,
     flash_team_id: str | None = None,
+    favorites: frozenset[str] = frozenset(),
+    now: datetime | None = None,
 ) -> CardModel:
     title_parts: list[str] = []
     classes: list[str] = []
@@ -179,10 +185,10 @@ def build_card(
     return CardModel(
         title=" ".join(title_parts),
         rows=(
-            _row(game, game.away, glyphs, flash_team_id),
-            _row(game, game.home, glyphs, flash_team_id),
+            _row(game, game.away, glyphs, flash_team_id, game.away.id in favorites),
+            _row(game, game.home, glyphs, flash_team_id, game.home.id in favorites),
         ),
-        status=status_text(game, glyphs),
+        status=status_text(game, glyphs, now or datetime.now(UTC)),
         extra=_extra_text(game),
         classes=tuple(classes),
     )
@@ -228,10 +234,21 @@ class GameCard(Static):
     GameCard.redzone { border-title-color: $error; }
     GameCard.flash { border: double $accent; }
     GameCard.old { text-opacity: 55%; }
+    GameCard:focus { border: double $primary; }
     """
 
-    def __init__(self, game: Game, glyphs: Glyphs, *, verdict: UpsetVerdict | None = None) -> None:
+    can_focus = True
+
+    def __init__(
+        self,
+        game: Game,
+        glyphs: Glyphs,
+        *,
+        verdict: UpsetVerdict | None = None,
+        favorites: frozenset[str] = frozenset(),
+    ) -> None:
         super().__init__()
+        self.favorites = favorites
         self.game = game
         self.glyphs = glyphs
         self.verdict = verdict
@@ -252,14 +269,18 @@ class GameCard(Static):
         verdict: UpsetVerdict | None,
         *,
         data_old: bool = False,
+        favorites: frozenset[str] | None = None,
     ) -> None:
+        favorites = self.favorites if favorites is None else favorites
         unchanged = (
             game == self.game
+            and favorites == self.favorites
             and glyphs is self.glyphs
             and verdict == self.verdict
             and data_old == self.data_old
         )
         self.game, self.glyphs, self.verdict, self.data_old = game, glyphs, verdict, data_old
+        self.favorites = favorites
         if not unchanged:  # most polls change a handful of the 60-odd games
             self.repaint()
 
@@ -289,7 +310,9 @@ class GameCard(Static):
         self.repaint()
 
     def repaint(self) -> None:
-        model = build_card(self.game, self.glyphs, verdict=self.verdict, flash_team_id=self._flash_team)
+        model = build_card(
+            self.game, self.glyphs, verdict=self.verdict, flash_team_id=self._flash_team, favorites=self.favorites
+        )
         self.model = model
         self.border_title = model.title
         for name in ("live", "final", "pregame", "upset", "redzone", "flash"):

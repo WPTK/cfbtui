@@ -2,6 +2,25 @@
 
 Release notes for cfbtui, kept the way a fortress overseer keeps a journal. Newest first. Versions follow FibVer.
 
+## 0.8.0 (2026-10-12)
+
+- A config file was offered a home under the user's config directory. It declined to exist until someone starred a team, and was praised for its restraint.
+- The Config learned to be wrong about nothing. A missing file became the defaults. A corrupt one became the defaults and a warning. A poll interval written as the word "fast" was dropped, and its neighbours were left unharmed.
+- Unknown keys from a future version were found at the door. They were ignored without comment and told to come back when they had grown up.
+- Command-line flags were hired to override the file for one run only. `--no-config` was given the harder job of pretending the file does not exist.
+- A flag-wearing run once tried to write its disguise into the config file when a favorite was starred. It was caught at the door by review, and the file now keeps only what the file said.
+- `[` and `]` were taught to turn the page, `t` to come home, and `f` to cross between FBS and FCS. At week 1 and week 15 the pages stop, and a toast says so politely.
+- A poll in flight for last week was found arriving after the user had moved on. The scheduler dropped it. A message already queued for the old week was dropped too, by its generation number. Neither complained.
+- The ticker was cleared on every switch, as requested. The first board of a new week announces nothing, because forty kickoffs at once was found to be rude.
+- The cards became focusable. Arrow keys walk them, clamp at the edges, and land on the final card when a short last row is all that remains below.
+- Favorites were given the top of the grid. Press `1` or `2` on a focused card to star its away or home team; a star appears on the card and the ticker highlights their events in reverse video. A game involving two favorites feels very seen.
+- A team's star survives a restart. A star that cannot be saved survives the evening and says why it will not survive the night.
+- A pregame card more than five days from kickoff now shows its date. A game next week no longer pretends to be this Saturday.
+- The period names and status prettifier, found living in two houses, were moved into one.
+- A single game that could not be diffed was found hoarding the other games' events. It is now set aside with its old snapshot and tried again next poll.
+- The poll started dropping messages into a screen that had already been torn down. The messages were told to stop.
+- Three hundred thirty-one tests. The Saturday payload remains unsaved, because it was Monday.
+
 ## 0.5.3 (2026-10-12)
 
 - Seven new poets moved into the commit hall: a senryu, a cinquain, a shadorma, an etheree, a limerick, a couplet and a clerihew. The etheree arrived at one syllable and has been growing since.

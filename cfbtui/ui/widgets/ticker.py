@@ -29,6 +29,7 @@ from cfbtui.state.events import (
     UpsetWatch,
 )
 from cfbtui.ui.glyphs import Glyphs
+from cfbtui.ui.labels import period_name, pretty_status
 
 CAP = 200
 
@@ -59,21 +60,38 @@ def _when(game: Game) -> str:
     s = game.status
     if s.is_halftime:
         return "half"
-    period = f"OT{s.period - 4}" if s.period > 5 else "OT" if s.period > 4 else f"Q{s.period}"
-    return f"{period} {s.clock}" if s.period else ""
+    return f"{period_name(s.period)} {s.clock}" if s.period else ""
 
 
 def _rank_tag(rank: int | None, abbreviation: str, glyphs: Glyphs) -> str:
     return f"{glyphs.rank}{rank} {abbreviation}" if rank is not None else abbreviation
 
 
-def format_event(event: Event, glyphs: Glyphs, *, stamp: datetime | None = None) -> Text:
-    """One ticker line. ``stamp`` is the local time the event arrived, shown as ``HH:MM``."""
+def involves(event: Event, favorites: frozenset[str]) -> bool:
+    """True when either team in the event's game is a favorite."""
+    return event.game.away.id in favorites or event.game.home.id in favorites
+
+
+def format_event(
+    event: Event,
+    glyphs: Glyphs,
+    *,
+    stamp: datetime | None = None,
+    favorites: frozenset[str] = frozenset(),
+) -> Text:
+    """One ticker line. ``stamp`` is the local time the event arrived, shown as ``HH:MM``.
+
+    A favorite's event gets the favorite glyph and a reversed body, so it stands out in a busy log.
+    """
     body = _body(event, glyphs)
     line = Text()
     if stamp is not None:
         line.append(f"{stamp:%H:%M} ", style="dim")
-    line.append(body, style=STYLES.get(event.kind, ""))
+    style = STYLES.get(event.kind, "")
+    if involves(event, favorites):
+        line.append(f"{glyphs.favorite} ", style="bold yellow")
+        style = f"{style} reverse".strip()
+    line.append(body, style=style)
     return line
 
 
@@ -90,15 +108,14 @@ def _body(event: Event, glyphs: Glyphs) -> str:
         case GameStarted():
             return f"{glyphs.kickoff} KICKOFF {matchup(game, glyphs)}  {scores(game)}  {_when(game)}".rstrip()
         case PeriodChanged(period=period):
-            name = f"OT{period - 4}" if period > 5 else "OT" if period > 4 else f"Q{period}"
-            return f"{glyphs.period} {name} {matchup(game, glyphs)}  {scores(game)}"
+            return f"{glyphs.period} {period_name(period)} {matchup(game, glyphs)}  {scores(game)}"
         case Halftime():
             return f"{glyphs.halftime} HALFTIME {matchup(game, glyphs)}  {scores(game)}"
         case GameFinal(winner=winner):
             ot = " (OT)" if game.status.is_overtime else ""
             return f"{glyphs.final} FINAL{ot} {scores(game)}" if winner else f"{glyphs.final} FINAL{ot} TIE {scores(game)}"
         case StatusChanged(before=before, after=after):
-            return f"{glyphs.stale} {matchup(game, glyphs)}  {_pretty(before)} to {_pretty(after)}"
+            return f"{glyphs.stale} {matchup(game, glyphs)}  {pretty_status(before)} to {pretty_status(after)}"
         case RedZone(team=team):
             who = team.abbreviation if team else "?"
             at = game.situation.possession_text if game.situation else None
@@ -111,10 +128,6 @@ def _body(event: Event, glyphs: Glyphs) -> str:
             return f"{glyphs.score} {matchup(game, glyphs)}  {scores(game)}"
 
 
-def _pretty(status_name: str) -> str:
-    return status_name.removeprefix("STATUS_").replace("_", " ").title()
-
-
 class Ticker(RichLog):
     DEFAULT_CSS = """
     Ticker {
@@ -125,9 +138,10 @@ class Ticker(RichLog):
     }
     """
 
-    def __init__(self, glyphs: Glyphs, **kwargs) -> None:
+    def __init__(self, glyphs: Glyphs, favorites: frozenset[str] = frozenset(), **kwargs) -> None:
         super().__init__(max_lines=CAP, wrap=True, markup=False, highlight=False, auto_scroll=True, **kwargs)
         self.glyphs = glyphs
+        self.favorites = favorites
         self._entries: deque[tuple[datetime, Event]] = deque(maxlen=CAP)
         self.border_title = "ticker"
 
@@ -135,15 +149,28 @@ class Ticker(RichLog):
         stamp = stamp or datetime.now()
         for event in events:
             self._entries.append((stamp, event))
-            self.write(format_event(event, self.glyphs, stamp=stamp))
+            self.write(format_event(event, self.glyphs, stamp=stamp, favorites=self.favorites))
 
     @property
     def entry_count(self) -> int:
         return len(self._entries)
 
+    def clear_log(self) -> None:
+        """Forget every line, for a week or group switch."""
+        self._entries.clear()
+        self.clear()
+
     def set_glyphs(self, glyphs: Glyphs) -> None:
         """Redraw the whole log in another glyph set."""
         self.glyphs = glyphs
+        self._redraw()
+
+    def set_favorites(self, favorites: frozenset[str]) -> None:
+        """Redraw the whole log with another set of favorites highlighted."""
+        self.favorites = favorites
+        self._redraw()
+
+    def _redraw(self) -> None:
         self.clear()
         for stamp, event in self._entries:
-            self.write(format_event(event, glyphs, stamp=stamp))
+            self.write(format_event(event, self.glyphs, stamp=stamp, favorites=self.favorites))

@@ -100,6 +100,7 @@ class PollResult:
     scoreboard: Scoreboard | None = None
     events: tuple[Event, ...] = ()
     error: Exception | None = None
+    generation: int = 0  # the scheduler's switch() count when this poll started
 
     @property
     def ok(self) -> bool:
@@ -149,6 +150,11 @@ class PollScheduler:
         self._wake = asyncio.Event()
         self._stopped = False
         self._generation = 0  # bumped by switch() so an in-flight fetch of the old week is dropped
+
+    @property
+    def generation(self) -> int:
+        """Bumped by every :meth:`switch`. A result carrying an older number belongs to a view the user left."""
+        return self._generation
 
     # --- timing -----------------------------------------------------------------
 
@@ -240,11 +246,13 @@ class PollScheduler:
         error: Exception | None,
         *,
         counted: bool = True,
+        generation: int | None = None,
     ) -> PollResult:
+        generation = self._generation if generation is None else generation
         self.polling = False
         self._normal = self.normal_delay()
         self._next_at = self._clock() + (self.next_delay() if counted else 0.0)
-        result = PollResult(self.freshness(), self._now(), board, events, error)
+        result = PollResult(self.freshness(), self._now(), board, events, error, generation)
         if counted and self.on_result is not None:
             self.on_result(result)
         return result
@@ -296,4 +304,5 @@ class PollScheduler:
         self._last_ok = None
         self._failures = 0
         self._last_error = None
+        self._next_at = None
         self._wake.set()

@@ -20,6 +20,7 @@ from cfbtui.ui.glyphs import Glyphs, get
 class StatusView:
     freshness: Freshness = field(default_factory=Freshness)
     week: int | None = None
+    group: str = ""
     live: int = 0
     total: int = 0
     next_in: float | None = None  # seconds to the next poll; None while fetching or unknown
@@ -45,7 +46,9 @@ def format_status(view: StatusView, glyphs: Glyphs, now: datetime | None = None)
     elif view.next_in is not None:
         parts.append(f"next {format_age(view.next_in)}")
     if view.week is not None:
-        parts.append(f"Week {view.week}")
+        parts.append(f"Week {view.week}{f' {view.group}' if view.group else ''}")
+    elif view.group:
+        parts.append(view.group)
     if view.total:
         parts.append(f"{view.live} live of {view.total}")
     if f.state is FreshnessState.ERROR and f.failures > 1:
