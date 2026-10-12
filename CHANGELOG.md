@@ -2,6 +2,19 @@
 
 Release notes for cfbtui, kept the way a fortress overseer keeps a journal. Newest first. Versions follow FibVer.
 
+## 1.0.0 (2026-10-12)
+
+- The scoreboard has been packed into a single suitcase called `cfbtui.exe`. It carries its own Python, its own stylesheet and its own timezone database, and it asked nobody for anything on arrival. It was opened in an empty folder and was fine.
+- The suitcase was weighed, and its fingerprint was written on a slip beside it. Anyone may compare the two. Nobody has yet. The slip waits patiently.
+- A version stamp was sewn into the suitcase's lining, so that Windows can say "1.0.0" when asked, and the program says the same thing, and they agree.
+- The first run against ESPN from the suitcase went well. Cards appeared in team colors. The ticker ticked. A Nerd Font glyph was spotted in the wild and did not turn into a box.
+- A photographer was hired to render the real app to pictures: the grid in three glyph sets, a game's detail room, and the polls. It photographs whatever ESPN is showing at the time, which on a Monday means a great deal of waiting. It will be sent back out on a Saturday.
+- The README was rewritten by someone who had actually seen the program. The phrase "planned keys" was retired with honors. Every key in the table now works.
+- A release machine was set up on GitHub to answer the ringing of any `v` tag. It runs the tests, checks that the tag and the program agree on their number, builds the suitcase, confirms it can say its own version, and posts it publicly with this log attached. It will not ring until Bill rings it.
+- A checklist for a fresh machine was written down, for a day when someone sits at a computer that has never heard of Python. It includes the line "disconnect the network and watch it recover", because it would be rude not to.
+- The glyph set was asked about, and the answer was `nerd` for everyone. A person on a fresh machine without the font will see boxes, and the README now says so, and says how to make them go away.
+- The program has declared itself 1.0.0, the first number it can tell strangers. Major versions from here on mean that somebody's config file stopped working.
+
 ## 0.13.0 (2026-10-12)
 
 - A card was found that could be pressed. Pressing `Enter` on it opens a second room, where the game's scoring plays are laid out in order, each with its clock, its team and the score at that moment. `Esc` leads back to the grid. Nobody was lost.
