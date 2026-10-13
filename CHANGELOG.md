@@ -8,6 +8,7 @@ Release notes for cfbtui, kept the way a fortress overseer keeps a journal. Newe
 - The errand-runner who asks ESPN for scores used to decide its pace by whether a game was on. It now looks over its shoulder instead: while anyone has touched the keyboard or mouse in the last five minutes it runs every twenty seconds, games or no games, and once the room has been empty that long it slows to every two minutes. It does not care which window is in front. ESPN has not noticed.
 - Someone walking back to the computer is greeted with a fresh poll rather than the tail of a two-minute wait.
 - The status bar now says "(away)" beside a slow countdown, so nobody has to ask the overseer what the long number means.
+- The posters on the front door were taken down. They were drawings of the scoreboard, and not good ones: the colors had drained out and the letters wandered. The new posters are photographs, taken through a real terminal window, and the team colors are back.
 - The package's dependency list was found hiding under the web links, where pip could not see it. It has been returned to the right shelf.
 
 ## 1.1.89 (2026-10-12)
