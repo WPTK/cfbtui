@@ -5,6 +5,7 @@ Release notes for cfbtui, kept the way a fortress overseer keeps a journal. Newe
 ## 1.1.144 (2026-10-12)
 
 - The workshop was swept out. The scaffolding, the hooks and the notes the builders left for each other were carted away, and the scoreboard stands in a clean room.
+- The posters on the front door were taken down. They were drawings of the scoreboard, and not good ones: the colors had drained out and the letters wandered. The new posters are photographs, taken through a real terminal window, and the team colors are back.
 - The package's dependency list was found hiding under the web links, where pip could not see it. It has been returned to the right shelf.
 
 ## 1.1.89 (2026-10-12)

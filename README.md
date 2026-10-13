@@ -2,7 +2,7 @@
 
 A college football scoreboard for your terminal. Live scores, rankings and scoring plays for every FBS and FCS game, in one window.
 
-![The scoreboard](docs/img/grid.svg)
+![The scoreboard](docs/img/grid.png)
 
 - [Features](#features)
 - [Install](#install)
@@ -18,7 +18,7 @@ A college football scoreboard for your terminal. Live scores, rankings and scori
 ## Features
 
 - Every FBS and FCS game for the week, live ones first, then upcoming, then finished.
-- Updates on its own: every 20 seconds while a game is on, every 5 minutes otherwise.
+- Updates on its own: every 20 seconds while a game is on, every 2 minutes otherwise.
 - Live cards show the clock, down and distance, and who has the ball. A card flashes when someone scores.
 - Upset alerts: when a ranked team is losing, or lost, to a worse-ranked or unranked team, its card gets a yellow border and an UPSET label.
 - A ticker of scores, kickoffs and upsets as they happen.
@@ -47,7 +47,7 @@ The exe is not code-signed yet, so Windows may warn about an unrecognized app th
 Run `cfbtui.exe` and the current week's games appear. Use the arrow keys to move between cards and press
 `Enter` to open one.
 
-![Game detail](docs/img/detail.svg)
+![Game detail](docs/img/detail.png)
 
 **Favorites.** Press `1` or `2` to star the away or home team of the selected game. Starred teams' games move
 to a Favorites section at the top.
@@ -56,14 +56,14 @@ to a Favorites section at the top.
 first ranking, you see only the CFP ranking through the end of the season. The FCS board shows the FCS
 Coaches poll.
 
-![Rankings](docs/img/rankings.svg)
+![Rankings](docs/img/rankings.png)
 
 **Views.** `v` switches between cards and a one-line-per-game list. `l` cycles the filter and `o` opens the
 conference picker.
 
-![One line per game](docs/img/list.svg)
+![One line per game](docs/img/list.png)
 
-![Conference picker](docs/img/conferences.svg)
+![Conference picker](docs/img/conferences.png)
 
 **Discord.** `c` copies one game as a line of text with the winner in bold. `C` copies the board as a code
 block. Discord caps messages at 2,000 characters, so on a big Saturday `C` copies one part at a time; press
@@ -111,8 +111,9 @@ Notepad. Anything you leave out uses the default, and a bad value is ignored wit
 
 ```toml
 [poll]
-live = 20          # seconds between updates while a game is on
-idle = 300         # seconds between updates otherwise
+live = 20          # seconds between updates while you are at the computer
+idle = 120         # seconds between updates once you have walked away
+away_after = 300   # seconds without keyboard or mouse input before you count as away
 
 [view]
 glyph_set = "nerd" # ascii, unicode, emoji, nerd
@@ -133,7 +134,7 @@ check = true       # set to false to never check for a newer version
 **Icons show as empty boxes.** The default `nerd` icon style needs a [Nerd Font](https://www.nerdfonts.com/)
 set as your terminal's font. Press `g` to cycle to another style, or start with `--glyphs unicode`.
 
-![Unicode icons](docs/img/grid-unicode.svg)
+![Unicode icons](docs/img/grid-unicode.png)
 
 **"Could not reach ESPN."** cfbtui keeps retrying and backs off between attempts. Check your connection; if
 the rest of the internet works, ESPN's service may be down.
