@@ -86,7 +86,7 @@ class EspnClient:
                 last_error.__cause__ = exc
                 continue
             status = response.status_code
-            if status >= 500:
+            if status >= 500 or status in (408, 429):
                 last_error = EspnHttpError(status, str(response.url))
                 continue
             if status >= 400:

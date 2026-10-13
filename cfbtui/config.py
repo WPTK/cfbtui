@@ -200,7 +200,7 @@ def load_config(path: Path | None = None) -> LoadResult:
     except OSError as exc:
         return LoadResult(Config(), (f"could not read {path}: {exc.strerror or exc}; using defaults",), path)
     try:
-        data = tomllib.loads(raw.decode("utf-8"))
+        data = tomllib.loads(raw.decode("utf-8-sig"))
     except (tomllib.TOMLDecodeError, UnicodeDecodeError) as exc:
         return LoadResult(Config(), (f"{path} is not valid TOML ({exc}); using defaults",), path)
     config, warnings = parse_config(data)

@@ -307,7 +307,10 @@ def parse_scoreboard(payload: dict) -> Scoreboard:
     week = _opt_int(_get(payload, "week", "number"))
     if week is None:
         week = next((g.week for g in games if g.week is not None), None)
-    week = from_espn(week, _opt_int(_get(payload, "season", "type")))
+    season_type = _opt_int(_get(payload, "season", "type"))
+    if season_type is None:
+        season_type = next((g.season_type for g in games if g.season_type is not None), None)
+    week = from_espn(week, season_type)
     return Scoreboard(games=games, week=week, season_year=season_year)
 
 

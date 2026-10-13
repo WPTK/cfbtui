@@ -103,6 +103,9 @@ def kind_from_play(play: LastPlay, points: int) -> ScoreKind | None:
     return kind
 
 
+MAX_DECOMPOSE = 100
+
+
 def decompose(points: int, *, pat_pending: bool = False) -> list[tuple[int, ScoreKind]]:
     """Split a point delta into the likeliest scoring plays, biggest first.
 
@@ -111,6 +114,8 @@ def decompose(points: int, *, pat_pending: bool = False) -> list[tuple[int, Scor
     """
     if points <= 0:
         return []
+    if points > MAX_DECOMPOSE:  # a corrupt feed; do not build a table the size of its number
+        return [(points, ScoreKind.UNKNOWN)]
     best: list[float | None] = [None] * (points + 1)
     choice: list[int] = [0] * (points + 1)
     best[0] = 0.0
