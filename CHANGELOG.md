@@ -2,6 +2,16 @@
 
 Release notes for cfbtui, kept the way a fortress overseer keeps a journal. Newest first. Versions follow FibVer.
 
+## 1.2.0 (2026-10-12)
+
+- A troupe of inspectors was sent through the scoreboard with clipboards. They pressed every key, fed it broken ledgers, unplugged the network and shouted at it in tiny rooms. About 800 of their checklists were kept in the cellar under tests/uat, and four faults came to light.
+- A settings scroll saved by Notepad with its invisible byte-order mark was being thrown away as gibberish. The overseer now reads past the mark and keeps the settings.
+- A courier once swore a team had scored a number with thirty zeroes, and the clerk tried to build a table that large to work out how. The clerk now writes "some points, unknown" and moves on.
+- When ESPN said "slow down" (429) or "come back later" (408), the errand-runner gave up at once. It now waits and tries again, the way it does for a server error.
+- A bowl-week ledger that forgot to say which season it belonged to was filed as Week 1. The overseer now reads the season off the games themselves, and Bowls and the Playoff land where they belong.
+- The front-door notice claimed scores arrive every five minutes on quiet days. It now says two.
+- Known gap, left for later: if the rankings only arrive after a game has started, the ticker misses that game's "upset watch" line. The cards still change color correctly.
+
 ## 1.1.144 (2026-10-12)
 
 - The workshop was swept out. The scaffolding, the hooks and the notes the builders left for each other were carted away, and the scoreboard stands in a clean room.
