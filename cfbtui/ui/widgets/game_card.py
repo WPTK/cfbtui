@@ -25,7 +25,7 @@ from cfbtui.espn.models import Competitor, Game
 from cfbtui.state.upset import UpsetVerdict
 from cfbtui.ui.glyphs import Glyphs
 from cfbtui.ui.labels import status_text
-from cfbtui.ui.theme import foreground_for
+from cfbtui.ui.theme import foreground_for, team_style
 
 FLASH_SECONDS = 3.0
 
@@ -162,7 +162,7 @@ def compact_line(
     line = Text(" ")
     for i, side in enumerate((game.away, game.home)):
         row = _row(game, side, glyphs, flash_team_id, side.id in favorites)
-        style = Style(color=row.foreground, bgcolor=row.background, bold=row.bold, dim=row.dim)
+        style = team_style(row.background, bold=row.bold, dim=row.dim)
         if row.flash:
             style += Style(reverse=True)
         score = row.score.strip()
@@ -184,7 +184,7 @@ def compact_line(
 def render_card(model: CardModel) -> RenderableType:
     parts: list[RenderableType] = []
     for row in model.rows:
-        style = Style(color=row.foreground, bgcolor=row.background, bold=row.bold, dim=row.dim)
+        style = team_style(row.background, bold=row.bold, dim=row.dim)
         score_style = style + Style(reverse=True, bold=True) if row.flash else style
         # The style goes on the columns and the text: a Table's own style is not carried to its cells.
         table = Table(show_header=False, show_edge=False, box=None, padding=0, expand=True)

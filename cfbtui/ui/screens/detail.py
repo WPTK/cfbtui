@@ -27,6 +27,7 @@ from cfbtui.espn.client import EspnError
 from cfbtui.espn.models import Competitor, Game, ScoringPlay, Summary
 from cfbtui.ui.glyphs import Glyphs
 from cfbtui.ui.labels import period_name, status_text
+from cfbtui.ui.theme import team_style
 
 LIVE_REFRESH = 20.0
 IDLE_REFRESH = 60.0
@@ -90,7 +91,12 @@ def build_detail(game: Game, summary: Summary | None, glyphs: Glyphs, *, error: 
     parts: list[RenderableType] = []
     head = Text()
     for i, line in enumerate(header_lines(game, glyphs)):
-        head.append(line + "\n", style="bold" if i < 2 else "dim")
+        if i < 2:
+            side = game.away if i == 0 else game.home
+            head.append(f" {line} ", style=team_style(side.team.color, bold=True))
+            head.append("\n")
+        else:
+            head.append(line + "\n", style="dim")
     parts.append(head)
     if summary is not None:
         bar = win_bar(summary.home_win_probability, game, glyphs)

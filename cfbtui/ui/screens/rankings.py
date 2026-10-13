@@ -15,6 +15,7 @@ from textual.widgets import Footer, Static
 from cfbtui.espn.client import GROUP_FBS, GROUP_FCS, EspnError
 from cfbtui.espn.models import Ranking
 from cfbtui.ui.glyphs import Glyphs
+from cfbtui.ui.theme import team_style
 
 
 class RankingsSource(Protocol):
@@ -71,9 +72,10 @@ def poll_table(poll: Ranking) -> Table:
     for entry in poll.ranks:
         votes = f" ({entry.first_place_votes})" if entry.first_place_votes else ""
         points = f"{entry.points:.0f}" if entry.points is not None else ""
+        style = team_style(entry.color)
         table.add_row(
-            str(entry.rank) if entry.rank is not None else "",
-            Text(f"{entry.abbreviation:<5}{entry.name}{votes}", style=entry.color or ""),
+            Text(f" {entry.rank} " if entry.rank is not None else "", style=style),
+            Text(f" {entry.abbreviation:<5}{entry.name}{votes} ", style=style),
             entry.record or "",
             points,
             trend_text(entry.previous, entry.trend),
