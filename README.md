@@ -1,5 +1,10 @@
 # cfbtui
 
+[![CI](https://github.com/WPTK/cfbtui/actions/workflows/ci.yml/badge.svg)](https://github.com/WPTK/cfbtui/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/WPTK/cfbtui)](https://github.com/WPTK/cfbtui/releases/latest)
+![Python 3.13+](https://img.shields.io/badge/python-3.13%2B-blue)
+[![License: MIT](https://img.shields.io/github/license/WPTK/cfbtui)](LICENSE)
+
 A college football scoreboard for your terminal. Live scores, rankings and scoring plays for every FBS and FCS game, in one window.
 
 ![The scoreboard](docs/img/grid.png)
