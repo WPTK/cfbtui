@@ -21,12 +21,13 @@ happening.
 ``stale_after`` is 2.5 poll intervals of whatever mode the scheduler is in, so
 one missed poll does not flicker the display and two do.
 
-**Intervals.** Live games poll fast, otherwise slow. Two refinements keep the
-slow mode from missing a kickoff: a game that kicks off before the next slow
-poll pulls the next poll forward to its kickoff, and a game whose kickoff has
-just passed while ESPN still says "scheduled" keeps the fast interval for a
-while. After a failed poll the delay doubles per consecutive failure up to a
-cap, and never drops below the normal interval.
+**Intervals.** The fast interval runs while someone is at the computer, games
+or no games; the slow one runs once the machine has seen no keyboard or mouse
+input for ``away_after`` seconds (see :mod:`cfbtui.presence`). Focus does not
+matter: the board may sit on a second monitor. A game that kicks off before
+the next slow poll pulls that poll forward to its kickoff, and a user who
+comes back gets a poll at once. After a failed poll the delay doubles per
+consecutive failure up to a cap, and never drops below the normal interval.
 """
 from __future__ import annotations
 
@@ -39,14 +40,13 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Protocol
 
+from cfbtui import presence
 from cfbtui.espn.client import GROUP_FBS
 from cfbtui.espn.models import Ranking, Scoreboard
 from cfbtui.state.events import Event
 from cfbtui.state.store import GameStore
 
 STALE_FACTOR = 2.5
-# A pregame game this long past kickoff is probably cancelled; stop polling fast for it.
-OVERDUE_WINDOW = 3 * 3600.0
 RANKINGS_RETRY = 300.0
 
 
@@ -54,9 +54,10 @@ RANKINGS_RETRY = 300.0
 class PollIntervals:
     """Seconds. Defaults chosen with Bill on 2026-10-12."""
 
-    live: float = 20.0
-    idle: float = 300.0
+    live: float = 20.0  # while someone is at the computer
+    idle: float = 120.0  # once they have walked away
     backoff_max: float = 120.0
+    away_after: float = 300.0  # no keyboard or mouse input for this long means away
 
 
 class FreshnessState(StrEnum):
@@ -128,7 +129,10 @@ class PollScheduler:
         on_result: Callable[[PollResult], None] | None = None,
         clock: Callable[[], float] = time.monotonic,
         now: Callable[[], datetime] = lambda: datetime.now(UTC),
+        idle_for: Callable[[], float | None] | None = None,
     ) -> None:
+        """``idle_for`` reports seconds since the user last touched the machine (``None`` means unknown);
+        the default asks the machine itself."""
         self.client = client
         self.store = store if store is not None else GameStore()
         self.intervals = intervals if intervals is not None else PollIntervals()
@@ -137,9 +141,11 @@ class PollScheduler:
         self.on_result = on_result
         self._clock = clock
         self._now = now
+        self._idle_for = idle_for or presence.seconds_since_input
 
         self.scoreboard: Scoreboard | None = None
         self.polling = False
+        self.away = False  # True while the slow interval is in force because nobody is at the computer
         self.polls = 0
         self._failures = 0
         self._last_error: Exception | None = None
@@ -159,29 +165,39 @@ class PollScheduler:
 
     # --- timing -----------------------------------------------------------------
 
+    def present(self) -> bool:
+        """True unless the machine has gone ``away_after`` seconds without keyboard or mouse input."""
+        idle = self._idle_for()
+        return idle is None or idle < self.intervals.away_after
+
     def normal_delay(self) -> float:
-        """Seconds to wait after a good poll, from the store's current games."""
+        """Seconds to wait after a good poll: fast while someone is here, slow once they have left."""
         iv = self.intervals
-        if self.store.live:
+        if self.present():
             return iv.live
         now = self._now()
         delay = iv.idle
         for game in self.store.games:
-            if not game.is_pregame:
-                continue
-            until = (game.date - now).total_seconds()
-            if until <= iv.live:
-                if until >= -OVERDUE_WINDOW:
-                    return iv.live  # kicking off now, or overdue and ESPN has not noticed
-                continue
-            delay = min(delay, until)
+            if game.is_pregame:
+                until = (game.date - now).total_seconds()
+                if until > 0:
+                    delay = min(delay, until)  # wake for the kickoff, then go back to sleep
         return delay
+
+    def observe_presence(self) -> None:
+        """Once a second from the app. Someone coming back to the computer gets a poll right away."""
+        present = self.present()
+        if present and self.away:
+            self.away = False
+            self.refresh()
+        elif not present:
+            self.away = True
 
     def next_delay(self) -> float:
         """Seconds to wait before the next poll, including error backoff."""
         base = self.normal_delay()
         if self._failures and self._last_ok is None:
-            base = min(base, self.intervals.live)  # nothing loaded yet: retry soon, not in five minutes
+            base = min(base, self.intervals.live)  # nothing loaded yet: retry soon, not in two minutes
         if self._failures:
             return max(base, min(self.intervals.backoff_max, base * 2**self._failures))
         return base
@@ -253,6 +269,7 @@ class PollScheduler:
     ) -> PollResult:
         generation = self._generation if generation is None else generation
         self.polling = False
+        self.away = not self.present()
         self._normal = self.normal_delay()
         self._next_at = self._clock() + (self.next_delay() if counted else 0.0)
         result = PollResult(self.freshness(), self._now(), board, events, error, generation)

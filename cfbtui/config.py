@@ -17,9 +17,10 @@ matched against each team's abbreviation as games arrive.
 .. code-block:: toml
 
     [poll]
-    live = 20
-    idle = 300
+    live = 20            # seconds between polls while someone is at the computer
+    idle = 120           # seconds between polls once they have walked away
     backoff_max = 120
+    away_after = 300     # seconds without keyboard or mouse input before "away"
 
     [view]
     glyph_set = "nerd"   # ascii, unicode, emoji, nerd
@@ -130,7 +131,7 @@ def parse_config(data: dict) -> tuple[Config, list[str]]:
     poll = PollIntervals()
     section = _section(data, "poll", warnings)
     values: dict[str, float] = {}
-    for name in ("live", "idle", "backoff_max"):
+    for name in ("live", "idle", "backoff_max", "away_after"):
         if name not in section:
             continue
         v = section[name]
@@ -224,6 +225,7 @@ def to_toml_data(config: Config) -> dict:
             "live": _num(config.poll.live),
             "idle": _num(config.poll.idle),
             "backoff_max": _num(config.poll.backoff_max),
+            "away_after": _num(config.poll.away_after),
         },
         "view": view,
         "favorites": {

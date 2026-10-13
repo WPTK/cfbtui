@@ -26,6 +26,7 @@ class StatusView:
     total: int = 0
     next_in: float | None = None  # seconds to the next poll; None while fetching or unknown
     polling: bool = False
+    away: bool = False  # the slow interval is in force because nobody has touched the computer lately
     glyph_set: str = ""
     errors: int = 0  # games whose latest diff raised
     view_note: str = ""  # the active filter, conference and layout, if not the defaults
@@ -47,7 +48,7 @@ def format_status(view: StatusView, glyphs: Glyphs, now: datetime | None = None)
     if view.polling:
         parts.append(f"{glyphs.refresh} polling")
     elif view.next_in is not None:
-        parts.append(f"next {format_age(view.next_in)}")
+        parts.append(f"next {format_age(view.next_in)}{' (away)' if view.away else ''}")
     if view.week is not None:
         parts.append(f"{week_label(view.week)}{f' {view.group}' if view.group else ''}")
     elif view.group:

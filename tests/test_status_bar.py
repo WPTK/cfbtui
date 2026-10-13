@@ -39,6 +39,12 @@ def test_polling_replaces_the_countdown():
     assert "@ polling" in text and "next" not in text
 
 
+def test_a_slow_countdown_says_why():
+    f = Freshness(FreshnessState.FRESH, age=19, stale_after=300)
+    assert "next 1m40s (away)" in format_status(view(freshness=f, next_in=100, away=True), ASCII)
+    assert "(away)" not in format_status(view(freshness=f, next_in=100), ASCII)
+
+
 def test_stale_says_so_with_the_age():
     f = Freshness(FreshnessState.STALE, age=95, stale_after=50)
     assert format_status(view(freshness=f), ASCII).startswith("~ STALE 1m35s old")

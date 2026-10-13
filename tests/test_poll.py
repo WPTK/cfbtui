@@ -210,32 +210,71 @@ async def test_a_long_halftime_with_identical_polls_stays_fresh():
 # --- intervals -----------------------------------------------------------------------
 
 
-async def test_live_games_poll_fast():
-    sched, _, _ = make(FakeClient(board("touchdown_before")))
+AWAY = 10_000.0  # seconds without input, well past away_after
+
+
+class Presence:
+    """A stand-in for the machine's input timer. Flip ``away`` to walk off or come back."""
+
+    def __init__(self, away: bool = False) -> None:
+        self.away = away
+
+    def __call__(self) -> float:
+        return AWAY if self.away else 0.0
+
+
+async def test_someone_at_the_computer_polls_fast_whatever_the_games_are_doing():
+    for name in ("touchdown_before", "final_after", "game_start_before"):
+        sched, _, _ = make(FakeClient(board(name)))
+        await sched.poll_once()
+        assert sched.next_delay() == LIVE and not sched.away
+        assert sched.freshness().stale_after == STALE_FACTOR * LIVE
+
+
+async def test_nobody_at_the_computer_polls_slowly_even_with_games_live():
+    for name in ("touchdown_before", "final_after"):
+        sched, _, _ = make(FakeClient(board(name)), idle_for=Presence(away=True))
+        await sched.poll_once()
+        assert sched.next_delay() == IDLE and sched.away
+        assert sched.freshness().stale_after == STALE_FACTOR * IDLE
+
+
+async def test_unknown_presence_counts_as_present():
+    sched, _, _ = make(FakeClient(board("final_after")), idle_for=lambda: None)
+    await sched.poll_once()
+    assert sched.next_delay() == LIVE and not sched.away
+
+
+async def test_away_starts_at_the_configured_number_of_seconds():
+    here, _, _ = make(FakeClient(board("final_after")), idle_for=lambda: 299.0)
+    gone, _, _ = make(FakeClient(board("final_after")), idle_for=lambda: 300.0)
+    await here.poll_once()
+    await gone.poll_once()
+    assert here.next_delay() == LIVE
+    assert gone.next_delay() == IDLE
+
+
+async def test_interval_follows_the_user_leaving_and_coming_back():
+    presence = Presence()
+    sched, _, _ = make(FakeClient(board("final_after")), idle_for=presence)
     await sched.poll_once()
     assert sched.next_delay() == LIVE
-    assert sched.freshness().stale_after == STALE_FACTOR * LIVE
-
-
-async def test_nothing_live_polls_slowly():
-    sched, _, _ = make(FakeClient(board("final_after")))
+    presence.away = True
     await sched.poll_once()
     assert sched.next_delay() == IDLE
-    assert sched.freshness().stale_after == STALE_FACTOR * IDLE
-
-
-async def test_interval_switches_from_idle_to_live_and_back():
-    pre = board("game_start_before")
-    client = FakeClient(pre, board("game_start_after"), board("final_after"))
-    # Park the wall clock far from kickoff so the pregame board is plainly idle.
-    clock = FakeClock(start=pre.games[0].date - timedelta(days=2))
-    sched, clock, _ = make(client, clock)
+    presence.away = False
     await sched.poll_once()
-    assert sched.next_delay() == IDLE
-    await sched.poll_once()  # kickoff
     assert sched.next_delay() == LIVE
-    await sched.poll_once()  # final
-    assert sched.next_delay() == IDLE
+
+
+async def test_observing_a_departure_marks_away_without_polling():
+    presence = Presence()
+    sched, _, results = make(FakeClient(board("final_after")), idle_for=presence)
+    await sched.poll_once()
+    presence.away = True
+    sched.observe_presence()
+    sched.observe_presence()
+    assert sched.away and len(results) == 1
 
 
 def _pregame_at(offset: timedelta) -> tuple[Scoreboard, FakeClock]:
@@ -245,30 +284,23 @@ def _pregame_at(offset: timedelta) -> tuple[Scoreboard, FakeClock]:
     return pre, clock
 
 
-async def test_idle_poll_is_pulled_forward_to_a_nearby_kickoff():
+async def test_away_poll_is_pulled_forward_to_a_nearby_kickoff():
     pre, clock = _pregame_at(timedelta(seconds=100))
-    sched, _, _ = make(FakeClient(pre), clock)
+    sched, _, _ = make(FakeClient(pre), clock, idle_for=Presence(away=True))
     await sched.poll_once()
     assert sched.next_delay() == pytest.approx(100)
 
 
 async def test_kickoff_beyond_the_idle_window_does_not_shorten_the_wait():
     pre, clock = _pregame_at(timedelta(hours=2))
-    sched, _, _ = make(FakeClient(pre), clock)
+    sched, _, _ = make(FakeClient(pre), clock, idle_for=Presence(away=True))
     await sched.poll_once()
     assert sched.next_delay() == IDLE
 
 
-async def test_kickoff_that_has_just_passed_keeps_the_fast_interval():
-    pre, clock = _pregame_at(timedelta(seconds=-120))  # kickoff was two minutes ago
-    sched, _, _ = make(FakeClient(pre), clock)
-    await sched.poll_once()
-    assert sched.next_delay() == LIVE
-
-
-async def test_long_overdue_pregame_game_is_ignored():
-    pre, clock = _pregame_at(timedelta(hours=-6))
-    sched, _, _ = make(FakeClient(pre), clock)
+async def test_a_kickoff_that_has_passed_does_not_wake_an_away_board():
+    pre, clock = _pregame_at(timedelta(seconds=-120))  # kickoff was two minutes ago, ESPN still says scheduled
+    sched, _, _ = make(FakeClient(pre), clock, idle_for=Presence(away=True))
     await sched.poll_once()
     assert sched.next_delay() == IDLE
 
@@ -287,7 +319,7 @@ async def test_error_backoff_doubles_to_a_cap_and_never_beats_the_normal_interva
 
 async def test_idle_error_backoff_is_not_faster_than_idle():
     client = FakeClient(board("final_after"), EspnNetworkError("down"))
-    sched, _, _ = make(client)
+    sched, _, _ = make(client, idle_for=Presence(away=True))
     await sched.poll_once()
     await sched.poll_once()
     assert sched.next_delay() == IDLE
@@ -307,6 +339,15 @@ async def test_countdown_tracks_the_clock_and_is_none_while_fetching():
 # --- the run loop --------------------------------------------------------------------
 
 
+async def _until(condition, *, timeout: float = 5.0) -> None:
+    """Poll ``condition`` until it holds. Generous timeout: a loaded machine must not fail these."""
+    deadline = asyncio.get_running_loop().time() + timeout
+    while not condition():
+        if asyncio.get_running_loop().time() > deadline:
+            raise AssertionError("timed out waiting for the scheduler")
+        await asyncio.sleep(0.01)
+
+
 async def test_run_loop_polls_repeatedly_and_stops():
     client = FakeClient(board("final_after"))
     results: list = []
@@ -317,12 +358,9 @@ async def test_run_loop_polls_repeatedly_and_stops():
         on_result=results.append,
     )
     task = asyncio.create_task(sched.run())
-    for _ in range(100):
-        await asyncio.sleep(0.01)
-        if len(results) >= 3:
-            break
+    await _until(lambda: len(results) >= 3)
     sched.stop()
-    await asyncio.wait_for(task, timeout=1)
+    await asyncio.wait_for(task, timeout=5)
     assert len(results) >= 3
 
 
@@ -336,19 +374,35 @@ async def test_refresh_wakes_the_loop_early():
         on_result=results.append,
     )
     task = asyncio.create_task(sched.run())
-    for _ in range(50):
-        await asyncio.sleep(0.01)
-        if results:
-            break
-    assert len(results) == 1
+    await _until(lambda: len(results) == 1)
     sched.refresh()
-    for _ in range(50):
-        await asyncio.sleep(0.01)
-        if len(results) >= 2:
-            break
-    assert len(results) == 2
+    await _until(lambda: len(results) == 2)
     sched.stop()
-    await asyncio.wait_for(task, timeout=1)
+    await asyncio.wait_for(task, timeout=5)
+
+
+async def test_coming_back_to_the_computer_wakes_the_loop():
+    presence = Presence(away=True)
+    results: list = []
+    sched = PollScheduler(
+        FakeClient(board("final_after")),
+        GameStore(),
+        intervals=PollIntervals(live=30, idle=30),
+        on_result=results.append,
+        idle_for=presence,
+    )
+    task = asyncio.create_task(sched.run())
+    await _until(lambda: len(results) == 1)
+    assert sched.away
+    sched.observe_presence()  # still away: nothing happens
+    await asyncio.sleep(0.05)
+    assert len(results) == 1
+    presence.away = False
+    sched.observe_presence()
+    await _until(lambda: len(results) == 2)
+    assert not sched.away
+    sched.stop()
+    await asyncio.wait_for(task, timeout=5)
 
 
 async def test_switch_resets_the_store_and_drops_an_in_flight_old_board():

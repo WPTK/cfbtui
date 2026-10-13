@@ -205,6 +205,7 @@ class CfbApp(App[None]):
         self._tick()
 
     def _tick(self) -> None:
+        self.scheduler.observe_presence()
         # the screen may be torn down
         with contextlib.suppress(NoMatches):
             self._update_status()
@@ -222,6 +223,7 @@ class CfbApp(App[None]):
             total=len(self.store),
             next_in=self.scheduler.seconds_until_next(),
             polling=self.scheduler.polling,
+            away=self.scheduler.away,
             glyph_set=self.glyphs.name,
             errors=len(self.store.last_errors),
             view_note=describe(self.filter, self.conference, self.layout),
