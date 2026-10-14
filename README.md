@@ -38,19 +38,59 @@ A college football scoreboard for your terminal. Live scores, rankings and scori
 
 ## Install
 
-1. Download `cfbtui.exe` from the [latest release](https://github.com/WPTK/cfbtui/releases/latest).
-2. Open Windows Terminal, go to the folder you saved it in, and run `.\cfbtui.exe`.
+cfbtui is one file with nothing else to install. Pick yours from the
+[latest release](https://github.com/WPTK/cfbtui/releases/latest):
 
-There is nothing else to install. You need a terminal that shows colors and Unicode; Windows Terminal does.
-The old Command Prompt window does not.
+| System | File |
+|---|---|
+| Windows | `cfbtui-windows-x86_64.exe` |
+| macOS, Apple silicon | `cfbtui-macos-arm64` |
+| macOS, Intel | `cfbtui-macos-x86_64` |
+| Linux, x86_64 | `cfbtui-linux-x86_64` |
+| Linux, arm64 (Raspberry Pi OS 64-bit, Asahi) | `cfbtui-linux-arm64` |
 
-The exe is not code-signed yet, so Windows may warn about an unrecognized app the first time. Choose
-**More info**, then **Run anyway**. Each release also carries a `.sha256` file if you want to check the download.
+You need a terminal that shows colors and Unicode. Windows Terminal, iTerm2, Terminal.app and any modern Linux
+terminal do. The old Windows Command Prompt window does not.
+
+**Windows.** Open Windows Terminal, go to the folder you saved it in, and run `.\cfbtui-windows-x86_64.exe`.
+Rename it to `cfbtui.exe` if you would rather type less. The exe is not code-signed yet, so Windows may warn
+about an unrecognized app the first time. Choose **More info**, then **Run anyway**.
+
+**macOS.** The binary is not notarized, so macOS quarantines it when you download it. In Terminal:
+
+```
+chmod +x cfbtui-macos-arm64
+xattr -d com.apple.quarantine cfbtui-macos-arm64
+./cfbtui-macos-arm64
+```
+
+**Linux.** Works on any distribution from 2020 on (glibc 2.31 or newer: Ubuntu 20.04, Debian 11, Fedora 32,
+RHEL 9 and later). Copying for Discord uses the system clipboard, so install `xclip` on X11 or `wl-clipboard`
+on Wayland if `c` says there is no clipboard.
+
+```
+chmod +x cfbtui-linux-x86_64
+./cfbtui-linux-x86_64
+```
+
+On macOS and Linux, move the file somewhere on your `PATH` and rename it `cfbtui` to run it from anywhere.
+
+**With your own Python (3.13 or newer).** Every release also carries the source tarball and a wheel. Download
+the `.whl` and install it with [pipx](https://pipx.pypa.io/) or [uv](https://docs.astral.sh/uv/), and you get a
+`cfbtui` command on any system:
+
+```
+pipx install ./cfbtui-1.3.0-py3-none-any.whl
+```
+
+**Checking a download.** Every release carries a `SHA256SUMS` file. Save it next to the file you downloaded and run
+`sha256sum -c --ignore-missing SHA256SUMS` on Linux, `shasum -a 256 -c --ignore-missing SHA256SUMS` on macOS, or
+`(Get-FileHash .\cfbtui-windows-x86_64.exe).Hash` in PowerShell and compare it with the line in the file.
 
 ## Usage
 
-Run `cfbtui.exe` and the current week's games appear. Use the arrow keys to move between cards and press
-`Enter` to open one.
+Run `cfbtui` and the current week's games appear. Use the arrow keys to move between cards and press `Enter`
+to open one. The rest of this page writes `cfbtui` for whichever file you downloaded.
 
 ![Game detail](docs/img/detail.png)
 
@@ -100,19 +140,25 @@ it again for the next part.
 These apply to that run only.
 
 ```
-cfbtui.exe --week 9              start on week 9 (also: --week bowls, --week playoff)
-cfbtui.exe --group fcs           start on the FCS board
-cfbtui.exe --glyphs unicode      icon style: ascii, unicode, emoji, nerd
-cfbtui.exe --layout list         one line per game
-cfbtui.exe --no-update-check     don't look for a newer version
-cfbtui.exe --no-config           ignore and never touch the settings file
-cfbtui.exe --version
+cfbtui --week 9              start on week 9 (also: --week bowls, --week playoff)
+cfbtui --group fcs           start on the FCS board
+cfbtui --glyphs unicode      icon style: ascii, unicode, emoji, nerd
+cfbtui --layout list         one line per game
+cfbtui --no-update-check     don't look for a newer version
+cfbtui --no-config           ignore and never touch the settings file
+cfbtui --version
 ```
 
 ## Configuration
 
-cfbtui creates `%LOCALAPPDATA%\cfbtui\config.toml` the first time you star a team. You can edit it in
-Notepad. Anything you leave out uses the default, and a bad value is ignored with a warning.
+cfbtui creates a settings file the first time you star a team, and you can edit it in any text editor. Anything
+you leave out uses the default, and a bad value is ignored with a warning.
+
+| System | Settings file |
+|---|---|
+| Windows | `%LOCALAPPDATA%\cfbtui\config.toml` |
+| macOS | `~/Library/Application Support/cfbtui/config.toml` |
+| Linux | `~/.config/cfbtui/config.toml` (or under `$XDG_CONFIG_HOME`) |
 
 ```toml
 [poll]

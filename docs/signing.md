@@ -11,7 +11,7 @@ Signing alone does not clear it instantly. SmartScreen also judges reputation, a
 - **Azure Artifact Signing (formerly Trusted Signing).** Microsoft's cloud service. No hardware token, works from CI. Requires an Azure account and identity validation, and eligibility depends on your country and whether you are an individual or an organization. It signs through its own tool and not a .pfx file, so see the note at the end.
 - **Standard (OV) certificate from a certificate authority.** Cheaper than EV. Current CA rules generally require the private key to live on a hardware token or in a cloud HSM, so a plain downloadable .pfx may not be offered. Ask the CA before buying whether you can get a .pfx or a CI-friendly signing method.
 - **EV certificate.** Gives instant SmartScreen reputation but costs more and ships on a hardware token, which does not work in GitHub Actions runners.
-- **Nothing.** Users click "More info" then "Run anyway". The SHA-256 file on each release lets careful users verify the download.
+- **Nothing.** Users click "More info" then "Run anyway". The `SHA256SUMS` file on each release lets careful users verify the download.
 
 ## Add the secrets (once you have a .pfx)
 
@@ -25,7 +25,7 @@ Signing alone does not clear it instantly. SmartScreen also judges reputation, a
 3. Create `SIGN_CERT_BASE64` and paste the clipboard.
 4. Create `SIGN_CERT_PASSWORD` with the .pfx password.
 
-Until both exist, the build prints "Not signing: SIGN_CERT_BASE64 is not set." and carries on as before. The next tagged release signs the exe automatically, and the SHA-256 is computed from the signed file.
+Until both exist, the build prints "Not signing: SIGN_CERT_BASE64 is not set." and carries on as before. The next tagged release signs the exe automatically, and the `SHA256SUMS` entry is computed from the signed file.
 
 ## Test locally
 

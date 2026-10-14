@@ -2,6 +2,15 @@
 
 Release notes for cfbtui, kept the way a fortress overseer keeps a journal. Newest first. Versions follow FibVer.
 
+## 1.3.0 (2026-10-13)
+
+- The scoreboard used to leave the building in one crate, stamped for Windows. The loading dock now packs five: Windows, Linux on x86_64 and on arm64, and macOS on Apple silicon and on Intel. Each is built by its own crew on its own machine, and all of them go out on one release with a single SHA256SUMS manifest nailed to the side instead of a tag on each crate.
+- The Linux crates are packed in an older room, Debian 11, so they open on any distribution from 2020 onward rather than only the newest.
+- For anyone who keeps their own Python, the same release carries the source tarball and a wheel, so pipx or uv can set it up with no crate at all.
+- The inspectors now run their checklists on Linux and macOS as well as Windows before anything is allowed out, and every crate is opened and started once on the dock before it is loaded.
+- The front-door notice tells each kind of visitor which file is theirs, where their settings scroll lives, and how to check the manifest.
+- The first Linux inspection found a fault the Windows room had hidden by luck of timing: close a live game's detail page at the wrong instant and the runner fetching its scoring plays came back to find the page already torn down, and brought the whole scoreboard down with it. The runner now notices the empty room and leaves quietly.
+
 ## 1.2.2 (2026-10-13)
 
 - The name tags handed out in 1.2.1 were checked against ESPN's own roll call, and one was wrong: Conference 179 is the Ohio Valley, not the Big South-OVC. It is now OVC. The Missouri Valley took ESPN's own short name, MVFC, and the last stranger, Conference 32, turned out to be the FCS Independents.

@@ -33,6 +33,7 @@ dev = [
     "respx>=0.22",
     "pytest-textual-snapshot>=1.1",
     "pyinstaller>=6.22,<7",
+    "build>=1,<2",
     "ruff>=0.8",
     "vulture>=2.14",
 ]

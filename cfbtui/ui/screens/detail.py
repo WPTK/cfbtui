@@ -20,6 +20,7 @@ from rich.text import Text
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import VerticalScroll
+from textual.css.query import NoMatches
 from textual.screen import Screen
 from textual.widgets import Footer, Static
 
@@ -156,7 +157,13 @@ class DetailScreen(Screen[None]):
         self.run_worker(self._loop(), name="detail", group="detail", exclusive=True)
 
     def _paint(self) -> None:
-        self.query_one("#detail", Static).update(build_detail(self.game, self.summary, self.glyphs, error=self.error))
+        try:
+            body = self.query_one("#detail", Static)
+        except NoMatches:
+            # Escape removes the screen's widgets before its Unmount cancels the fetch worker, so a fetch that
+            # was in flight can come back to an empty screen. Nothing to paint on; the worker is about to go.
+            return
+        body.update(build_detail(self.game, self.summary, self.glyphs, error=self.error))
 
     def update_game(self, game: Game) -> None:
         """Fresher scoreboard data for this game, from the app's poll."""
@@ -177,7 +184,7 @@ class DetailScreen(Screen[None]):
     async def _loop(self) -> None:
         while True:
             await self._fetch_once()
-            if self.done:
+            if self.done or not self.is_attached:
                 return
             await asyncio.sleep(self.live_refresh if self.game.is_live else self.idle_refresh)
 

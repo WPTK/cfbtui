@@ -1,8 +1,17 @@
 name: Release
 
-# Pushing a tag like v1.1.0 tests the code, builds cfbtui.exe on Windows, signs it when signing secrets exist,
-# and publishes a public GitHub release carrying the exe, its SHA-256 and that version's CHANGELOG section.
-# The tag must be on main and must match the version in cfbtui/__init__.py.
+# Pushing a tag like v1.3.0 tests the code on Windows, Linux and macOS, builds one standalone binary per
+# platform, builds the source tarball and wheel for people who would rather install with pip, signs the Windows
+# exe when signing secrets exist, and publishes one public GitHub release carrying all of it, a SHA256SUMS file
+# and that version's CHANGELOG section. The tag must be on main and must match the version in cfbtui/__init__.py.
+#
+# Binaries:
+#   cfbtui-windows-x86_64.exe   windows-latest
+#   cfbtui-linux-x86_64         ubuntu-latest, built inside python:3.13-bullseye so the glibc floor is 2.31
+#                               (Ubuntu 20.04, Debian 11, RHEL 9 and newer)
+#   cfbtui-linux-arm64          ubuntu-24.04-arm, same container (Raspberry Pi OS 64-bit, Linux VMs on Apple silicon)
+#   cfbtui-macos-arm64          macos-latest (Apple silicon)
+#   cfbtui-macos-x86_64         macos-15-intel (GitHub's last Intel image; it goes away in August 2027)
 
 on:
   push:
@@ -15,29 +24,16 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
-jobs:
-  test:
-    runs-on: windows-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-          cache: pip
-      - run: python -m pip install -e ".[dev]"
-      - run: python -m pytest
+env:
+  PYTHON_VERSION: "3.13"
 
-  release:
-    needs: test
-    runs-on: windows-latest
-    timeout-minutes: 30
-    permissions:
-      contents: write
-    env:
-      TAG: ${{ github.ref_name }}
+jobs:
+  check:
+    name: Tag matches the version and the changelog
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -45,70 +41,203 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
-          cache: pip
-      - run: python -m pip install -e ".[dev]"
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Tag must be on main and match the package version
-        shell: pwsh
+        id: version
+        env:
+          TAG: ${{ github.ref_name }}
         run: |
-          git merge-base --is-ancestor $env:GITHUB_SHA origin/main
-          if ($LASTEXITCODE -ne 0) { throw "$env:TAG is not on main" }
-          $version = python -c "import cfbtui; print(cfbtui.__version__)"
-          if ("v$version" -ne $env:TAG) { throw "Tag $env:TAG does not match cfbtui.__version__ v$version" }
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main || { echo "$TAG is not on main"; exit 1; }
+          version="$(python -c 'import cfbtui; print(cfbtui.__version__)')"
+          if [ "v$version" != "$TAG" ]; then echo "Tag $TAG does not match cfbtui.__version__ v$version"; exit 1; fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
-      - name: Build the exe (unsigned; no secrets in this step)
-        shell: pwsh
-        run: ./scripts/build_exe.ps1 -SkipSign
-
-      - name: Smoke-test the exe
-        shell: pwsh
+      - name: Extract this version's changelog section
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          $out = ./dist/cfbtui.exe --version
-          Write-Host $out
-          if ($out -ne "cfbtui $($env:TAG.TrimStart('v'))") { throw "exe reports '$out'" }
-          ./dist/cfbtui.exe --help | Out-Null
-          if ($LASTEXITCODE -ne 0) { throw "--help failed" }
-          ./dist/cfbtui.exe --selftest
-          if ($LASTEXITCODE -ne 0) { throw "--selftest failed: the frozen app is missing something" }
+          grep -q "^## $VERSION " CHANGELOG.md || { echo "No '## $VERSION' section in CHANGELOG.md"; exit 1; }
+          awk -v v="$VERSION" '/^## /{p = ($2 == v); next} p' CHANGELOG.md | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}' > release-notes.md
+          if [ ! -s release-notes.md ]; then echo "The '## $VERSION' section of CHANGELOG.md is empty"; exit 1; fi
+          cat release-notes.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: release-notes.md
+          if-no-files-found: error
+
+  test:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - run: python -m pip install -e ".[dev]"
+      - run: python -m pytest
+
+  sdist:
+    name: Source tarball and wheel
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: python -m pip install build
+      - run: python -m build --sdist --wheel --outdir dist .
+      - name: The wheel installs and runs in a clean environment
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          python -m venv /tmp/wheel-check
+          /tmp/wheel-check/bin/pip install --quiet dist/*.whl
+          out="$(/tmp/wheel-check/bin/cfbtui --version)"
+          echo "$out"
+          [ "$out" = "cfbtui ${TAG#v}" ] || { echo "wheel reports '$out'"; exit 1; }
+          /tmp/wheel-check/bin/cfbtui --selftest
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-python
+          path: |
+            dist/*.tar.gz
+            dist/*.whl
+          if-no-files-found: error
+
+  binary:
+    name: Binary (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    # Empty for the jobs that run straight on the runner; GitHub treats '' as "no container".
+    container: ${{ matrix.container }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: windows-x86_64
+            os: windows-latest
+            ext: .exe
+          - name: linux-x86_64
+            os: ubuntu-latest
+            container: python:3.13-bullseye
+          - name: linux-arm64
+            os: ubuntu-24.04-arm
+            container: python:3.13-bullseye
+          - name: macos-arm64
+            os: macos-latest
+          - name: macos-x86_64
+            os: macos-15-intel
+    env:
+      BINARY: cfbtui-${{ matrix.name }}${{ matrix.ext }}
+      BUILT: dist/cfbtui${{ matrix.ext }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        if: matrix.container == ''
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      # tzdata is a Windows-only dependency of the package because other systems ship zone files, but a
+      # standalone binary may land on a minimal system that does not, so every binary bundles its own copy.
+      - name: Install
+        shell: bash
+        run: python -m pip install -e ".[dev]" tzdata
+
+      - name: Windows version resource
+        if: runner.os == 'Windows'
+        shell: bash
+        run: python scripts/version_info.py
+
+      - name: Build (unsigned; no secrets in this step)
+        shell: bash
+        run: python -m PyInstaller --noconfirm --clean --workpath .pyi-build cfbtui.spec
+
+      - name: Smoke-test the binary
+        shell: bash
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          ls -la "$BUILT"
+          out="$("./$BUILT" --version)"
+          echo "$out"
+          [ "$out" = "cfbtui ${TAG#v}" ] || { echo "binary reports '$out'"; exit 1; }
+          "./$BUILT" --help > /dev/null || { echo "--help failed"; exit 1; }
+          "./$BUILT" --selftest || { echo "--selftest failed: the frozen app is missing something"; exit 1; }
 
       - name: Sign the exe
+        if: runner.os == 'Windows'
         shell: pwsh
         env:
           SIGN_CERT_BASE64: ${{ secrets.SIGN_CERT_BASE64 }}
           SIGN_CERT_PASSWORD: ${{ secrets.SIGN_CERT_PASSWORD }}
-        run: ./scripts/sign_exe.ps1
-
-      - name: Hash the exe that will ship
-        shell: pwsh
         run: |
-          ./scripts/hash_exe.ps1
+          ./scripts/sign_exe.ps1
           Get-AuthenticodeSignature dist/cfbtui.exe | Select-Object Status, SignerCertificate | Format-List
 
-      - name: Extract this version's changelog section
-        shell: pwsh
+      - name: Name the binary for its platform
+        shell: bash
+        run: mv "$BUILT" "dist/$BINARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: binary-${{ matrix.name }}
+          path: dist/${{ env.BINARY }}
+          if-no-files-found: error
+
+  release:
+    name: Publish the release
+    needs: [check, test, sdist, binary]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ github.ref_name }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: binary-*
+          merge-multiple: true
+          path: release
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-python
+          path: release
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+          path: notes
+
+      - name: Hash everything that will ship
+        working-directory: release
         run: |
-          $version = $env:TAG.TrimStart("v")
-          $lines = @(Get-Content CHANGELOG.md -Encoding utf8)
-          $index = [array]::FindIndex($lines, [Predicate[string]]{ param($l) $l -like "## $version *" })
-          if ($index -lt 0) { throw "No '## $version' section in CHANGELOG.md" }
-          $body = @()
-          for ($i = $index + 1; $i -lt $lines.Count -and $lines[$i] -notmatch "^## "; $i++) { $body += $lines[$i] }
-          $text = ($body -join "`n").Trim()
-          if (-not $text) { throw "The '## $version' section of CHANGELOG.md is empty" }
-          $text | Set-Content -Encoding utf8 release-notes.md
+          sha256sum * > SHA256SUMS
+          cat SHA256SUMS
 
       - name: Publish the release
-        shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release view $env:TAG *> $null
-          if ($LASTEXITCODE -eq 0) { throw "A release for $env:TAG already exists. Delete it and re-run if it should be rebuilt." }
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "A release for $TAG already exists. Delete it and re-run if it should be rebuilt."; exit 1
+          fi
           # Draft first, upload, then publish, so nobody sees a release without its files.
-          gh release create $env:TAG --draft --title "cfbtui $env:TAG" --notes-file release-notes.md
-          if ($LASTEXITCODE -ne 0) { throw "could not create the release" }
-          gh release upload $env:TAG dist/cfbtui.exe dist/cfbtui.exe.sha256
-          if ($LASTEXITCODE -ne 0) { throw "upload failed; the draft release is left in place" }
-          gh release edit $env:TAG --draft=false
-          if ($LASTEXITCODE -ne 0) { throw "could not publish the draft" }
+          gh release create "$TAG" --draft --title "cfbtui $TAG" --notes-file notes/release-notes.md
+          gh release upload "$TAG" release/* || { echo "upload failed; the draft release is left in place"; exit 1; }
+          gh release edit "$TAG" --draft=false

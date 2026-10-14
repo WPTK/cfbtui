@@ -1,14 +1,15 @@
 # Fresh-machine smoke test
 
-Run this against the exe from a release (or `dist\cfbtui.exe` after `scripts\build_exe.ps1`) on a machine or
-Windows profile with no Python and no checkout of the repo. Run it in Windows Terminal.
+Run this against `cfbtui-windows-x86_64.exe` from a release (or `dist\cfbtui.exe` after `scripts\build_exe.ps1`)
+on a machine or Windows profile with no Python and no checkout of the repo. Run it in Windows Terminal. The
+same list applies to the macOS and Linux binaries, with that system's terminal and hashing command.
 
 Record the date, the exe's SHA-256 and the result of each line.
 
 ## Setup
 
-- [ ] Copy `cfbtui.exe` into an empty folder, for example `C:\Temp\cfbtui-test`. Run everything from there.
-- [ ] `(Get-FileHash cfbtui.exe -Algorithm SHA256).Hash` matches the `cfbtui.exe.sha256` attached to the release.
+- [ ] Copy the exe into an empty folder as `cfbtui.exe`, for example `C:\Temp\cfbtui-test`. Run everything from there.
+- [ ] `(Get-FileHash cfbtui.exe -Algorithm SHA256).Hash` matches the `cfbtui-windows-x86_64.exe` line in the `SHA256SUMS` attached to the release.
 - [ ] Delete `%LOCALAPPDATA%\cfbtui` if it exists, so the run starts without a config file.
 - [ ] `python --version` fails or you are on a profile without Python (proves the exe stands alone).
 

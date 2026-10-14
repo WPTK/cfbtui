@@ -152,6 +152,20 @@ async def test_a_live_game_refreshes_until_the_screen_closes_and_then_stops():
         assert not [w for w in app.workers if w.name == "detail" and not w.is_finished]
 
 
+async def test_a_fetch_that_lands_after_escape_paints_nothing_and_does_not_raise():
+    """Escape removes the widgets before the worker is cancelled; a fetch already in flight must not crash the app."""
+    client = ScreenClient(load_board("pairs/touchdown_before.json"))
+    app = CfbApp(client=client, intervals=FAST, glyph_set="ascii", detail_refresh=0.05)
+    async with app.run_test(size=SIZE) as pilot:
+        await open_detail(pilot, app)
+        screen = app.screen
+        await pilot.press("escape")
+        await wait_for(pilot, lambda: not isinstance(app.screen, DetailScreen))
+        await pilot.pause(0.1)
+        screen._paint()  # what the worker does when its fetch returns
+        assert not screen.is_attached
+
+
 async def test_a_final_game_is_fetched_once():
     client = ScreenClient(load_board("pairs/final_after.json"))
     app = CfbApp(client=client, intervals=FAST, glyph_set="ascii", detail_refresh=0.05)
