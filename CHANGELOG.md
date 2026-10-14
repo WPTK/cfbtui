@@ -2,6 +2,10 @@
 
 Release notes for cfbtui, kept the way a fortress overseer keeps a journal. Newest first. Versions follow FibVer.
 
+## 1.2.1 (2026-10-13)
+
+- The conference picker listed three strangers at the bottom of the room: Conference 179, Conference 29 and Conference 48. They were FCS conferences ESPN had numbered and the overseer had never been introduced to. They are now Big South-OVC, Southern and CAA, and the rest of the FCS crowd got name tags too: Big Sky, Missouri Valley, MEAC, NEC, Patriot, Southland, SWAC and UAC.
+
 ## 1.2.0 (2026-10-12)
 
 - A troupe of inspectors was sent through the scoreboard with clipboards. They pressed every key, fed it broken ledgers, unplugged the network and shouted at it in tiny rooms. About 800 of their checklists were kept in the cellar under tests/uat, and four faults came to light.

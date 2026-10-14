@@ -25,6 +25,18 @@ CONFERENCES = {
     "18": "Independents",
     "37": "Sun Belt",
     "151": "American",
+    # FCS, as ESPN numbers them
+    "20": "Big Sky",
+    "21": "Missouri Valley",
+    "24": "MEAC",
+    "25": "NEC",
+    "27": "Patriot",
+    "29": "Southern",
+    "30": "Southland",
+    "31": "SWAC",
+    "48": "CAA",
+    "177": "UAC",
+    "179": "Big South-OVC",
 }
 
 

@@ -16,7 +16,7 @@ from cfbtui.espn.client import GROUP_FCS, EspnClient
 from cfbtui.espn.models import RankEntry, Ranking
 from cfbtui.espn.parse import parse_scoreboard
 from cfbtui.espn.periods import WEEK_BOWLS, WEEK_PLAYOFF, espn_request, from_espn, week_label
-from cfbtui.ui.filters import conference_name, conferences_on, describe, keep, next_filter
+from cfbtui.ui.filters import CONFERENCES, conference_name, conferences_on, describe, keep, next_filter
 from cfbtui.ui.glyphs import ASCII, UNICODE
 from cfbtui.ui.screens.conferences import ConferenceScreen
 from cfbtui.ui.screens.rankings import is_cfp, pick_polls
@@ -154,7 +154,7 @@ def test_conferences_on_the_board_are_named_and_sorted():
     options = conferences_on(board().games)
     names = [name for _, name in options]
     assert ("8", "SEC") in options and ("1", "ACC") in options
-    named = [n for i, n in options if i in {"1", "4", "5", "8", "9", "12", "15", "17", "18", "37", "151"}]
+    named = [n for i, n in options if i in CONFERENCES]
     assert named == sorted(named)
     assert names[: len(named)] == named  # unnamed ones sort last
     assert conference_name("99999") == "Conference 99999"
