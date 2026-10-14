@@ -2,6 +2,10 @@
 
 Release notes for cfbtui, kept the way a fortress overseer keeps a journal. Newest first. Versions follow FibVer.
 
+## 1.2.2 (2026-10-13)
+
+- The name tags handed out in 1.2.1 were checked against ESPN's own roll call, and one was wrong: Conference 179 is the Ohio Valley, not the Big South-OVC. It is now OVC. The Missouri Valley took ESPN's own short name, MVFC, and the last stranger, Conference 32, turned out to be the FCS Independents.
+
 ## 1.2.1 (2026-10-13)
 
 - The conference picker listed three strangers at the bottom of the room: Conference 179, Conference 29 and Conference 48. They were FCS conferences ESPN had numbered and the overseer had never been introduced to. They are now Big South-OVC, Southern and CAA, and the rest of the FCS crowd got name tags too: Big Sky, Missouri Valley, MEAC, NEC, Patriot, Southland, SWAC and UAC.
