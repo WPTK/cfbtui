@@ -54,6 +54,29 @@ PyInstaller does not cross-compile: a binary runs on the kind of machine that bu
 needs a glibc at least as new as the builder's. The release workflow builds the Linux binaries inside a
 Debian 11 container (glibc 2.31) so they run on distributions back to 2020.
 
+## Test the self-updater end to end
+
+The self-updater swaps the running binary, which unit tests only simulate. The `Updater end-to-end` workflow
+(`.github/workflows/updater-e2e.yml`, manual `workflow_dispatch` only) builds the real binary on Windows, Linux and macOS
+at the current version and at the next patch version, serves the newer one from a throwaway server on `127.0.0.1`
+inside the job, and checks that the older one installs it, that a wrong checksum changes nothing, and that
+"Restart now" lands in the new version. The checks live in `scripts/updater_e2e.py`; to run them locally build two
+binaries (bump the version in a scratch checkout, never in a commit) and pass them in:
+
+```sh
+python scripts/updater_e2e.py OLD_BINARY NEW_BINARY OLD_VERSION NEW_VERSION SCRATCH_DIR
+```
+
+Two things exist only for this test:
+
+- `CFBTUI_RELEASES_URL` replaces the GitHub release feed URL. It is honoured only when its host is exactly
+  `127.0.0.1` (http or https); any other value is ignored and GitHub is asked as usual. Asset downloads are already
+  limited to https or `http://127.0.0.1`.
+- `cfbtui --update-test apply|restart` runs the update path without the TUI: check, stage, probe, install, and for
+  `restart` start the installed binary. The TUI cannot be driven in CI, so this reuses the same `Updater`,
+  `install_update` and `restart` that the app calls on quit. It needs a standalone binary, ignores your config and is
+  hidden from `--help`.
+
 ## Screenshots
 
 `scripts\screenshot_terminal.ps1` captures the README images from a real Windows Terminal window, so they
