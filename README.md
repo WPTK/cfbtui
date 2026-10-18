@@ -193,8 +193,10 @@ With `check = true` cfbtui looks for a newer release at startup. What happens ne
   against the release's `SHA256SUMS` and test-run. The status bar then shows `update X.Y.Z ready` and a message
   says it takes over when you quit. Nothing changes while you are using cfbtui; the new file replaces the old one
   as you quit, and the next start runs it. To switch right away, open Settings (`S`) and choose **Restart now**.
-- **A new major version, `auto = false`, `--no-config`, or no download for your platform:** you just get a message
-  with a link to the release.
+  The update is installed only if cfbtui exits normally and auto-update is still on when you quit (turn it off
+  in Settings and the downloaded file is deleted instead); after a crash or error exit it is discarded.
+- **A new major version, `auto = false`, `--no-config`, or no download (or no `SHA256SUMS`) for your platform:**
+  you just get a message with a link to the release.
 - **pip, pipx and uv installs:** you get a message with the upgrade command (`pipx upgrade cfbtui`,
   `uv tool upgrade cfbtui` or `python -m pip install -U cfbtui`). cfbtui never changes those installs itself.
 - `--no-update-check` (or `check = false`) turns off both the check and the download.

@@ -3,8 +3,12 @@ from __future__ import annotations
 
 import asyncio
 import sys
+import threading
+import time
+from pathlib import Path
 from types import SimpleNamespace
 
+import httpx
 import pytest
 
 from cfbtui import __main__ as entry
@@ -20,6 +24,7 @@ from tests.fakes import FakeClient, load_board
 from tests.test_app_smoke import FAST, SIZE, wait_for
 
 NAME = "cfbtui-linux-x86_64"
+SUMS = "SHA256SUMS"
 LINK = "https://example.test/releases/latest"
 _major, _minor, _patch = (int(p) for p in __version__.split(".")[:3])
 PATCH = f"{_major}.{_minor}.{_patch + 1}"
@@ -33,7 +38,7 @@ def info(version: str = PATCH, *, names: tuple[str, ...] = (NAME, "SHA256SUMS"))
 class FakeUpdater:
     def __init__(self, kind: str = "binary", asset_name: str | None = NAME, fail: Exception | None = None) -> None:
         self.kind, self.asset_name, self.fail = kind, asset_name, fail
-        self.target = "target"
+        self.target = Path("bin/cfbtui")
         self.staged = SimpleNamespace(name="staged")
         self.stage_calls: list[UpdateInfo] = []
         self.closed = 0
@@ -44,8 +49,9 @@ class FakeUpdater:
             raise self.fail
         return self.staged
 
-    def close(self) -> None:
+    def close(self, keep=None) -> None:
         self.closed += 1
+        self.kept = keep
 
 
 def make_app(found: UpdateInfo | None, updater: FakeUpdater | None, *, auto: bool = True, config_path="x") -> CfbApp:
@@ -71,13 +77,14 @@ async def settle(pilot, app: CfbApp, text: str) -> None:
 @pytest.mark.parametrize(
     ("kind", "auto", "no_config", "version", "names", "expected"),
     [
-        ("binary", True, False, PATCH, (NAME,), "download"),
-        ("binary", True, False, f"{_major}.{_minor + 1}.0", (NAME,), "download"),
-        ("binary", False, False, PATCH, (NAME,), "link"),
-        ("binary", True, True, PATCH, (NAME,), "link"),
-        ("binary", True, False, MAJOR, (NAME,), "link"),
-        ("binary", True, False, PATCH, ("cfbtui-other",), "link"),
-        ("binary", True, False, "not-a-version", (NAME,), "link"),
+        ("binary", True, False, PATCH, (NAME, SUMS), "download"),
+        ("binary", True, False, f"{_major}.{_minor + 1}.0", (NAME, SUMS), "download"),
+        ("binary", True, False, PATCH, (NAME,), "link"),  # no SHA256SUMS
+        ("binary", False, False, PATCH, (NAME, SUMS), "link"),
+        ("binary", True, True, PATCH, (NAME, SUMS), "link"),
+        ("binary", True, False, MAJOR, (NAME, SUMS), "link"),
+        ("binary", True, False, PATCH, ("cfbtui-other", SUMS), "link"),
+        ("binary", True, False, "not-a-version", (NAME, SUMS), "link"),
         ("pip", True, False, PATCH, (NAME,), "message"),
         ("pipx", False, True, MAJOR, (), "message"),
         ("uv", True, False, PATCH, (), "message"),
@@ -184,9 +191,19 @@ def test_the_status_marker_is_ascii_and_dropped_before_health():
 # --- the entry point -------------------------------------------------------------
 
 
+class StubStaged:
+    def __init__(self) -> None:
+        self.discarded = 0
+
+    def discard(self) -> None:
+        self.discarded += 1
+
+
 class StubApp:
     staged = None
     restart_requested = False
+    return_code = 0
+    config = Config()
 
     def __init__(self, **kwargs) -> None:
         StubApp.kwargs = kwargs
@@ -194,6 +211,8 @@ class StubApp:
     def run(self) -> None:
         self.staged = StubApp.staged_after_run
         self.restart_requested = StubApp.restart_after_run
+        self.return_code = StubApp.code_after_run
+        self.config = StubApp.config_after_run
 
 
 class MainUpdater(FakeUpdater):
@@ -210,15 +229,17 @@ class MainUpdater(FakeUpdater):
 
 @pytest.fixture
 def main_env(monkeypatch):
-    calls = SimpleNamespace(cleanup=[], restart=[])
+    calls = SimpleNamespace(cleanup=[], sweep=[], restart=[])
     monkeypatch.setattr("cfbtui.app.CfbApp", StubApp)
     monkeypatch.setattr("cfbtui.selfupdate.cleanup_old", calls.cleanup.append)
+    monkeypatch.setattr("cfbtui.selfupdate.sweep", calls.sweep.append)
     monkeypatch.setattr(entry, "restart", lambda target, args: calls.restart.append((target, args)))
     monkeypatch.setattr(sys, "argv", ["cfbtui", "--no-config"])
 
-    def setup(updater, staged=None, restart=False):
+    def setup(updater, staged=None, restart=False, code=0, auto=True):
         monkeypatch.setattr("cfbtui.selfupdate.Updater.detect", lambda version: updater)
-        StubApp.staged_after_run, StubApp.restart_after_run = staged, restart
+        StubApp.staged_after_run, StubApp.restart_after_run, StubApp.code_after_run = staged, restart, code
+        StubApp.config_after_run = Config(updates=UpdatesConfig(auto=auto))
 
     calls.setup = setup
     return calls
@@ -228,7 +249,7 @@ def test_main_applies_a_staged_update_once_after_the_app_exits(main_env):
     updater = MainUpdater()
     main_env.setup(updater, staged="S")
     assert entry.main(["--no-config"]) == 0
-    assert updater.applied == ["S"] and main_env.restart == [] and main_env.cleanup == ["target"]
+    assert updater.applied == ["S"] and main_env.restart == [] and main_env.cleanup == [Path("bin/cfbtui")]
     assert StubApp.kwargs["updater"] is updater
 
 
@@ -236,7 +257,7 @@ def test_main_restarts_only_when_asked_and_only_after_a_good_apply(main_env):
     updater = MainUpdater()
     main_env.setup(updater, staged="S", restart=True)
     entry.main(["--no-config"])
-    assert main_env.restart == [("target", ["--no-config"])]
+    assert main_env.restart == [(Path("bin/cfbtui"), ["--no-config"])]
 
 
 def test_main_prints_recovery_instructions_and_does_not_restart_on_rollback_error(main_env, capsys):
@@ -259,10 +280,31 @@ def test_main_applies_nothing_when_nothing_was_staged(main_env):
     assert updater.applied == []
 
 
+def test_main_discards_the_update_when_auto_was_turned_off_after_staging(main_env):
+    updater, staged = MainUpdater(), StubStaged()
+    main_env.setup(updater, staged=staged, auto=False)
+    entry.main(["--no-config"])
+    assert updater.applied == [] and staged.discarded == 1
+
+
+def test_restart_now_installs_even_with_auto_off(main_env):
+    updater, staged = MainUpdater(), StubStaged()
+    main_env.setup(updater, staged=staged, auto=False, restart=True)
+    entry.main(["--no-config"])
+    assert updater.applied == [staged] and len(main_env.restart) == 1
+
+
+def test_main_discards_the_update_after_an_abnormal_exit(main_env):
+    updater, staged = MainUpdater(), StubStaged()
+    main_env.setup(updater, staged=staged, code=1, restart=True)
+    entry.main(["--no-config"])
+    assert updater.applied == [] and staged.discarded == 1 and main_env.restart == []
+
+
 def test_main_cleans_up_only_for_binaries_and_survives_any_error(main_env, monkeypatch):
     main_env.setup(MainUpdater("pip"))
     entry.main(["--no-config"])
-    assert main_env.cleanup == []
+    assert main_env.cleanup == [] and main_env.sweep == []
 
     def explode(target):
         raise RuntimeError("anything")
@@ -270,6 +312,12 @@ def test_main_cleans_up_only_for_binaries_and_survives_any_error(main_env, monke
     monkeypatch.setattr("cfbtui.selfupdate.cleanup_old", explode)
     main_env.setup(MainUpdater("binary"))
     assert entry.main(["--no-config"]) == 0
+
+
+def test_main_sweeps_the_stage_folder_for_binaries(main_env):
+    main_env.setup(MainUpdater("binary"))
+    entry.main(["--no-config"])
+    assert main_env.sweep == [Path("bin")]
 
 
 def test_no_update_check_hands_the_app_no_updater(main_env):
@@ -283,3 +331,104 @@ def test_updater_stage_needs_the_asset_and_the_sums_file(tmp_path):
     for names in ((NAME,), ("SHA256SUMS",)):
         with pytest.raises(UpdateError, match="has no"):
             updater.stage(info(names=names))
+
+
+# --- restart: a clean PyInstaller environment ------------------------------------------
+
+
+@pytest.mark.parametrize("platform", ["linux", "win32"])
+def test_restart_drops_the_pyinstaller_environment_and_keeps_the_flags(monkeypatch, platform):
+    monkeypatch.setattr(sys, "platform", platform)
+    monkeypatch.setenv("_PYI_ARCHIVE_FILE", "/old")
+    monkeypatch.setenv("_PYI_PARENT_PROCESS_LEVEL", "1")
+    monkeypatch.setenv("KEEP_ME", "1")
+    seen = []
+    execve = lambda path, argv, env: seen.append(("execve", str(path), argv, env))  # noqa: E731
+    call = lambda argv, env: seen.append(("call", argv[0], argv, env)) or 0  # noqa: E731
+    if platform == "win32":
+        with pytest.raises(SystemExit):
+            entry.restart(Path("/bin/cfbtui"), ["--no-config", "--week", "3"], execve, call)
+    else:
+        entry.restart(Path("/bin/cfbtui"), ["--no-config", "--week", "3"], execve, call)
+    (kind, _, argv, env), = seen
+    assert kind == ("call" if platform == "win32" else "execve")
+    assert argv[1:] == ["--no-config", "--week", "3"]
+    assert not any(k.startswith("_PYI_") for k in env)
+    assert env["PYINSTALLER_RESET_ENVIRONMENT"] == "1" and env["KEEP_ME"] == "1"
+
+
+# --- cancelling, sweeping and the sums download ----------------------------------------
+
+
+class SlowUpdater(FakeUpdater):
+    """stage() waits until close() is called, then fails the way the real one does."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.started = threading.Event()
+        self.cancel = threading.Event()
+
+    def stage(self, found):
+        self.started.set()
+        assert self.cancel.wait(5), "close() never reached the running stage"
+        raise UpdateError("the update was cancelled")
+
+    def close(self, keep=None) -> None:
+        super().close(keep)
+        self.cancel.set()
+
+
+async def test_quitting_while_the_update_is_downloading_stops_it():
+    updater = SlowUpdater()
+    app = make_app(info(), updater)
+    started = time.monotonic()
+    async with app.run_test(size=SIZE) as pilot:
+        await wait_for(pilot, updater.started.is_set)
+    assert updater.closed == 1 and updater.kept is None and app.staged is None
+    assert time.monotonic() - started < 4
+
+
+def real_updater(tmp_path, handler) -> Updater:
+    return Updater("binary", NAME, tmp_path / NAME, __version__, httpx.Client(transport=httpx.MockTransport(handler)))
+
+
+def sums_asset(url="https://example.test/SHA256SUMS", size=10) -> Asset:
+    return Asset("SHA256SUMS", url, size)
+
+
+def test_sums_text_reads_a_good_file(tmp_path):
+    updater = real_updater(tmp_path, lambda r: httpx.Response(200, content=b"abc"))
+    assert updater._sums_text(sums_asset()) == "abc"
+
+
+@pytest.mark.parametrize(
+    ("handler", "asset", "message"),
+    [
+        (lambda r: httpx.Response(200 if r.url.host == "evil.test" else 302, headers={"location": "http://evil.test/x"}),
+         sums_asset(), "refusing"),
+        (lambda r: httpx.Response(200, content=b"x" * (2 << 20)), sums_asset(size=2 << 20), "too large"),
+        (lambda r: httpx.Response(200, content=b"x" * (2 << 20)), sums_asset(), "HTTP 200"),
+        (lambda r: httpx.Response(404), sums_asset(), "HTTP 404"),
+        (lambda r: httpx.Response(200, content=b"\xff\xfe"), sums_asset(), "could not read"),
+        (lambda r: httpx.Response(200), sums_asset("http://example.test/SHA256SUMS"), "refusing"),
+    ],
+    ids=["redirect-to-http", "oversize-listed", "oversize-sent", "non-200", "not-utf8", "http-url"],
+)
+def test_sums_text_refuses_bad_downloads(tmp_path, handler, asset, message):
+    with pytest.raises(UpdateError, match=message):
+        real_updater(tmp_path, handler)._sums_text(asset)
+
+
+def test_sums_text_after_close_is_an_update_error_not_a_crash(tmp_path):
+    updater = real_updater(tmp_path, lambda r: httpx.Response(200, content=b"abc"))
+    updater.close()
+    with pytest.raises(UpdateError):
+        updater._sums_text(sums_asset())
+
+
+def test_stage_after_close_does_nothing(tmp_path):
+    updater = real_updater(tmp_path, lambda r: httpx.Response(200, content=b"abc"))
+    updater.close()
+    with pytest.raises(UpdateError, match="cancelled"):
+        updater.stage(info())
+    assert not (tmp_path / ".cfbtui-update").exists()

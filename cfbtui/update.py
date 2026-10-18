@@ -12,6 +12,7 @@ import httpx
 from cfbtui import __version__
 from cfbtui.version import parse
 
+SUMS_NAME = "SHA256SUMS"  # the release asset that lists every other asset's sha256
 RELEASES_URL = "https://api.github.com/repos/WPTK/cfbtui/releases/latest"
 USER_AGENT = f"cfbtui/{__version__} (+https://github.com/WPTK/cfbtui)"
 
@@ -123,7 +124,8 @@ def decide(kind: str, *, auto: bool, no_config: bool, current: str, info: Update
     """What to do about a newer release: "download" it, show the upgrade "message", or show the "link".
 
     Only a standalone binary downloads, and only for [updates] auto, a config file, this platform's asset in
-    the release and a minor or patch bump; a new major version is announced, never installed unasked.
+    the release (plus its SHA256SUMS) and a minor or patch bump; a new major version is announced, never
+    installed unasked.
     """
     if kind != "binary":
         return "message"
@@ -131,7 +133,8 @@ def decide(kind: str, *, auto: bool, no_config: bool, current: str, info: Update
         major = _parse(info.version)[0] != _parse(current)[0]
     except ValueError:
         return "link"
-    if not auto or no_config or major or asset not in {a.name for a in info.assets}:
+    names = {a.name for a in info.assets}
+    if not auto or no_config or major or asset not in names or SUMS_NAME not in names:
         return "link"
     return "download"
 

@@ -108,17 +108,29 @@ def selftest() -> int:
     return 0
 
 
-def restart(target: Path, args: list[str]) -> None:
-    """Start the installed binary again with the same arguments. Windows has no exec, so it waits for the child."""
+def restart(target: Path, args: list[str], execve=os.execve, call=subprocess.call) -> None:
+    """Start the installed binary again with the same arguments and a clean PyInstaller environment.
+
+    Windows has no exec, so it waits for the child.
+    """
+    from cfbtui.selfupdate import child_env
+
     if sys.platform == "win32":
-        raise SystemExit(subprocess.call([str(target), *args]))
-    os.execv(target, [str(target), *args])
+        raise SystemExit(call([str(target), *args], env=child_env()))
+    execve(target, [str(target), *args], child_env())
 
 
-def install_update(updater, staged) -> bool:
-    """Swap the staged binary in after the app has exited. A failure leaves the old version and says why."""
+def install_update(updater, staged, app) -> bool:
+    """Swap the staged binary in after the app has exited, or discard it. Returns whether it was installed.
+
+    A staged update is installed only if cfbtui exited normally and auto-update is still on (or the user chose
+    Restart now). A failure leaves the old version in place and says why on stderr.
+    """
     from cfbtui.selfupdate import UpdateError
 
+    if app.return_code not in (0, None) or not (app.config.updates.auto or app.restart_requested):
+        staged.discard()
+        return False
     try:
         updater.apply(staged)
     except UpdateError as exc:  # RollbackError says how to recover by hand
@@ -134,7 +146,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # Imported lazily so `--version` stays instant and never touches the terminal.
     from cfbtui.app import CfbApp
-    from cfbtui.selfupdate import Updater, cleanup_old
+    from cfbtui.selfupdate import Updater, cleanup_old, sweep
     from cfbtui.update import check_for_update
 
     update_check = partial(check_for_update, __version__) if config.updates.check else None
@@ -142,6 +154,7 @@ def main(argv: list[str] | None = None) -> int:
     if updater.kind == "binary":
         with contextlib.suppress(Exception):
             cleanup_old(updater.target)  # drop the previous version, or restore it after a crashed swap
+            sweep(updater.target.parent)  # and any download an earlier run left behind
     if update_check is None:
         updater = None  # --no-update-check: no checking and no downloading
     app = CfbApp(
@@ -153,8 +166,10 @@ def main(argv: list[str] | None = None) -> int:
         updater=updater,
     )
     app.run()
-    if app.staged is not None and updater is not None and install_update(updater, app.staged) and app.restart_requested:
-        restart(updater.target, sys.argv[1:] if argv is None else argv)
+    if app.staged is not None and updater is not None:
+        installed = install_update(updater, app.staged, app)
+        if installed and app.restart_requested:
+            restart(updater.target, sys.argv[1:] if argv is None else argv)
     return 0
 
 

@@ -8,21 +8,22 @@ process that staged a file ever deletes it.
 from __future__ import annotations
 
 import contextlib
+import glob
 import hashlib
 import os
 import re
 import subprocess
 import sys
+import threading
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import httpx
 
-from cfbtui.update import USER_AGENT, Asset, UpdateInfo, asset_name, install_kind
+from cfbtui.update import SUMS_NAME, USER_AGENT, Asset, UpdateInfo, asset_name, install_kind
 
 STAGE_DIR = ".cfbtui-update"
-SUMS_NAME = "SHA256SUMS"
 SUMS_MAX = 1 << 20
 PROBE_TIMEOUT = 60.0
 RENAME_TRIES = 5
@@ -53,6 +54,19 @@ def parse_sums(text: str) -> dict[str, str]:
         if sums.setdefault(name, digest) != digest:
             raise UpdateError(f"SHA256SUMS lists {name} twice with different hashes")
     return sums
+
+
+def child_env() -> dict[str, str]:
+    """The environment for a child cfbtui. A PyInstaller onefile parent exports _PYI_* variables that would
+    make a child binary reuse the parent's (about to be replaced) extraction folder."""
+    env = {k: v for k, v in os.environ.items() if not k.startswith("_PYI_")}
+    env["PYINSTALLER_RESET_ENVIRONMENT"] = "1"
+    return env
+
+
+def _check_cancel(cancel: threading.Event | None) -> None:
+    if cancel is not None and cancel.is_set():
+        raise UpdateError("the update was cancelled")
 
 
 def _remove(path: Path) -> None:
@@ -126,7 +140,10 @@ def _check_url(url: httpx.URL) -> None:
     raise UpdateError(f"refusing to download from {url.scheme}://{url.host}")
 
 
-def stage(asset: Asset, sums: dict[str, str], target_dir: Path, client: httpx.Client, version: str) -> Staged:
+def stage(
+    asset: Asset, sums: dict[str, str], target_dir: Path, client: httpx.Client, version: str,
+    cancel: threading.Event | None = None,
+) -> Staged:
     """Download asset beside the install, verify size and sha256, and return it as Staged."""
     if not _SAFE_NAME.match(asset.name) or Path(asset.name).name != asset.name or asset.name in (".", ".."):
         raise UpdateError(f"unsafe asset name {asset.name!r}")
@@ -162,6 +179,7 @@ def stage(asset: Asset, sums: dict[str, str], target_dir: Path, client: httpx.Cl
             if resp.status_code != 200:
                 raise UpdateError(f"download failed: HTTP {resp.status_code}")
             for chunk in resp.iter_bytes():
+                _check_cancel(cancel)
                 size += len(chunk)
                 if size > asset.size:
                     raise UpdateError("download is larger than the release says")
@@ -180,22 +198,23 @@ def stage(asset: Asset, sums: dict[str, str], target_dir: Path, client: httpx.Cl
     except BaseException as exc:
         _remove(part)
         staged.discard()
-        if isinstance(exc, (httpx.HTTPError, httpx.InvalidURL, httpx.StreamError, OSError)):
+        if isinstance(exc, (httpx.HTTPError, httpx.InvalidURL, httpx.StreamError, OSError, RuntimeError)):
             raise UpdateError(f"download failed: {exc}") from None
         raise
 
 
-def probe(staged: Staged, version: str, run=subprocess.run) -> None:
+def probe(staged: Staged, version: str, run=subprocess.run, cancel: threading.Event | None = None) -> None:
     """Raise unless the staged binary reports `cfbtui <version>` and passes its own selftest.
 
     On any failure the staged file is deleted.
     """
     try:
         for args in (["--version"], ["--selftest"]):
+            _check_cancel(cancel)
             try:
                 done = run(
                     [str(staged.path), *args], capture_output=True, text=True,
-                    encoding="utf-8", errors="replace", timeout=PROBE_TIMEOUT,
+                    encoding="utf-8", errors="replace", timeout=PROBE_TIMEOUT, env=child_env(),
                 )
             except (OSError, subprocess.SubprocessError) as exc:
                 raise UpdateError(f"the new version would not run: {exc}") from None
@@ -243,7 +262,10 @@ def apply(target: Path, staged: Staged) -> None:
         else:
             # Windows cannot overwrite or delete a running exe but can rename it out of the way.
             if old.exists():
-                old.unlink()
+                try:
+                    old.unlink()
+                except OSError:  # the previous version is still running; park it under a name of its own
+                    os.replace(old, old.with_name(f"{old.name}.{os.getpid()}-{time.monotonic_ns()}"))
             _rename(target, old)
             try:
                 _rename(staged.path, target)
@@ -271,6 +293,9 @@ def apply(target: Path, staged: Staged) -> None:
 def cleanup_old(target: Path) -> None:
     """Delete the previous version, or restore it when a crash left only `.old` behind."""
     old = target.with_name(target.name + ".old")
+    for parked in target.parent.glob(glob.escape(old.name) + ".*"):  # see apply: set aside while still running
+        with contextlib.suppress(OSError):
+            parked.unlink()
     try:
         if not old.exists():
             return
@@ -282,18 +307,38 @@ def cleanup_old(target: Path) -> None:
         pass
 
 
+def sweep(target_dir: Path) -> None:
+    """Delete a stage folder nobody is using (a download cut short by a kill). Skips one whose lock is held."""
+    directory = target_dir / STAGE_DIR
+    try:
+        if not directory.is_dir():
+            return
+        fd = _lock_fd(directory / "lock")
+    except (OSError, UpdateError):
+        return
+    for item in directory.iterdir():
+        if item.name != "lock":
+            _remove(item)
+    Staged(directory / "lock", "", fd).release()
+
+
 @dataclass
 class Updater:
     """What the app needs to update this install: stage and probe a release, apply it, and close.
 
     `kind` and `asset_name` say what is possible here; the app never calls `stage` for a pip-type install.
+    `close` (from the app's thread) cancels a stage running in another thread.
     """
 
     kind: str
     asset_name: str | None
     target: Path
     version: str
-    client: httpx.Client | None = None
+    client: httpx.Client = field(default_factory=lambda: httpx.Client(timeout=30.0))
+    _cancel: threading.Event = field(default_factory=threading.Event, repr=False)
+    _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
+    _procs: list = field(default_factory=list, repr=False)
+    _issued: Staged | None = field(default=None, repr=False)
 
     @classmethod
     def detect(cls, version: str) -> Updater:
@@ -305,15 +350,34 @@ class Updater:
         asset, sums_asset = by_name.get(self.asset_name or ""), by_name.get(SUMS_NAME)
         if asset is None or sums_asset is None:
             raise UpdateError(f"the release has no {self.asset_name if asset is None else SUMS_NAME}")
-        if self.client is None:
-            self.client = httpx.Client(timeout=30.0)
+        _check_cancel(self._cancel)
         sums = parse_sums(self._sums_text(sums_asset))
-        staged = stage(asset, sums, self.target.parent, self.client, info.version)
-        probe(staged, info.version)
+        staged = stage(asset, sums, self.target.parent, self.client, info.version, self._cancel)
+        probe(staged, info.version, self._run, self._cancel)
+        with self._lock:
+            if self._cancel.is_set():  # closed while the last step ran; nobody will install this
+                staged.discard()
+                raise UpdateError("the update was cancelled")
+            self._issued = staged
         return staged
 
+    def _run(self, cmd, **kwargs):
+        """subprocess.run, but close() can kill it."""
+        with subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+            encoding=kwargs["encoding"], errors=kwargs["errors"], env=kwargs["env"],
+        ) as proc:
+            self._procs.append(proc)
+            try:
+                out, err = proc.communicate(timeout=kwargs["timeout"])
+            except BaseException:
+                proc.kill()
+                raise
+            finally:
+                self._procs.remove(proc)
+        return subprocess.CompletedProcess(cmd, proc.returncode, out, err)
+
     def _sums_text(self, sums_asset: Asset) -> str:
-        assert self.client is not None
         try:
             _check_url(httpx.URL(sums_asset.url))
             if sums_asset.size > SUMS_MAX:
@@ -324,14 +388,20 @@ class Updater:
             if resp.status_code != 200 or len(resp.content) > SUMS_MAX:
                 raise UpdateError(f"could not read SHA256SUMS: HTTP {resp.status_code}")
             return resp.content.decode("utf-8")
-        except (httpx.HTTPError, httpx.InvalidURL, UnicodeDecodeError) as exc:
+        except (httpx.HTTPError, httpx.InvalidURL, UnicodeDecodeError, RuntimeError) as exc:
             raise UpdateError(f"could not read SHA256SUMS: {exc}") from None
 
     def apply(self, staged: Staged) -> None:
         apply(self.target, staged)
 
-    def close(self) -> None:
-        """Abort a download in progress (the closed client makes its thread raise) and free the client."""
-        if self.client is not None:
+    def close(self, keep: Staged | None = None) -> None:
+        """Cancel a stage in progress and free the client; discard a result nobody took (anything but `keep`)."""
+        with self._lock:
+            self._cancel.set()
+            if self._issued is not None and self._issued is not keep:
+                self._issued.discard()
+        for proc in list(self._procs):
             with contextlib.suppress(Exception):
-                self.client.close()
+                proc.kill()
+        with contextlib.suppress(Exception):
+            self.client.close()

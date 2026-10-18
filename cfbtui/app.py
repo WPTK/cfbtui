@@ -190,7 +190,7 @@ class CfbApp(App[None]):
     async def on_unmount(self) -> None:
         self.scheduler.stop()
         if self.updater is not None:
-            self.updater.close()  # a download still running stops here
+            self.updater.close(keep=self.staged)  # a download still running stops here
         if self._owns_client and isinstance(self.client, EspnClient):
             await self.client.aclose()
 
