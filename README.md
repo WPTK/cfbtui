@@ -80,7 +80,7 @@ the `.whl` and install it with [pipx](https://pipx.pypa.io/) or [uv](https://doc
 `cfbtui` command on any system:
 
 ```
-pipx install ./cfbtui-1.3.0-py3-none-any.whl
+pipx install ./cfbtui-1.5.0-py3-none-any.whl
 ```
 
 **Checking a download.** Every release carries a `SHA256SUMS` file. Save it next to the file you downloaded and run
@@ -145,6 +145,7 @@ cfbtui --week 9              start on week 9 (also: --week bowls, --week playoff
 cfbtui --group fcs           start on the FCS board
 cfbtui --glyphs unicode      icon style: ascii, unicode, emoji, nerd
 cfbtui --layout list         one line per game
+cfbtui --config PATH         use this settings file instead of the default
 cfbtui --no-update-check     don't look for a newer version
 cfbtui --no-config           ignore and never touch the settings file
 cfbtui --version
