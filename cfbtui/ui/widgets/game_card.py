@@ -131,7 +131,7 @@ def build_card(
         else:
             title_parts.append(f"{glyphs.upset_watch} UPSET WATCH")
         classes.append("upset")
-    if game.is_live and game.situation is not None and game.situation.is_red_zone:
+    if game.in_red_zone:
         title_parts.append(f"{glyphs.red_zone} RED ZONE")
         classes.append("redzone")
     classes.append("live" if game.is_live else "pregame" if game.is_pregame else "final")
@@ -176,7 +176,7 @@ def compact_line(
     if verdict is not None:
         label = f"  {glyphs.upset} UPSET" if verdict.confirmed else f"  {glyphs.upset_watch} UPSET WATCH"
         line.append(label, style="bold yellow")
-    if game.is_live and game.situation is not None and game.situation.is_red_zone:
+    if game.in_red_zone:
         line.append(f"  {glyphs.red_zone} RED ZONE", style="bold red")
     return line
 

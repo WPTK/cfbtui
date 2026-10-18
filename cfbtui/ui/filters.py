@@ -1,4 +1,5 @@
-"""Which games the board shows: a filter (all, Top 25, live, favorites) and an optional conference.
+"""Which games the board shows: a filter (all, Top 25, live, favorites, and the
+game-day ones: upset watch, red zone, overtime, interesting) and an optional conference.
 
 Pure functions of a game, so the app filters its store's games and hands the result to the grid.
 Conference ids are ESPN's. A conference we have no name for is listed as "Conference <id>"
@@ -9,9 +10,19 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from cfbtui.espn.models import Game
+from cfbtui.state.upset import UpsetRule
 
-FILTERS = ("all", "top25", "live", "favorites")
-FILTER_LABELS = {"all": "All games", "top25": "Top 25", "live": "Live", "favorites": "Favorites"}
+FILTERS = ("all", "top25", "live", "favorites", "upset", "redzone", "overtime", "interesting")
+FILTER_LABELS = {
+    "all": "All games",
+    "top25": "Top 25",
+    "live": "Live",
+    "favorites": "Favorites",
+    "upset": "Upset Watch",
+    "redzone": "Red Zone",
+    "overtime": "Overtime",
+    "interesting": "Interesting",
+}
 
 CONFERENCES = {
     "1": "ACC",
@@ -64,7 +75,21 @@ def conferences_on(games: Iterable[Game]) -> list[tuple[str, str]]:
     return sorted(((i, conference_name(i)) for i in seen), key=lambda p: (p[0] not in CONFERENCES, p[1]))
 
 
-def keep(game: Game, mode: str, favorites: frozenset[str], conference_id: str | None) -> bool:
+def is_upset_watch(game: Game, rule: UpsetRule) -> bool:
+    verdict = rule.evaluate(game)
+    return verdict is not None and verdict.watch
+
+
+def is_overtime(game: Game) -> bool:
+    """In overtime, live or finished (a final stays until it drops off the board)."""
+    return (game.is_live or game.is_final) and game.status.is_overtime
+
+
+def is_interesting(game: Game, rule: UpsetRule) -> bool:
+    return is_upset_watch(game, rule) or game.in_red_zone or is_overtime(game)
+
+
+def keep(game: Game, mode: str, favorites: frozenset[str], conference_id: str | None, rule: UpsetRule) -> bool:
     if conference_id is not None and not in_conference(game, conference_id):
         return False
     match mode:
@@ -74,6 +99,14 @@ def keep(game: Game, mode: str, favorites: frozenset[str], conference_id: str | 
             return game.is_live
         case "favorites":
             return game.away.id in favorites or game.home.id in favorites
+        case "upset":
+            return is_upset_watch(game, rule)
+        case "redzone":
+            return game.in_red_zone
+        case "overtime":
+            return is_overtime(game)
+        case "interesting":
+            return is_interesting(game, rule)
     return True
 
 

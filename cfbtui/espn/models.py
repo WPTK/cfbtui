@@ -165,6 +165,11 @@ class Game:
         return self.status.state == GameState.POST and self.status.completed
 
     @property
+    def in_red_zone(self) -> bool:
+        """Live with the offense inside the 20: the one definition the card, alerts and filter share."""
+        return self.is_live and self.situation is not None and self.situation.is_red_zone
+
+    @property
     def is_tied(self) -> bool:
         return self.home.score == self.away.score
 
