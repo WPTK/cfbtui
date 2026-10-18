@@ -149,7 +149,6 @@ class CfbApp(App[None]):
         self.last_result: PollResult | None = None
         self.favorites: frozenset[str] = favorite_ids(self.config)
         self._quiet_first_poll = False
-        self.alerts_enabled = True  # gates card pulses; to be wired to config.alerts.enabled
         self._pulses = PulseGate()
         self.detail_refresh = detail_refresh
         self.copier: Callable[[str], None] = copy_text
@@ -208,7 +207,7 @@ class CfbApp(App[None]):
                 for event in result.events:
                     if isinstance(event, Scored):
                         grid.flash(event.game_id, event.team.id)
-                    elif self.alerts_enabled and (kind := pulse_kind(event)) and self._pulses.allow(
+                    elif self.config.alerts.enabled and (kind := pulse_kind(event)) and self._pulses.allow(
                         event.game_id, kind
                     ):
                         grid.pulse(event.game_id, kind)
