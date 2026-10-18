@@ -127,6 +127,7 @@ it again for the next part.
 | `l` | Filter: all games, Top 25, live only, favorites |
 | `o` | Pick a conference |
 | `v` | Switch between cards and a one-line-per-game list |
+| `S` | Settings: alerts, auto-update, icon style and default layout, saved as you change them |
 | `1` `2` | Star the away / home team of the selected game |
 | `c` | Copy the selected game for Discord |
 | `C` | Copy every game on screen for Discord |
@@ -176,8 +177,12 @@ group = "fbs"      # fbs or fcs
 team_ids = ["251"]
 abbreviations = ["TEX"]   # you can also list teams by abbreviation
 
+[alerts]
+enabled = true     # pulse a card on a score or a lead change
+
 [updates]
 check = true       # set to false to never check for a newer version
+auto = true        # install new versions on their own
 ```
 
 ## Troubleshooting

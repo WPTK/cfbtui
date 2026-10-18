@@ -421,7 +421,7 @@ def test_saved_file_is_valid_toml_with_documented_sections(tmp_path):
     p = tmp_path / "c.toml"
     save_config(Config(), p)
     data = tomllib.loads(p.read_text(encoding="utf-8"))
-    assert set(data) == {"poll", "view", "favorites", "updates"}
+    assert set(data) == {"poll", "view", "favorites", "updates", "alerts"}
     assert set(data["poll"]) == {"live", "idle", "backoff_max", "away_after"}
 
 

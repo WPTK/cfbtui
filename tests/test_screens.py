@@ -10,12 +10,14 @@ from textual.widgets import Static
 
 from cfbtui.app import CfbApp
 from cfbtui.clipboard import ClipboardError
+from cfbtui.config import Config, apply_overrides, load_config
 from cfbtui.espn.client import EspnNetworkError
 from cfbtui.espn.models import GameState, Status
 from cfbtui.espn.parse import parse_summary
 from cfbtui.ui.glyphs import ASCII
 from cfbtui.ui.screens.detail import DetailScreen, build_detail, play_line, win_bar
 from cfbtui.ui.screens.rankings import RankingsScreen, pick_polls, poll_title
+from cfbtui.ui.screens.settings import SettingsScreen
 from cfbtui.ui.widgets.game_card import GameCard
 from cfbtui.ui.widgets.status_bar import StatusBar
 from tests.fakes import FIXTURES, FakeClient, load_board, load_game, load_rankings
@@ -375,3 +377,46 @@ async def test_q_on_a_screen_still_quits():
         await pilot.press("q")
         await pilot.pause(0.2)
     assert not app.is_running
+
+
+# --- settings ----------------------------------------------------------------------
+
+
+async def test_settings_screen_changes_apply_and_save_without_the_flags(tmp_path):
+    path = tmp_path / "config.toml"
+    file_config = Config()
+    flagged = apply_overrides(file_config, week=5, layout="list")  # flags for this run only
+    app = CfbApp(client=FakeClient(load_board("pairs/final_after.json")), config=flagged, file_config=file_config,
+                 config_path=path, intervals=FAST, glyph_set="ascii")
+    async with app.run_test(size=SIZE) as pilot:
+        await pilot.press("S")
+        assert isinstance(app.screen, SettingsScreen)
+        await pilot.press("r")  # grid actions are off underneath
+        assert isinstance(app.screen, SettingsScreen)
+        await pilot.press("enter")  # alerts -> off
+        await pilot.press("down", "enter")  # auto-update -> off
+        await pilot.press("down", "enter")  # glyph set -> the one after the current
+        await pilot.press("down", "enter")  # default layout: the flag's list -> grid
+        await pilot.press("escape")
+        assert not isinstance(app.screen, SettingsScreen)
+    saved = load_config(path).config
+    assert saved.alerts.enabled is False and saved.updates.auto is False
+    assert saved.view.glyph_set == app.glyphs.name
+    assert saved.view.layout == "grid" and app.layout == "grid"
+    assert saved.view.week is None  # the --week flag was not written back
+    assert app.config.alerts.enabled is False
+
+
+async def test_settings_screen_says_when_it_cannot_save():
+    app = CfbApp(client=FakeClient(load_board("pairs/final_after.json")), config_path=None, intervals=FAST, glyph_set="ascii")
+    async with app.run_test(size=SIZE) as pilot:
+        await pilot.press("S", "enter")
+        assert app.config.alerts.enabled is False
+        assert any("not saved" in n.message for n in app._notifications)
+
+
+async def test_settings_is_listed_on_the_help_screen():
+    app = CfbApp(client=FakeClient(load_board("pairs/final_after.json")), intervals=FAST, glyph_set="ascii")
+    async with app.run_test(size=SIZE) as pilot:
+        await pilot.press("question_mark")
+        assert ("S", "Settings") in app.screen.rows
