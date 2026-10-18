@@ -6,16 +6,16 @@ callers pass the ``unicode`` set (or ``ascii``), never ``nerd``.
 ``format_game`` is one Markdown line with the winner or leader in bold.
 ``format_board`` is a code block (so the columns line up; Discord does not
 render Markdown inside one) and is split into several messages, each at most
-:data:`DISCORD_LIMIT` characters, breaking only between games.
+:data:`DISCORD_LIMIT` characters, breaking only between games. ``format_poll`` is one ranking poll, the same way.
 """
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
 from datetime import UTC, datetime
 
-from cfbtui.espn.models import Competitor, Game
+from cfbtui.espn.models import Competitor, Game, Ranking
 from cfbtui.ui.glyphs import UNICODE, Glyphs
-from cfbtui.ui.labels import status_text
+from cfbtui.ui.labels import poll_title, status_text, trend_text
 
 DISCORD_LIMIT = 2000
 FENCE = "```"
@@ -78,9 +78,14 @@ def format_board(
         return []
     now = now or datetime.now(UTC)
     lines = _board_lines(games, glyphs, now)
-    room = limit - 2 * len(FENCE) - 2  # the fences and their two newlines
     if title:
         lines.insert(0, title.replace(FENCE, "'''"))
+    return _code_messages(lines, glyphs, limit)
+
+
+def _code_messages(lines: list[str], glyphs: Glyphs, limit: int) -> list[str]:
+    """Pack lines into code blocks of at most ``limit`` characters, breaking only between lines."""
+    room = limit - 2 * len(FENCE) - 2  # the fences and their two newlines
     cut = max(1, room - len(glyphs.loading))
     lines = [line if len(line) <= room else line[:cut] + glyphs.loading for line in lines]
     messages: list[str] = []
@@ -95,3 +100,29 @@ def format_board(
         size += cost
     messages.append("\n".join(current))
     return [f"{FENCE}\n{body}\n{FENCE}" for body in messages]
+
+
+def format_poll(poll: Ranking, glyphs: Glyphs = UNICODE, *, limit: int = DISCORD_LIMIT) -> list[str]:
+    """One poll as code-block messages of at most ``limit`` characters; the heading leads the first.
+
+    Columns: rank, team, record, points, change. Empty when the poll has no ranked teams.
+    """
+    if not poll.ranks:
+        return []
+    rows = [
+        (
+            f"{glyphs.rank}{e.rank}" if e.rank is not None else "",
+            e.name + (f" ({e.first_place_votes})" if e.first_place_votes else ""),
+            e.record or "",
+            f"{e.points:.0f}" if e.points is not None else "",
+            trend_text(e.previous, e.trend),
+        )
+        for e in poll.ranks
+    ]
+    wide = [max(len(row[i]) for row in rows) for i in range(4)]
+    lines = [
+        f"{r:>{wide[0]}}  {t:<{wide[1]}}  {rec:<{wide[2]}}  {pts:>{wide[3]}}  {chg}".rstrip().replace(FENCE, "'''")
+        for r, t, rec, pts, chg in rows
+    ]
+    lines.insert(0, poll_title(poll).replace(FENCE, "'''"))
+    return _code_messages(lines, glyphs, limit)

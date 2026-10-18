@@ -12,9 +12,12 @@ from textual.containers import Horizontal, VerticalScroll
 from textual.screen import Screen
 from textual.widgets import Footer, Static
 
+from cfbtui import share
+from cfbtui.clipboard import ClipboardError, copy_text
 from cfbtui.espn.client import GROUP_FBS, GROUP_FCS, EspnError
 from cfbtui.espn.models import Ranking
 from cfbtui.ui.glyphs import Glyphs
+from cfbtui.ui.labels import poll_title, trend_text
 from cfbtui.ui.theme import team_style
 
 
@@ -50,18 +53,6 @@ def pick_polls(
     return [p for p in (ap, coaches) if p is not None]
 
 
-def poll_title(poll: Ranking) -> str:
-    week = f"  Week {poll.week}" if poll.week else ""
-    when = f"  {poll.date:%b} {poll.date.day}" if poll.date else ""
-    return f"{poll.name}{week}{when}"
-
-
-def trend_text(previous: int | None, trend: str | None) -> str:
-    if trend and trend not in {"-", "0"}:
-        return trend
-    return "new" if previous is None else ""
-
-
 def poll_table(poll: Ranking) -> Table:
     table = Table(box=None, padding=(0, 1), show_header=True, header_style="bold", expand=False)
     table.add_column("#", justify="right")
@@ -86,6 +77,7 @@ def poll_table(poll: Ranking) -> Table:
 class RankingsScreen(Screen[None]):
     BINDINGS = [
         Binding("escape", "close", "Back"),
+        Binding("c", "copy_polls", "Copy"),
     ]
 
     DEFAULT_CSS = """
@@ -110,6 +102,9 @@ class RankingsScreen(Screen[None]):
         self.group = group
         self.client = client
         self.glyphs = glyphs
+        self.copier: Callable[[str], None] = copy_text
+        self._copy_parts: list[tuple[str, str]] = []
+        self._copy_next = 0
         self.polls: list[Ranking] = []
         self.error: str | None = None
         self.loaded = False
@@ -151,6 +146,31 @@ class RankingsScreen(Screen[None]):
                 body = Static(poll_table(poll), classes="poll")
                 body.border_title = poll_title(poll)
                 await holder.mount(body)
+
+    def action_copy_polls(self) -> None:
+        parts = [(poll.name, text) for poll in self.polls for text in share.format_poll(poll, share.UNICODE)]
+        if not parts:
+            self.notify("No rankings to copy yet.", timeout=3)
+            return
+        # One clipboard holds one message: each poll (and each 2000 character piece of a long
+        # one) is its own part, and pressing c again moves to the next.
+        if parts != self._copy_parts:
+            self._copy_next = 0
+        self._copy_parts = parts
+        index = self._copy_next
+        name, text = parts[index]
+        label = name if len(parts) == 1 else f"{name}, part {index + 1} of {len(parts)}"
+        try:
+            self.copier(text)
+        except ClipboardError as exc:
+            self.notify(f"Could not copy: {exc}. Is a clipboard tool installed?", severity="error", timeout=6)
+            return
+        self.notify(f"Copied {label} for Discord", timeout=2)
+        self._copy_next = (index + 1) % len(parts)
+        if len(parts) > 1:
+            last = index == len(parts) - 1
+            more = "That was the last part; c starts over." if last else "Press c again for the next part."
+            self.notify(more, timeout=3)
 
     def action_close(self) -> None:
         self.dismiss()
