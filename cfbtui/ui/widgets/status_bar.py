@@ -2,7 +2,8 @@
 
 ``format_status`` is a pure function of a :class:`StatusView` and the glyph
 set, so tests do not need a running app. The app builds a new view once a
-second and calls :meth:`StatusBar.show`.
+second and calls :meth:`StatusBar.show`. Given a width, the line drops its
+least important segments (clock, glyph set, version first) until it fits.
 """
 from __future__ import annotations
 
@@ -32,7 +33,21 @@ class StatusView:
     view_note: str = ""  # the active filter, conference and layout, if not the defaults
 
 
-def format_status(view: StatusView, glyphs: Glyphs, now: datetime | None = None) -> str:
+# Drop order when the line is too wide: the highest number goes first, health (0) never.
+P_HEALTH, P_FAILING, P_WEEK, P_LIVE, P_NOTE, P_NEXT, P_VERSION, P_GLYPHS, P_CLOCK = range(9)
+
+
+def fit_segments(parts: list[tuple[int, str]], sep: str, width: int | None) -> str:
+    """Join ``(priority, text)`` segments in order, dropping the least important until the line fits ``width``."""
+    parts = list(parts)
+    while width is not None and len(parts) > 1 and len(sep.join(text for _, text in parts)) > width:
+        # the highest priority number goes; of equals, the one furthest right
+        drop = max(range(len(parts)), key=lambda i: (parts[i][0], i))
+        del parts[drop]
+    return sep.join(text for _, text in parts)
+
+
+def format_status(view: StatusView, glyphs: Glyphs, now: datetime | None = None, width: int | None = None) -> str:
     f = view.freshness
     match f.state:
         case FreshnessState.LOADING:
@@ -44,29 +59,29 @@ def format_status(view: StatusView, glyphs: Glyphs, now: datetime | None = None)
         case FreshnessState.ERROR:
             age = "no data yet" if f.age is None else f"showing data {format_age(f.age)} old"
             health = f"{glyphs.error} ERROR {age}"
-    parts = [health]
+    parts = [(P_HEALTH, health)]
     if view.polling:
-        parts.append(f"{glyphs.refresh} polling")
+        parts.append((P_NEXT, f"{glyphs.refresh} polling"))
     elif view.next_in is not None:
-        parts.append(f"next {format_age(view.next_in)}{' (away)' if view.away else ''}")
+        parts.append((P_NEXT, f"next {format_age(view.next_in)}{' (away)' if view.away else ''}"))
     if view.week is not None:
-        parts.append(f"{week_label(view.week)}{f' {view.group}' if view.group else ''}")
+        parts.append((P_WEEK, f"{week_label(view.week)}{f' {view.group}' if view.group else ''}"))
     elif view.group:
-        parts.append(view.group)
+        parts.append((P_WEEK, view.group))
     if view.view_note:
-        parts.append(view.view_note)
+        parts.append((P_NOTE, view.view_note))
     if view.total:
-        parts.append(f"{view.live} live of {view.total}")
+        parts.append((P_LIVE, f"{view.live} live of {view.total}"))
     if f.state is FreshnessState.ERROR and f.failures > 1:
-        parts.append(f"{f.failures} failed polls")
+        parts.append((P_FAILING, f"{f.failures} failed polls"))
     if view.errors:
-        parts.append(f"{glyphs.error} {view.errors} game{'s' if view.errors != 1 else ''} failing to diff")
-    parts.append(f"v{__version__}")
+        parts.append((P_FAILING, f"{glyphs.error} {view.errors} game{'s' if view.errors != 1 else ''} failing to diff"))
+    parts.append((P_VERSION, f"v{__version__}"))
     if view.glyph_set:
-        parts.append(f"glyphs: {view.glyph_set}")
+        parts.append((P_GLYPHS, f"glyphs: {view.glyph_set}"))
     if now is not None:
-        parts.append(f"{now:%a %H:%M:%S}")
-    return glyphs.sep.join(parts)
+        parts.append((P_CLOCK, f"{now:%a %H:%M:%S}"))
+    return fit_segments(parts, glyphs.sep, width)
 
 
 class StatusBar(Static):
@@ -87,6 +102,7 @@ class StatusBar(Static):
         self.glyphs = glyphs or get()
         self.view = StatusView()
         self.text = ""
+        self._now: datetime | None = None
 
     def on_mount(self) -> None:
         self.show(self.view)
@@ -95,7 +111,15 @@ class StatusBar(Static):
         if glyphs is not None:
             self.glyphs = glyphs
         self.view = view
-        self.text = format_status(view, self.glyphs, now or datetime.now().astimezone())
+        self._now = now or datetime.now().astimezone()
+        self._refit()
         for state in FreshnessState:
             self.set_class(view.freshness.state is state, state.value)
+
+    def on_resize(self) -> None:
+        self._refit()
+
+    def _refit(self) -> None:
+        width = self.size.width - 2 if self.size.width else None  # minus the side padding; unsized yet means no limit
+        self.text = format_status(self.view, self.glyphs, self._now, width)
         self.update(self.text)

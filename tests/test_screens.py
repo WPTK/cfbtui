@@ -233,6 +233,37 @@ async def test_r_shows_both_polls_and_escape_returns():
         await wait_for(pilot, lambda: not isinstance(app.screen, RankingsScreen))
 
 
+async def test_c_on_rankings_copies_one_poll_per_press_for_discord():
+    client = ScreenClient(load_board("pairs/final_after.json"), rankings=load_rankings())
+    app = CfbApp(client=client, intervals=FAST, glyph_set="nerd")
+    async with app.run_test(size=SIZE) as pilot:
+        await wait_for(pilot, lambda: len(app.query(GameCard)) > 0)
+        await pilot.press("R")
+        await wait_for(pilot, lambda: isinstance(app.screen, RankingsScreen) and app.screen.loaded)
+        copied: list[str] = []
+        app.screen.copier = copied.append
+        await pilot.press("c")
+        assert len(copied) == 1 and "AP Top 25" in copied[0] and copied[0].startswith("```")
+        assert any("Copied AP Top 25, part 1 of 2" in m for m in messages(app))
+        await pilot.press("c")
+        assert len(copied) == 2 and "Coaches" in copied[1] and len(copied[1]) <= 2000
+        assert not any(0xE000 <= ord(ch) <= 0xF8FF for ch in "".join(copied)), "no Nerd Font glyphs reach Discord"
+        await pilot.press("c")
+        assert copied[2] == copied[0], "after the last part it starts over"
+
+
+async def test_c_on_rankings_with_no_polls_says_so():
+    app = CfbApp(client=ScreenClient(load_board("pairs/final_after.json"), rankings=()), intervals=FAST)
+    async with app.run_test(size=SIZE) as pilot:
+        await wait_for(pilot, lambda: len(app.query(GameCard)) > 0)
+        await pilot.press("R")
+        await wait_for(pilot, lambda: isinstance(app.screen, RankingsScreen) and app.screen.loaded)
+        copied: list[str] = []
+        app.screen.copier = copied.append
+        await pilot.press("c")
+        assert copied == [] and any("No rankings" in m for m in messages(app))
+
+
 async def test_rankings_failure_says_so():
     class Broken(ScreenClient):
         async def rankings(self):

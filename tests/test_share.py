@@ -4,7 +4,8 @@ from __future__ import annotations
 from dataclasses import replace
 from datetime import UTC, datetime
 
-from cfbtui.share import DISCORD_LIMIT, FENCE, escape, format_board, format_game
+from cfbtui.espn.models import RankEntry, Ranking
+from cfbtui.share import DISCORD_LIMIT, FENCE, escape, format_board, format_game, format_poll
 from cfbtui.ui.glyphs import ASCII, UNICODE
 from tests.fakes import load_board, load_game
 
@@ -103,3 +104,50 @@ def test_a_kickoff_more_than_five_days_out_keeps_its_date_without_being_told_the
     game = load_board("scoreboard_week7_pregame.json").games[0]
     far = replace(game, date=datetime.now(UTC).replace(microsecond=0) + __import__("datetime").timedelta(days=14))
     assert any(month in format_game(far, UNICODE) for month in ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))
+
+
+# --- polls ---------------------------------------------------------------------------
+
+
+def _poll(count: int = 3) -> Ranking:
+    entries = tuple(
+        RankEntry(
+            team_id=str(i),
+            abbreviation=f"T{i}",
+            name="Texas" if i == 1 else f"Team {i}",
+            color="000000",
+            rank=i + 1,
+            previous=None if i == 2 else i + 1,
+            trend="+2" if i == 1 else "-",
+            points=1500.0 - i,
+            first_place_votes=5 if i == 0 else 0,
+            record="6-0",
+        )
+        for i in range(count)
+    )
+    return Ranking(id="1", name="AP Top 25", short_name="AP", type="ap", week=7, ranks=entries)
+
+
+def test_poll_is_a_code_block_with_aligned_columns_under_a_heading():
+    (message,) = format_poll(_poll(), UNICODE)
+    assert message.startswith(f"{FENCE}\nAP Top 25  Week 7\n") and message.endswith(f"\n{FENCE}")
+    rows = message.splitlines()[2:-1]
+    assert rows[0].split() == ["#1", "Team", "0", "(5)", "6-0", "1500"]
+    assert rows[1].split() == ["#2", "Texas", "6-0", "1499", "+2"]
+    assert rows[2].split() == ["#3", "Team", "2", "6-0", "1498", "new"]
+    assert len({row.index("6-0") for row in rows}) == 1, "records line up"
+    assert not any(0xE000 <= ord(ch) <= 0xF8FF for ch in message)
+
+
+def test_poll_splits_between_rows_and_every_message_fits():
+    messages = format_poll(_poll(25), UNICODE, limit=300)
+    assert len(messages) > 1
+    assert all(len(m) <= 300 and m.startswith(FENCE) and m.endswith(FENCE) for m in messages)
+    assert "AP Top 25" in messages[0] and "AP Top 25" not in messages[1]
+    assert sum(m.count("6-0") for m in messages) == 25
+
+
+def test_a_full_poll_fits_one_message_and_an_empty_poll_has_none():
+    (message,) = format_poll(_poll(25), UNICODE)
+    assert len(message) <= DISCORD_LIMIT
+    assert format_poll(_poll(0), UNICODE) == []
