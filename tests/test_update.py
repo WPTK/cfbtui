@@ -186,3 +186,30 @@ async def test_missing_assets_still_updates(mock, over):
     mock.get(RELEASES_URL).mock(return_value=httpx.Response(200, json=release(**over)))
     info = await check_for_update("1.0.0")
     assert info == UpdateInfo("1.2.0", URL) and info.assets == ()
+
+
+@pytest.mark.parametrize(
+    ("override", "honoured"),
+    [
+        ("http://127.0.0.1:8123/releases/latest", True),
+        ("https://127.0.0.1/releases/latest", True),
+        ("http://localhost:8123/releases/latest", False),
+        ("http://127.0.0.1.evil.test/releases/latest", False),
+        ("http://evil.test/127.0.0.1", False),
+        ("ftp://127.0.0.1/x", False),
+        ("not a url", False),
+        ("", False),
+    ],
+)
+def test_release_url_override_only_for_loopback(monkeypatch, override, honoured):
+    from cfbtui.update import RELEASES_URL_ENV, releases_url
+
+    monkeypatch.setenv(RELEASES_URL_ENV, override)
+    assert releases_url() == (override if honoured else RELEASES_URL)
+
+
+def test_release_url_default_without_override(monkeypatch):
+    from cfbtui.update import RELEASES_URL_ENV, releases_url
+
+    monkeypatch.delenv(RELEASES_URL_ENV, raising=False)
+    assert releases_url() == RELEASES_URL

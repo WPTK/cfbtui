@@ -432,3 +432,67 @@ def test_stage_after_close_does_nothing(tmp_path):
     with pytest.raises(UpdateError, match="cancelled"):
         updater.stage(info())
     assert not (tmp_path / ".cfbtui-update").exists()
+
+
+class StageUpdater(MainUpdater):
+    def __init__(self, fail: Exception | None = None) -> None:
+        super().__init__("binary")
+        self.stage_error = fail
+
+    def stage(self, release):
+        if self.stage_error is not None:
+            raise self.stage_error
+        return "S"
+
+
+@pytest.fixture
+def headless(main_env, monkeypatch):
+    found = {"info": info()}
+
+    async def check(current):
+        return found["info"]
+
+    monkeypatch.setattr("cfbtui.update.check_for_update", check)
+    monkeypatch.setattr("cfbtui.update.asset_name", lambda *a: NAME)
+    main_env.found = found
+    return main_env
+
+
+def test_update_test_installs_without_the_app(headless, capsys):
+    updater = StageUpdater()
+    headless.setup(updater)
+    assert entry.main(["--no-config", "--update-test", "apply"]) == 0
+    assert updater.applied == ["S"] and headless.restart == []
+    assert f"cfbtui {PATCH} installed" in capsys.readouterr().out
+
+
+def test_update_test_restart_starts_the_new_binary_after_a_good_apply(headless):
+    headless.setup(StageUpdater())
+    assert entry.main(["--no-config", "--update-test", "restart"]) == 0
+    assert headless.restart == [(Path("bin/cfbtui"), ["--no-config", "--update-test", "restart"])]
+
+
+def test_update_test_failures_exit_nonzero_and_install_nothing(headless, capsys):
+    updater = StageUpdater(fail=UpdateError("download does not match SHA256SUMS"))
+    headless.setup(updater)
+    assert entry.main(["--no-config", "--update-test", "restart"]) == 1
+    assert updater.applied == [] and headless.restart == []
+    assert "does not match SHA256SUMS" in capsys.readouterr().err
+
+
+def test_update_test_with_nothing_newer_says_so(headless, capsys):
+    headless.found["info"] = None
+    headless.setup(StageUpdater())
+    assert entry.main(["--no-config", "--update-test", "apply"]) == 0
+    assert f"cfbtui {__version__}: up to date" in capsys.readouterr().out
+
+
+def test_update_test_refuses_a_release_that_would_not_download(headless):
+    headless.found["info"] = info(MAJOR)
+    headless.setup(StageUpdater())
+    assert entry.main(["--no-config", "--update-test", "apply"]) == 2
+
+
+def test_update_test_needs_a_binary(main_env):
+    main_env.setup(MainUpdater("pip"))
+    assert entry.main(["--no-config", "--update-test", "apply"]) == 2

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import os
 import platform as _platform
 import sys
 from dataclasses import dataclass
@@ -14,6 +15,7 @@ from cfbtui.version import parse
 
 SUMS_NAME = "SHA256SUMS"  # the release asset that lists every other asset's sha256
 RELEASES_URL = "https://api.github.com/repos/WPTK/cfbtui/releases/latest"
+RELEASES_URL_ENV = "CFBTUI_RELEASES_URL"  # test-only override, honoured for 127.0.0.1 only (see releases_url)
 USER_AGENT = f"cfbtui/{__version__} (+https://github.com/WPTK/cfbtui)"
 
 
@@ -29,6 +31,20 @@ class UpdateInfo:
     version: str
     url: str
     assets: tuple[Asset, ...] = ()
+
+
+def releases_url() -> str:
+    """The release feed to ask. CFBTUI_RELEASES_URL replaces it only when it points at 127.0.0.1, so the
+    end-to-end test can serve a fake release; any other value is ignored and GitHub is asked as usual."""
+    override = os.environ.get(RELEASES_URL_ENV)
+    if override:
+        try:
+            url = httpx.URL(override)
+        except httpx.InvalidURL:
+            return RELEASES_URL
+        if url.scheme in ("http", "https") and url.host == "127.0.0.1":
+            return override
+    return RELEASES_URL
 
 
 def _assets(data: dict) -> tuple[Asset, ...]:
@@ -99,7 +115,7 @@ async def check_for_update(
             http = httpx.AsyncClient(follow_redirects=True)
         async with asyncio.timeout(timeout):
             resp = await http.get(
-                RELEASES_URL,
+                releases_url(),
                 headers={"Accept": "application/vnd.github+json", "User-Agent": USER_AGENT},
                 timeout=timeout,
             )

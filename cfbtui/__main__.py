@@ -54,6 +54,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--config", type=Path, metavar="PATH", help=f"config file (default: {default_path()})")
     parser.add_argument("--no-config", action="store_true", help="ignore the config file and do not save to it")
     parser.add_argument("--selftest", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--update-test", choices=("apply", "restart"), help=argparse.SUPPRESS)
     parser.add_argument("--no-update-check", action="store_true", help="do not look for a newer release")
     return parser
 
@@ -139,6 +140,37 @@ def install_update(updater, staged, app) -> bool:
     return True
 
 
+def update_test(mode: str, updater, argv: list[str]) -> int:
+    """Run the update path with no TUI (the end-to-end workflow cannot drive one): check, stage and probe
+    a newer release, install it, and for "restart" start the new binary. Exit 1 when the update fails."""
+    import asyncio
+    from types import SimpleNamespace
+
+    from cfbtui.selfupdate import UpdateError
+    from cfbtui.update import asset_name, check_for_update, decide
+
+    info = asyncio.run(check_for_update(__version__))
+    if info is None:
+        print(f"cfbtui {__version__}: up to date")
+        return 0
+    if decide(updater.kind, auto=True, no_config=False, current=__version__, info=info,
+              asset=asset_name()) != "download":
+        print("cfbtui: this release would not be downloaded", file=sys.stderr)
+        return 2
+    try:
+        staged = updater.stage(info)
+    except UpdateError as exc:
+        print(f"cfbtui: could not download {info.version}: {exc}", file=sys.stderr)
+        return 1
+    app = SimpleNamespace(return_code=0, config=Config(), restart_requested=mode == "restart")
+    if not install_update(updater, staged, app):
+        return 1
+    print(f"cfbtui {info.version} installed")
+    if mode == "restart":
+        restart(updater.target, argv)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     if argv is None and "--selftest" in sys.argv[1:]:
         return selftest()
@@ -155,6 +187,12 @@ def main(argv: list[str] | None = None) -> int:
         with contextlib.suppress(Exception):
             cleanup_old(updater.target)  # drop the previous version, or restore it after a crashed swap
             sweep(updater.target.parent)  # and any download an earlier run left behind
+    mode = build_parser().parse_args(argv).update_test
+    if mode is not None:
+        if updater.kind != "binary":
+            print("cfbtui: --update-test needs a standalone binary", file=sys.stderr)
+            return 2
+        return update_test(mode, updater, sys.argv[1:] if argv is None else argv)
     if update_check is None:
         updater = None  # --no-update-check: no checking and no downloading
     app = CfbApp(
