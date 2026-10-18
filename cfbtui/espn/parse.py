@@ -11,7 +11,10 @@ from typing import Any
 from cfbtui.espn.models import (
     UNRANKED_SENTINELS,
     Competitor,
+    Drive,
     Game,
+    GameInfo,
+    GameLeader,
     GameState,
     HomeAway,
     LastPlay,
@@ -24,6 +27,8 @@ from cfbtui.espn.models import (
     Status,
     Summary,
     Team,
+    TeamStat,
+    TeamStats,
 )
 from cfbtui.espn.periods import from_espn
 from cfbtui.ui.theme import hex_color
@@ -396,14 +401,135 @@ def _parse_scoring_play(raw: dict) -> ScoringPlay:
     )
 
 
+# ESPN's boxscore also carries pregame season averages and more than the detail
+# screen needs; keep only the in-game comparison lines, in ESPN's order.
+_TEAM_STAT_NAMES = frozenset(
+    {
+        "firstDowns",
+        "thirdDownEff",
+        "fourthDownEff",
+        "totalYards",
+        "netPassingYards",
+        "rushingYards",
+        "yardsPerPass",
+        "yardsPerRushAttempt",
+        "totalPenaltiesYards",
+        "turnovers",
+        "possessionTime",
+    }
+)
+
+
+def _parse_team_stats(raw: dict) -> TeamStats:
+    stats = tuple(
+        TeamStat(
+            name=_str(s.get("name")),
+            label=_str(s.get("label")),
+            display_value=_str(s.get("displayValue")),
+        )
+        for s in _dicts(raw.get("statistics"))
+        if _str(s.get("name")) in _TEAM_STAT_NAMES
+    )
+    return TeamStats(team_id=_str(_get(raw, "team", "id")), stats=stats)
+
+
+def _parse_leaders(raw: Any) -> tuple[GameLeader, ...]:
+    out: list[GameLeader] = []
+    for side in _dicts(raw):
+        team_id = _str(_get(side, "team", "id"))
+        for category in _dicts(side.get("leaders")):
+            top = _dicts(category.get("leaders"))
+            if not top:
+                continue
+            out.append(
+                GameLeader(
+                    category=_str(category.get("displayName")) or _str(category.get("name")),
+                    athlete=_str(_get(top[0], "athlete", "displayName")),
+                    stat_line=_str(top[0].get("displayValue")),
+                    team_id=team_id,
+                )
+            )
+    return tuple(out)
+
+
+def _parse_drive(raw: dict, *, in_progress: bool = False) -> Drive:
+    return Drive(
+        team_id=_str(_get(raw, "team", "id")),
+        team_abbreviation=_str(_get(raw, "team", "abbreviation")),
+        result=_str(raw.get("displayResult")) or _str(raw.get("result")),
+        plays=parse_int(raw.get("offensivePlays")),
+        yards=parse_int(raw.get("yards")),
+        time=_str(_get(raw, "timeElapsed", "displayValue")),
+        description=_str(raw.get("description")),
+        in_progress=in_progress,
+    )
+
+
+def _parse_drives(raw: Any) -> tuple[Drive, ...]:
+    """Previous drives in order, then the current one (flagged) if ESPN sends it."""
+    if not isinstance(raw, dict):
+        return ()
+    current = raw.get("current")
+    current = current if isinstance(current, dict) else None
+    previous = [
+        d for d in _dicts(raw.get("previous")) if current is None or d.get("id") != current.get("id")
+    ]
+    drives = [_parse_drive(d) for d in previous]
+    if current is not None:
+        drives.append(_parse_drive(current, in_progress=True))
+    return tuple(drives)
+
+
+def _parse_game_info(raw: Any) -> GameInfo | None:
+    if not isinstance(raw, dict):
+        return None
+    return GameInfo(
+        venue=_opt_str(_get(raw, "venue", "fullName")),
+        city=_opt_str(_get(raw, "venue", "address", "city")),
+        state=_opt_str(_get(raw, "venue", "address", "state")),
+        grass=_opt_bool(_get(raw, "venue", "grass")),
+        attendance=_opt_int(raw.get("attendance")),
+    )
+
+
+def _summary_broadcasts(raw: Any) -> tuple[str, ...]:
+    names = (_str(_get(entry, "media", "shortName")) for entry in _dicts(raw))
+    return tuple(dict.fromkeys(name for name in names if name))
+
+
+def _linescores(competitors: Any, side: HomeAway) -> tuple[int, ...]:
+    for comp in _dicts(competitors):
+        if comp.get("homeAway") == side:
+            quarters = (_opt_int(q.get("displayValue")) for q in _dicts(comp.get("linescores")))
+            return tuple(n for n in quarters if n is not None)
+    return ()
+
+
 def parse_summary(payload: dict) -> Summary:
     """Build a :class:`Summary` from a game summary payload."""
     if not isinstance(payload, dict):
         return Summary(game_id="")
     probs = _dicts(payload.get("winprobability"))
+    header = _get(payload, "header", "competitions", 0, default={})
+    competitors = _get(header, "competitors")
     return Summary(
         game_id=_str(_get(payload, "header", "id")),
         scoring_plays=tuple(_parse_scoring_play(p) for p in _dicts(payload.get("scoringPlays"))),
         home_win_probability=_opt_float(probs[-1].get("homeWinPercentage")) if probs else None,
         status=parse_status(_get(payload, "header", "competitions", 0, "status")),
+        team_stats=tuple(
+            ts for ts in map(_parse_team_stats, _dicts(_get(payload, "boxscore", "teams"))) if ts.stats
+        ),
+        leaders=_parse_leaders(payload.get("leaders")),
+        winprobability=tuple(
+            p for p in (_opt_float(pt.get("homeWinPercentage")) for pt in probs) if p is not None
+        ),
+        drives=_parse_drives(payload.get("drives")),
+        game_info=_parse_game_info(payload.get("gameInfo")),
+        odds=parse_odds(payload.get("pickcenter")),
+        broadcasts=_summary_broadcasts(_get(header, "broadcasts")),
+        away_linescores=_linescores(competitors, "away"),
+        home_linescores=_linescores(competitors, "home"),
+        recap_headline=_opt_str(_get(payload, "article", "headline")),
+        recap_description=_opt_str(_get(payload, "article", "description")),
     )

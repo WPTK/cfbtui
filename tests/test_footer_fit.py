@@ -57,11 +57,11 @@ def test_the_status_text_never_exceeds_its_width(width):
         assert len(format_status(view, ASCII, NOW, width)) <= width
 
 
-def test_help_rows_list_every_described_binding_and_esc():
+def test_help_rows_list_every_described_binding_the_ticker_and_esc():
     bindings = list(Binding.make_bindings(CfbApp.BINDINGS))
     rows = help_rows(bindings, lambda b: b.key)
     assert ("Esc", "Back from a screen") in rows
-    assert len(rows) == len(bindings) + 1
+    assert len(rows) == len(bindings) + 2  # plus the ticker row
 
 
 @pytest.mark.parametrize("width", [60, 80, 120])

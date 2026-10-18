@@ -265,6 +265,50 @@ class ScoringPlay:
 
 
 @dataclass(frozen=True, slots=True)
+class TeamStat:
+    """One boxscore line, as ESPN labels it (``display_value`` is e.g. ``"3-14"``)."""
+
+    name: str
+    label: str
+    display_value: str
+
+
+@dataclass(frozen=True, slots=True)
+class TeamStats:
+    team_id: str
+    stats: tuple[TeamStat, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class GameLeader:
+    category: str
+    athlete: str
+    stat_line: str
+    team_id: str
+
+
+@dataclass(frozen=True, slots=True)
+class Drive:
+    team_id: str
+    team_abbreviation: str
+    result: str
+    plays: int
+    yards: int
+    time: str
+    description: str
+    in_progress: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class GameInfo:
+    venue: str | None = None
+    city: str | None = None
+    state: str | None = None
+    grass: bool | None = None
+    attendance: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class Summary:
     """The parts of a game summary payload worth keeping."""
 
@@ -272,3 +316,14 @@ class Summary:
     scoring_plays: tuple[ScoringPlay, ...] = ()
     home_win_probability: float | None = None
     status: Status = field(default_factory=Status)
+    team_stats: tuple[TeamStats, ...] = ()
+    leaders: tuple[GameLeader, ...] = ()
+    winprobability: tuple[float, ...] = ()
+    drives: tuple[Drive, ...] = ()
+    game_info: GameInfo | None = None
+    odds: Odds | None = None
+    broadcasts: tuple[str, ...] = ()
+    away_linescores: tuple[int, ...] = ()
+    home_linescores: tuple[int, ...] = ()
+    recap_headline: str | None = None
+    recap_description: str | None = None

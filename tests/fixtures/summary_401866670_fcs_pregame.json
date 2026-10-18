@@ -1,0 +1,655 @@
+{
+ "boxscore": {
+  "teams": [
+   {
+    "team": {
+     "id": "399",
+     "slug": "ualbany-great-danes",
+     "location": "UAlbany",
+     "name": "Great Danes",
+     "abbreviation": "ALB",
+     "displayName": "UAlbany Great Danes",
+     "shortDisplayName": "UAlbany",
+     "color": "3D2777",
+     "alternateColor": "ffffff"
+    },
+    "statistics": [
+     {
+      "name": "totalPointsPerGame",
+      "displayValue": "25.1",
+      "label": "Points Per Game"
+     },
+     {
+      "name": "yardsPerGame",
+      "displayValue": "338.3",
+      "label": "Total Yards"
+     },
+     {
+      "name": "passingYardsPerGame",
+      "displayValue": "165.4",
+      "label": "Yards Passing"
+     },
+     {
+      "name": "rushingYardsPerGame",
+      "displayValue": "172.9",
+      "label": "Yards Rushing"
+     },
+     {
+      "name": "totalPointsPerGameAllowed",
+      "displayValue": "18.9",
+      "label": "Points Allowed Per Game"
+     },
+     {
+      "name": "yardsPerGameAllowed",
+      "displayValue": "308.1",
+      "label": "Yards Allowed"
+     },
+     {
+      "name": "passingYardsPerGameAllowed",
+      "displayValue": "205.9",
+      "label": "Pass Yards Allowed"
+     },
+     {
+      "name": "rushingYardsPerGameAllowed",
+      "displayValue": "102.3",
+      "label": "Rush Yards Allowed"
+     }
+    ],
+    "displayOrder": 1,
+    "homeAway": "away"
+   },
+   {
+    "team": {
+     "id": "227",
+     "slug": "rhode-island-rams",
+     "location": "Rhode Island",
+     "name": "Rams",
+     "abbreviation": "URI",
+     "displayName": "Rhode Island Rams",
+     "shortDisplayName": "Rhode Island",
+     "color": "091f3f",
+     "alternateColor": "5ab3e8"
+    },
+    "statistics": [
+     {
+      "name": "totalPointsPerGame",
+      "displayValue": "25.0",
+      "label": "Points Per Game"
+     },
+     {
+      "name": "yardsPerGame",
+      "displayValue": "336.1",
+      "label": "Total Yards"
+     },
+     {
+      "name": "passingYardsPerGame",
+      "displayValue": "194.1",
+      "label": "Yards Passing"
+     },
+     {
+      "name": "rushingYardsPerGame",
+      "displayValue": "142.0",
+      "label": "Yards Rushing"
+     },
+     {
+      "name": "totalPointsPerGameAllowed",
+      "displayValue": "23.7",
+      "label": "Points Allowed Per Game"
+     },
+     {
+      "name": "yardsPerGameAllowed",
+      "displayValue": "363.9",
+      "label": "Yards Allowed"
+     },
+     {
+      "name": "passingYardsPerGameAllowed",
+      "displayValue": "185.6",
+      "label": "Pass Yards Allowed"
+     },
+     {
+      "name": "rushingYardsPerGameAllowed",
+      "displayValue": "178.3",
+      "label": "Rush Yards Allowed"
+     }
+    ],
+    "displayOrder": 2,
+    "homeAway": "home"
+   }
+  ]
+ },
+ "gameInfo": {
+  "venue": {
+   "id": "11488",
+   "fullName": "Centreville Bank Stadium",
+   "address": {
+    "city": "Pawtucket",
+    "state": "RI",
+    "country": "USA"
+   },
+   "grass": true
+  }
+ },
+ "leaders": [
+  {
+   "team": {
+    "id": "227",
+    "displayName": "Rhode Island Rams",
+    "abbreviation": "URI"
+   },
+   "leaders": [
+    {
+     "name": "passingYards",
+     "displayName": "Passing Yards",
+     "leaders": [
+      {
+       "displayValue": "85/153, 872 YDS, 5 TD, 6 INT",
+       "value": 872.0,
+       "athlete": {
+        "id": "5145592",
+        "lastName": "Budge",
+        "fullName": "Tyler Budge",
+        "displayName": "Tyler Budge",
+        "shortName": "T. Budge",
+        "jersey": "10",
+        "position": {
+         "name": "Quarterback",
+         "displayName": "Quarterback",
+         "abbreviation": "QB"
+        },
+        "status": {
+         "id": "1",
+         "name": "Active",
+         "type": "active",
+         "abbreviation": "Active"
+        }
+       },
+       "mainStat": {
+        "value": "872",
+        "label": "YDS"
+       },
+       "summary": "85/153, 5 TD, 6 INT"
+      }
+     ]
+    },
+    {
+     "name": "rushingYards",
+     "displayName": "Rushing Yards",
+     "leaders": [
+      {
+       "displayValue": "64 CAR, 235 YDS, 1 TD",
+       "value": 235.0,
+       "athlete": {
+        "id": "4602644",
+        "lastName": "Barrow",
+        "fullName": "Brendon Barrow",
+        "displayName": "Brendon Barrow",
+        "shortName": "B. Barrow",
+        "jersey": "2",
+        "position": {
+         "name": "Running Back",
+         "displayName": "Running Back",
+         "abbreviation": "RB"
+        },
+        "status": {
+         "id": "1",
+         "name": "Active",
+         "type": "active",
+         "abbreviation": "Active"
+        }
+       },
+       "mainStat": {
+        "value": "235",
+        "label": "YDS"
+       },
+       "summary": "64 CAR, 1 TD"
+      }
+     ]
+    },
+    {
+     "name": "receivingYards",
+     "displayName": "Receiving Yards",
+     "leaders": [
+      {
+       "displayValue": "43 REC, 676 YDS, 6 TD",
+       "value": 676.0,
+       "athlete": {
+        "id": "5083393",
+        "lastName": "Buchanan",
+        "fullName": "Marquis Buchanan",
+        "displayName": "Marquis Buchanan",
+        "shortName": "M. Buchanan",
+        "jersey": "1",
+        "position": {
+         "name": "Wide Receiver",
+         "displayName": "Wide Receiver",
+         "abbreviation": "WR"
+        },
+        "status": {
+         "id": "1",
+         "name": "Active",
+         "type": "active",
+         "abbreviation": "Active"
+        }
+       },
+       "mainStat": {
+        "value": "676",
+        "label": "YDS"
+       },
+       "summary": "43 REC, 6 TD"
+      }
+     ]
+    },
+    {
+     "name": "sacks",
+     "displayName": "Sacks",
+     "leaders": [
+      {
+       "displayValue": "5",
+       "value": 5.0,
+       "athlete": {
+        "id": "5153968",
+        "lastName": "Mankins",
+        "fullName": "Case Mankins",
+        "displayName": "Case Mankins",
+        "shortName": "C. Mankins",
+        "jersey": "97",
+        "position": {
+         "name": "Defensive Lineman",
+         "displayName": "Defensive Lineman",
+         "abbreviation": "DL"
+        },
+        "status": {
+         "id": "1",
+         "name": "Active",
+         "type": "active",
+         "abbreviation": "Active"
+        }
+       },
+       "mainStat": {
+        "value": "5",
+        "label": "SACKS"
+       },
+       "summary": ""
+      }
+     ]
+    },
+    {
+     "name": "totalTackles",
+     "displayName": "Tackles",
+     "leaders": [
+      {
+       "displayValue": "52",
+       "value": 52.0,
+       "athlete": {
+        "id": "5226799",
+        "lastName": "Davy",
+        "fullName": "Rohan Davy",
+        "displayName": "Rohan Davy",
+        "shortName": "R. Davy",
+        "jersey": "0",
+        "position": {
+         "name": "Linebacker",
+         "displayName": "Linebacker",
+         "abbreviation": "LB"
+        },
+        "status": {
+         "id": "1",
+         "name": "Active",
+         "type": "active",
+         "abbreviation": "Active"
+        }
+       },
+       "mainStat": {
+        "value": "52",
+        "label": "TOT"
+       },
+       "summary": ""
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "team": {
+    "id": "399",
+    "displayName": "UAlbany Great Danes",
+    "abbreviation": "ALB"
+   },
+   "leaders": [
+    {
+     "name": "passingYards",
+     "displayName": "Passing Yards",
+     "leaders": [
+      {
+       "displayValue": "85/150, 1,026 YDS, 10 TD, 5 INT",
+       "value": 1026.0,
+       "athlete": {
+        "id": "5095216",
+        "lastName": "Colon",
+        "fullName": "Kai Colon",
+        "displayName": "Kai Colon",
+        "shortName": "K. Colon",
+        "jersey": "12",
+        "position": {
+         "name": "Quarterback",
+         "displayName": "Quarterback",
+         "abbreviation": "QB"
+        },
+        "status": {
+         "id": "1",
+         "name": "Active",
+         "type": "active",
+         "abbreviation": "Active"
+        }
+       },
+       "mainStat": {
+        "value": "1,026",
+        "label": "YDS"
+       },
+       "summary": "85/150, 10 TD, 5 INT"
+      }
+     ]
+    },
+    {
+     "name": "rushingYards",
+     "displayName": "Rushing Yards",
+     "leaders": [
+      {
+       "displayValue": "98 CAR, 474 YDS, 5 TD",
+       "value": 474.0,
+       "athlete": {
+        "id": "5432343",
+        "lastName": "La Mons",
+        "fullName": "Rahshan La Mons",
+        "displayName": "Rahshan La Mons",
+        "shortName": "R. La Mons",
+        "jersey": "2",
+        "position": {
+         "name": "Running Back",
+         "displayName": "Running Back",
+         "abbreviation": "RB"
+        },
+        "status": {
+         "id": "1",
+         "name": "Active",
+         "type": "active",
+         "abbreviation": "Active"
+        }
+       },
+       "mainStat": {
+        "value": "474",
+        "label": "YDS"
+       },
+       "summary": "98 CAR, 5 TD"
+      }
+     ]
+    },
+    {
+     "name": "receivingYards",
+     "displayName": "Receiving Yards",
+     "leaders": [
+      {
+       "displayValue": "28 REC, 312 YDS, 5 TD",
+       "value": 312.0,
+       "athlete": {
+        "id": "5301250",
+        "lastName": "Norman",
+        "fullName": "BJ Norman",
+        "displayName": "BJ Norman",
+        "shortName": "B. Norman",
+        "jersey": "5",
+        "position": {
+         "name": "Wide Receiver",
+         "displayName": "Wide Receiver",
+         "abbreviation": "WR"
+        },
+        "status": {
+         "id": "1",
+         "name": "Active",
+         "type": "active",
+         "abbreviation": "Active"
+        }
+       },
+       "mainStat": {
+        "value": "312",
+        "label": "YDS"
+       },
+       "summary": "28 REC, 5 TD"
+      }
+     ]
+    },
+    {
+     "name": "sacks",
+     "displayName": "Sacks",
+     "leaders": [
+      {
+       "displayValue": "6",
+       "value": 6.0,
+       "athlete": {
+        "id": "4884485",
+        "lastName": "Lewis",
+        "fullName": "Shawan Lewis",
+        "displayName": "Shawan Lewis",
+        "shortName": "S. Lewis",
+        "jersey": "11",
+        "position": {
+         "name": "Defensive Lineman",
+         "displayName": "Defensive Lineman",
+         "abbreviation": "DL"
+        },
+        "status": {
+         "id": "1",
+         "name": "Active",
+         "type": "active",
+         "abbreviation": "Active"
+        }
+       },
+       "mainStat": {
+        "value": "6",
+        "label": "SACKS"
+       },
+       "summary": ""
+      }
+     ]
+    },
+    {
+     "name": "totalTackles",
+     "displayName": "Tackles",
+     "leaders": [
+      {
+       "displayValue": "54",
+       "value": 54.0,
+       "athlete": {
+        "id": "5156966",
+        "lastName": "Dunathan",
+        "fullName": "Dillon Dunathan",
+        "displayName": "Dillon Dunathan",
+        "shortName": "D. Dunathan",
+        "jersey": "41",
+        "position": {
+         "name": "Linebacker",
+         "displayName": "Linebacker",
+         "abbreviation": "LB"
+        },
+        "status": {
+         "id": "1",
+         "name": "Active",
+         "type": "active",
+         "abbreviation": "Active"
+        }
+       },
+       "mainStat": {
+        "value": "54",
+        "label": "TOT"
+       },
+       "summary": ""
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "broadcasts": [
+  {
+   "type": {
+    "id": "4",
+    "shortName": "Streaming",
+    "longName": "Streaming",
+    "slug": "streaming"
+   },
+   "station": "FloSports",
+   "market": {
+    "id": "2",
+    "type": "Home"
+   },
+   "media": {
+    "callLetters": "FloSports",
+    "name": "FloSports",
+    "shortName": "FloSports"
+   },
+   "lang": "en",
+   "region": "us",
+   "isNational": false
+  }
+ ],
+ "pickcenter": [],
+ "winprobability": [],
+ "header": {
+  "id": "401866670",
+  "season": {
+   "year": 2026,
+   "current": true,
+   "type": 2
+  },
+  "timeValid": true,
+  "competitions": [
+   {
+    "id": "401866670",
+    "date": "2026-10-24T16:00Z",
+    "dateValid": true,
+    "neutralSite": false,
+    "conferenceCompetition": true,
+    "boxscoreAvailable": false,
+    "commentaryAvailable": false,
+    "liveAvailable": false,
+    "onWatchESPN": false,
+    "recent": false,
+    "wallclockAvailable": false,
+    "boxscoreSource": "none",
+    "playByPlaySource": "none",
+    "competitors": [
+     {
+      "id": "227",
+      "order": 0,
+      "homeAway": "home",
+      "team": {
+       "id": "227",
+       "location": "Rhode Island",
+       "name": "Rams",
+       "nickname": "Rhode Island",
+       "abbreviation": "URI",
+       "displayName": "Rhode Island Rams",
+       "color": "091f3f",
+       "alternateColor": "5ab3e8",
+       "groups": {
+        "id": "48"
+       }
+      },
+      "record": [
+       {
+        "type": "total",
+        "summary": "4-3",
+        "displayValue": "4-3"
+       },
+       {
+        "type": "vsconf",
+        "summary": "1-2",
+        "displayValue": "1-2"
+       }
+      ],
+      "possession": false
+     },
+     {
+      "id": "399",
+      "order": 1,
+      "homeAway": "away",
+      "team": {
+       "id": "399",
+       "location": "UAlbany",
+       "name": "Great Danes",
+       "nickname": "UAlbany",
+       "abbreviation": "ALB",
+       "displayName": "UAlbany Great Danes",
+       "color": "3D2777",
+       "alternateColor": "ffffff",
+       "groups": {
+        "id": "48"
+       }
+      },
+      "record": [
+       {
+        "type": "total",
+        "summary": "4-3",
+        "displayValue": "4-3"
+       },
+       {
+        "type": "vsconf",
+        "summary": "2-1",
+        "displayValue": "2-1"
+       }
+      ],
+      "possession": false
+     }
+    ],
+    "status": {
+     "type": {
+      "id": "1",
+      "name": "STATUS_SCHEDULED",
+      "state": "pre",
+      "completed": false,
+      "description": "Scheduled",
+      "detail": "Sat, October 24th at 12:00 PM EDT",
+      "shortDetail": "10/24 - 12:00 PM EDT"
+     }
+    },
+    "broadcasts": [
+     {
+      "type": {
+       "id": "4",
+       "shortName": "Streaming"
+      },
+      "market": {
+       "id": "2",
+       "type": "Home"
+      },
+      "media": {
+       "shortName": "FloSports"
+      },
+      "lang": "en",
+      "region": "us",
+      "isNational": false
+     }
+    ],
+    "groups": {
+     "id": "48",
+     "name": "Coastal Athletic Association",
+     "abbreviation": "caa",
+     "shortName": "CAA",
+     "midsizeName": "CAA"
+    },
+    "boxscoreMinutes": false
+   }
+  ],
+  "week": 8,
+  "league": {
+   "id": "23",
+   "name": "NCAA - Football",
+   "abbreviation": "NCAAF",
+   "shortName": "NCAA Football",
+   "midsizeName": "NCAA Football",
+   "slug": "college-football",
+   "isTournament": false
+  }
+ },
+ "wallclockAvailable": false
+}
