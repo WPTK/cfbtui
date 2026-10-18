@@ -1,6 +1,8 @@
 """Card pulses: which events pulse, the cool-down, the quiet first poll, and the widget class lifecycle."""
 from __future__ import annotations
 
+from dataclasses import replace
+
 import pytest
 from textual.app import App, ComposeResult
 
@@ -113,7 +115,7 @@ async def test_a_red_zone_entry_pulses_its_card():
 
 async def test_alerts_off_means_no_pulse():
     app = _app("final_before", "final_after")
-    app.alerts_enabled = False
+    app.config = replace(app.config, alerts=replace(app.config.alerts, enabled=False))
     async with app.run_test(size=SIZE) as pilot:
         await wait_for(pilot, lambda: app.query_one(GameCard).game.is_final)
         await pilot.pause(0.2)
