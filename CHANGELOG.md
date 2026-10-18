@@ -2,6 +2,19 @@
 
 Release notes for cfbtui, kept the way a fortress overseer keeps a journal. Newest first. Versions follow FibVer.
 
+## 1.5.0 (2026-10-18)
+
+- The first real Saturday came back with a list, and the overseer worked through all of it.
+- Four new ways to read the board, all on the `l` key: Upset Watch, Red Zone, Overtime, and Interesting, which is the three combined.
+- When a game walks into the red zone, an upset watch or overtime, or goes final, its card now breathes: a slow, heavy-bordered pulse in its own color that settles after a few seconds. It is slow on purpose, and it never repeats for a game that is only bouncing at the line. Turn it off with `[alerts] enabled = false` or in the new settings screen.
+- Click a line in the ticker (or move to it and press Enter) and the game it names is scrolled into view, focused and pulsed. If a filter was hiding it, the filter is cleared and the overseer says so.
+- A settings screen at `S`: alerts, auto-update, glyph set and layout, saved as you change them.
+- The key hints along the bottom no longer run off the edge. The footer keeps the five that matter, `?` lists every key, and the status line drops its least important parts as the window narrows.
+- `c` on the rankings screen copies the poll as a Discord-ready block, split into messages under 2000 characters.
+- The game detail screen grew up: score by quarter, team stats as side-by-side bars, a win-probability line for the whole game, game leaders, the current drive with a field strip, the odds, venue, attendance and TV, and the recap headline once it is final. Team colors too dark or too alike to read are adjusted.
+- cfbtui can now update itself. A standalone build downloads the new release in the background, checks it against the release's SHA256SUMS, test-runs it, and swaps itself in when you quit (or at once from the settings screen). pip, pipx and uv installs only get a message with the right upgrade command. Major versions are announced, never installed unasked. Turn it off with `[updates] auto = false`. Releases are not yet signed, so the checksum guards against corruption, not a hostile release.
+- Known gap: the drive field strip reads its side from the possession text, and has only been tried against a hand-built live game.
+
 ## 1.3.0 (2026-10-13)
 
 - The scoreboard used to leave the building in one crate, stamped for Windows. The loading dock now packs five: Windows, Linux on x86_64 and on arm64, and macOS on Apple silicon and on Intel. Each is built by its own crew on its own machine, and all of them go out on one release with a single SHA256SUMS manifest nailed to the side instead of a tag on each crate.
