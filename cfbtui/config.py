@@ -32,8 +32,12 @@ matched against each team's abbreviation as games arrive.
     team_ids = ["251"]
     abbreviations = ["TEX"]
 
+    [alerts]
+    enabled = true       # pulse a card on a score or a lead change
+
     [updates]
     check = true         # look for a newer release at startup
+    auto = true          # install it on its own (stored here; the settings screen toggles it)
 """
 from __future__ import annotations
 
@@ -76,6 +80,12 @@ class FavoritesConfig:
 @dataclass(frozen=True, slots=True)
 class UpdatesConfig:
     check: bool = True
+    auto: bool = True
+
+
+@dataclass(frozen=True, slots=True)
+class AlertsConfig:
+    enabled: bool = True
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,6 +94,7 @@ class Config:
     view: ViewConfig = field(default_factory=ViewConfig)
     favorites: FavoritesConfig = field(default_factory=FavoritesConfig)
     updates: UpdatesConfig = field(default_factory=UpdatesConfig)
+    alerts: AlertsConfig = field(default_factory=AlertsConfig)
 
 
 @dataclass(frozen=True, slots=True)
@@ -181,14 +192,24 @@ def parse_config(data: dict) -> tuple[Config, list[str]]:
 
     updates = UpdatesConfig()
     section = _section(data, "updates", warnings)
-    if "check" in section:
-        v = section["check"]
-        if isinstance(v, bool):
-            updates = UpdatesConfig(check=v)
-        else:
-            warnings.append("updates.check should be true or false; using true")
+    for name in ("check", "auto"):
+        if name in section:
+            v = section[name]
+            if isinstance(v, bool):
+                updates = replace(updates, **{name: v})
+            else:
+                warnings.append(f"updates.{name} should be true or false; using true")
 
-    return Config(poll, view, favorites, updates), warnings
+    alerts = AlertsConfig()
+    section = _section(data, "alerts", warnings)
+    if "enabled" in section:
+        v = section["enabled"]
+        if isinstance(v, bool):
+            alerts = AlertsConfig(enabled=v)
+        else:
+            warnings.append("alerts.enabled should be true or false; using true")
+
+    return Config(poll, view, favorites, updates, alerts), warnings
 
 
 def load_config(path: Path | None = None) -> LoadResult:
@@ -232,7 +253,8 @@ def to_toml_data(config: Config) -> dict:
             "team_ids": list(config.favorites.team_ids),
             "abbreviations": list(config.favorites.abbreviations),
         },
-        "updates": {"check": config.updates.check},
+        "updates": {"check": config.updates.check, "auto": config.updates.auto},
+        "alerts": {"enabled": config.alerts.enabled},
     }
 
 

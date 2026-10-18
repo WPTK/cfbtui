@@ -58,6 +58,7 @@ from cfbtui.ui.screens.conferences import ConferenceScreen
 from cfbtui.ui.screens.detail import DetailScreen
 from cfbtui.ui.screens.help import HelpScreen, help_rows
 from cfbtui.ui.screens.rankings import RankingsScreen
+from cfbtui.ui.screens.settings import SettingsScreen
 from cfbtui.ui.widgets.score_grid import ScoreGrid
 from cfbtui.ui.widgets.status_bar import StatusBar, StatusView
 from cfbtui.ui.widgets.ticker import Ticker
@@ -96,12 +97,13 @@ class CfbApp(App[None]):
         Binding("C", "copy_board", "Copy all", show=False),
         Binding("v", "toggle_layout", "Grid/list", show=False),
         Binding("o", "conference", "Conference", show=False),
+        Binding("S", "settings", "Settings", show=False),
     ]
 
     # Actions that belong to the grid; they are off while a detail or rankings screen is on top.
     GRID_ACTIONS = frozenset(
         {"help", "refresh", "week", "this_week", "toggle_group", "favorite", "detail", "rankings", "copy_game",
-         "copy_board", "toggle_layout", "cycle_filter", "conference"}
+         "copy_board", "toggle_layout", "cycle_filter", "conference", "settings"}
     )
 
     def __init__(
@@ -373,6 +375,32 @@ class CfbApp(App[None]):
             )
         )
 
+    def action_settings(self) -> None:
+        values = {
+            "alerts": "on" if self.config.alerts.enabled else "off",
+            "auto_update": "on" if self.config.updates.auto else "off",
+            "glyph_set": self.glyphs.name,
+            "layout": self.layout,
+        }
+        self.push_screen(SettingsScreen(values, self._setting_changed))
+
+    def _setting_changed(self, key: str, value: str) -> str:
+        """Apply one setting now and save it; returns the save note ('' when saved). Flags are never saved."""
+        change = {
+            "alerts": lambda c: replace(c, alerts=replace(c.alerts, enabled=value == "on")),
+            "auto_update": lambda c: replace(c, updates=replace(c.updates, auto=value == "on")),
+            "glyph_set": lambda c: replace(c, view=replace(c.view, glyph_set=value)),
+            "layout": lambda c: replace(c, view=replace(c.view, layout=value)),
+        }[key]
+        self.config = change(self.config)
+        self.file_config = change(self.file_config)
+        if key == "glyph_set":
+            self._set_glyphs(value)
+        elif key == "layout":
+            self.layout = value
+            self._view_changed(f"Layout: {value}")
+        return self._save()
+
     def _remember_cfp(self, poll: Ranking) -> None:
         self.cfp = poll
 
@@ -469,14 +497,17 @@ class CfbApp(App[None]):
         self.scheduler.refresh()
 
     def action_cycle_glyphs(self) -> None:
-        self.glyphs = glyph_tables.get(glyph_tables.next_name(self.glyphs.name))
+        self._set_glyphs(glyph_tables.next_name(self.glyphs.name))
+        self.notify(f"Glyph set: {self.glyphs.name}", timeout=2)
+
+    def _set_glyphs(self, name: str) -> None:
+        self.glyphs = glyph_tables.get(name)
         for screen in self.screen_stack:
             if isinstance(screen, DetailScreen):
                 screen.set_glyphs(self.glyphs)
         self.query_one(Ticker).set_glyphs(self.glyphs)
         self._repaint_grid()
         self._tick()
-        self.notify(f"Glyph set: {self.glyphs.name}", timeout=2)
 
 
 def run() -> None:
