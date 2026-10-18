@@ -54,6 +54,7 @@ from cfbtui.state.store import GameStore
 from cfbtui.ui import glyphs as glyph_tables
 from cfbtui.ui.filters import FILTER_LABELS, conference_name, conferences_on, describe, keep, next_filter
 from cfbtui.ui.glyphs import Glyphs
+from cfbtui.ui.pulse import PulseGate, pulse_kind
 from cfbtui.ui.screens.conferences import ConferenceScreen
 from cfbtui.ui.screens.detail import DetailScreen
 from cfbtui.ui.screens.help import HelpScreen, help_rows
@@ -148,6 +149,8 @@ class CfbApp(App[None]):
         self.last_result: PollResult | None = None
         self.favorites: frozenset[str] = favorite_ids(self.config)
         self._quiet_first_poll = False
+        self.alerts_enabled = True  # gates card pulses; to be wired to config.alerts.enabled
+        self._pulses = PulseGate()
         self.detail_refresh = detail_refresh
         self.copier: Callable[[str], None] = copy_text
         self._copy_parts: list[str] = []
@@ -205,6 +208,10 @@ class CfbApp(App[None]):
                 for event in result.events:
                     if isinstance(event, Scored):
                         grid.flash(event.game_id, event.team.id)
+                    elif self.alerts_enabled and (kind := pulse_kind(event)) and self._pulses.allow(
+                        event.game_id, kind
+                    ):
+                        grid.pulse(event.game_id, kind)
             self._feed_detail()
         elif self.scheduler.scoreboard is None:
             grid.set_message(f"{self.glyphs.error} Could not reach ESPN. Retrying. ({result.error})")
