@@ -12,8 +12,9 @@ from textual.widgets import Footer, Static
 
 
 def help_rows(bindings: Iterable[Binding], display: Callable[[Binding], str]) -> list[tuple[str, str]]:
-    """``(key, description)`` for each binding, in declaration order, plus the screens' own Esc."""
+    """``(key, description)`` for each binding, in declaration order, plus the ticker's click and the screens' Esc."""
     rows = [(display(b), b.description) for b in bindings if b.description]
+    rows.append(("Click / Enter", "On a ticker line (Tab to it, Up/Down): show that game"))
     rows.append(("Esc", "Back from a screen"))
     return rows
 
