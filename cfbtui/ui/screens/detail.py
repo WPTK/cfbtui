@@ -32,7 +32,7 @@ from cfbtui.espn.client import EspnError
 from cfbtui.espn.models import Competitor, Drive, Game, ScoringPlay, Summary, TeamStat
 from cfbtui.ui.glyphs import Glyphs
 from cfbtui.ui.labels import period_name, status_text
-from cfbtui.ui.theme import hex_color, team_style
+from cfbtui.ui.theme import bar_colors, team_style
 
 LIVE_REFRESH = 20.0
 IDLE_REFRESH = 60.0
@@ -71,6 +71,12 @@ def win_bar(home_probability: float | None, game: Game, glyphs: Glyphs, width: i
     away_pct = round((1 - home) * 100)
     home_pct = round(home * 100)
     return f"{game.away.abbreviation} {away_pct}% {bar} {home_pct}% {game.home.abbreviation}"
+
+
+def _side_colors(game: Game) -> tuple[str, str]:
+    """Away and home colours for bars and the sparkline: readable on the terminal and told apart."""
+    a, h = game.away.team, game.home.team
+    return bar_colors((a.color, a.alt_color), (h.color, h.alt_color))
 
 
 def _team_text(text: str, color: str, **attrs: bool) -> Text:
@@ -125,6 +131,7 @@ def stats_block(game: Game, summary: Summary, glyphs: Glyphs, width: int = DEFAU
     out.append_text(_team_text(away_abbr, game.away.team.color, bold=True))
     out.append("|")
     out.append_text(_team_text(home_abbr, game.home.team.color, bold=True))
+    away_color, home_color = _side_colors(game)
     wrote = False
     for name, label, kind in STAT_ROWS:
         a, h = away_stats.get(name), home_stats.get(name)
@@ -137,9 +144,9 @@ def stats_block(game: Game, summary: Summary, glyphs: Glyphs, width: int = DEFAU
         out.append("\n" + label.ljust(LABEL_WIDTH) + " ")
         out.append_text(_team_text(a.display_value.rjust(VALUE_WIDTH), game.away.team.color))
         out.append(" " + glyphs.bar_empty * (half - fill_a))
-        out.append(glyphs.bar_full * fill_a, style=Style(color=hex_color(game.away.team.color)))
+        out.append(glyphs.bar_full * fill_a, style=Style(color=away_color))
         out.append("|")
-        out.append(glyphs.bar_full * fill_h, style=Style(color=hex_color(game.home.team.color)))
+        out.append(glyphs.bar_full * fill_h, style=Style(color=home_color))
         out.append(glyphs.bar_empty * (half - fill_h) + " ")
         out.append_text(_team_text(h.display_value.ljust(VALUE_WIDTH), game.home.team.color))
         wrote = True
@@ -153,11 +160,12 @@ def win_sparkline(game: Game, summary: Summary, glyphs: Glyphs, width: int = BAR
         return None
     n = min(len(series), max(2, width))
     levels = len(glyphs.spark) - 1
+    colors = dict(zip((game.away.team.id, game.home.team.id), _side_colors(game), strict=True))
     out = Text(f"{game.away.team.abbreviation} ")
     for i in range(n):
         p = min(1.0, max(0.0, series[round(i * (len(series) - 1) / (n - 1))]))
         side = game.home if p >= 0.5 else game.away
-        out.append(glyphs.spark[round(p * levels)], style=Style(color=hex_color(side.team.color)))
+        out.append(glyphs.spark[round(p * levels)], style=Style(color=colors[side.team.id]))
     out.append(f" {game.home.team.abbreviation}")
     return out
 

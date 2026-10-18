@@ -451,12 +451,34 @@ def test_final_detail_has_linescore_stats_and_sparkline_in_every_glyph_set():
     summary, game = _summary_and_game("summary_401856717.json", "pairs/final_after.json")
     for glyphs in GLYPH_SETS.values():
         text = _plain(build_detail(game, summary, glyphs))
-        assert "Score by period" in text and "Team stats" in text and "Win probability, whole game" in text
+        assert "Score by period" in text and "Team stats" in text and "Win probability" in text
         assert "382" in text and "29:29" in text and "3-14" in text
     ascii_text = _plain(build_detail(game, summary, ASCII))
     row = next(line for line in ascii_text.splitlines() if "Total yds" in line)
     assert row.index("#") < row.index("|") < row.rindex("#"), "away bar left of the divider, home bar right"
     assert row.count("#") <= 2 * (60 - 11 - 12 - 3) // 2
+
+
+def _plain_at(renderable, width: int) -> str:
+    console = Console(width=width, record=True, file=io.StringIO())
+    console.print(renderable)
+    return console.export_text()
+
+
+def test_every_section_renders_in_every_glyph_set_at_60_and_120_columns():
+    from cfbtui.ui.glyphs import GLYPH_SETS
+
+    summary, game = _summary_and_game("summary_401856717.json", "pairs/final_after.json")
+    titles = ("Win probability", "Score by period", "Scoring plays", "Team stats")
+    for glyphs in GLYPH_SETS.values():
+        for cols in (60, 120):
+            text = _plain_at(build_detail(game, summary, glyphs, width=cols), cols)
+            assert all(t in text for t in titles), (glyphs.name, cols)
+            for line in text.splitlines():
+                if any(k in line for k in ("Total yds", "Pass yds", "Possession")):
+                    assert len(line.rstrip()) <= cols, (glyphs.name, cols, line)
+    ascii_text = _plain_at(build_detail(game, summary, ASCII, width=60), 60)
+    assert ascii_text.isascii(), sorted({c for c in ascii_text if not c.isascii()})
 
 
 def test_linescore_adds_overtime_columns_and_totals():
