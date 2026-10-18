@@ -182,8 +182,26 @@ enabled = true     # pulse a card on a score or a lead change
 
 [updates]
 check = true       # set to false to never check for a newer version
-auto = true        # install new versions on their own
+auto = true        # download new versions on their own (standalone binaries only)
 ```
+
+### Updates
+
+With `check = true` cfbtui looks for a newer release at startup. What happens next depends on how you installed it:
+
+- **Standalone binary, `auto = true`:** a new minor or patch version is downloaded in the background, checked
+  against the release's `SHA256SUMS` and test-run. The status bar then shows `update X.Y.Z ready` and a message
+  says it takes over when you quit. Nothing changes while you are using cfbtui; the new file replaces the old one
+  as you quit, and the next start runs it. To switch right away, open Settings (`S`) and choose **Restart now**.
+- **A new major version, `auto = false`, `--no-config`, or no download for your platform:** you just get a message
+  with a link to the release.
+- **pip, pipx and uv installs:** you get a message with the upgrade command (`pipx upgrade cfbtui`,
+  `uv tool upgrade cfbtui` or `python -m pip install -U cfbtui`). cfbtui never changes those installs itself.
+- `--no-update-check` (or `check = false`) turns off both the check and the download.
+
+If an update fails, your installed copy is left as it was and you get one warning. The previous version is kept
+beside the new one as `cfbtui.old` (`cfbtui.exe.old` on Windows) until the new version has started once. If cfbtui
+ever fails to start after an update, rename that `.old` file back to the program's name.
 
 ## Troubleshooting
 

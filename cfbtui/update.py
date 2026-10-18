@@ -119,5 +119,22 @@ async def check_for_update(
                 await http.aclose()
 
 
+def decide(kind: str, *, auto: bool, no_config: bool, current: str, info: UpdateInfo, asset: str | None) -> str:
+    """What to do about a newer release: "download" it, show the upgrade "message", or show the "link".
+
+    Only a standalone binary downloads, and only for [updates] auto, a config file, this platform's asset in
+    the release and a minor or patch bump; a new major version is announced, never installed unasked.
+    """
+    if kind != "binary":
+        return "message"
+    try:
+        major = _parse(info.version)[0] != _parse(current)[0]
+    except ValueError:
+        return "link"
+    if not auto or no_config or major or asset not in {a.name for a in info.assets}:
+        return "link"
+    return "download"
+
+
 def update_message(info: UpdateInfo) -> str:
     return f"cfbtui {info.version} is available. Get it at {info.url}"

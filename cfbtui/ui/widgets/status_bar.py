@@ -31,10 +31,11 @@ class StatusView:
     glyph_set: str = ""
     errors: int = 0  # games whose latest diff raised
     view_note: str = ""  # the active filter, conference and layout, if not the defaults
+    update_ready: str = ""  # the version downloaded and waiting to be installed when cfbtui quits
 
 
 # Drop order when the line is too wide: the highest number goes first, health (0) never.
-P_HEALTH, P_FAILING, P_WEEK, P_LIVE, P_NOTE, P_NEXT, P_VERSION, P_GLYPHS, P_CLOCK = range(9)
+P_HEALTH, P_UPDATE, P_FAILING, P_WEEK, P_LIVE, P_NOTE, P_NEXT, P_VERSION, P_GLYPHS, P_CLOCK = range(10)
 
 
 def fit_segments(parts: list[tuple[int, str]], sep: str, width: int | None) -> str:
@@ -76,6 +77,8 @@ def format_status(view: StatusView, glyphs: Glyphs, now: datetime | None = None,
         parts.append((P_FAILING, f"{f.failures} failed polls"))
     if view.errors:
         parts.append((P_FAILING, f"{glyphs.error} {view.errors} game{'s' if view.errors != 1 else ''} failing to diff"))
+    if view.update_ready:
+        parts.append((P_UPDATE, f"update {view.update_ready} ready"))
     parts.append((P_VERSION, f"v{__version__}"))
     if view.glyph_set:
         parts.append((P_GLYPHS, f"glyphs: {view.glyph_set}"))

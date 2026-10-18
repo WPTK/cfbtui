@@ -14,13 +14,16 @@ import re
 import subprocess
 import sys
 import time
+from dataclasses import dataclass
 from pathlib import Path
 
 import httpx
 
-from cfbtui.update import USER_AGENT, Asset
+from cfbtui.update import USER_AGENT, Asset, UpdateInfo, asset_name, install_kind
 
 STAGE_DIR = ".cfbtui-update"
+SUMS_NAME = "SHA256SUMS"
+SUMS_MAX = 1 << 20
 PROBE_TIMEOUT = 60.0
 RENAME_TRIES = 5
 RENAME_WAIT = 0.4
@@ -277,3 +280,58 @@ def cleanup_old(target: Path) -> None:
             os.replace(old, target)
     except OSError:
         pass
+
+
+@dataclass
+class Updater:
+    """What the app needs to update this install: stage and probe a release, apply it, and close.
+
+    `kind` and `asset_name` say what is possible here; the app never calls `stage` for a pip-type install.
+    """
+
+    kind: str
+    asset_name: str | None
+    target: Path
+    version: str
+    client: httpx.Client | None = None
+
+    @classmethod
+    def detect(cls, version: str) -> Updater:
+        return cls(install_kind(), asset_name(), Path(sys.executable).resolve(), version)
+
+    def stage(self, info: UpdateInfo) -> Staged:
+        """Download this platform's asset and SHA256SUMS, verify and probe it. Blocking; run in a thread."""
+        by_name = {a.name: a for a in info.assets}
+        asset, sums_asset = by_name.get(self.asset_name or ""), by_name.get(SUMS_NAME)
+        if asset is None or sums_asset is None:
+            raise UpdateError(f"the release has no {self.asset_name if asset is None else SUMS_NAME}")
+        if self.client is None:
+            self.client = httpx.Client(timeout=30.0)
+        sums = parse_sums(self._sums_text(sums_asset))
+        staged = stage(asset, sums, self.target.parent, self.client, info.version)
+        probe(staged, info.version)
+        return staged
+
+    def _sums_text(self, sums_asset: Asset) -> str:
+        assert self.client is not None
+        try:
+            _check_url(httpx.URL(sums_asset.url))
+            if sums_asset.size > SUMS_MAX:
+                raise UpdateError("SHA256SUMS is too large")
+            resp = self.client.get(sums_asset.url, headers={"User-Agent": USER_AGENT}, follow_redirects=True)
+            for hop in (*resp.history, resp):
+                _check_url(hop.url)
+            if resp.status_code != 200 or len(resp.content) > SUMS_MAX:
+                raise UpdateError(f"could not read SHA256SUMS: HTTP {resp.status_code}")
+            return resp.content.decode("utf-8")
+        except (httpx.HTTPError, httpx.InvalidURL, UnicodeDecodeError) as exc:
+            raise UpdateError(f"could not read SHA256SUMS: {exc}") from None
+
+    def apply(self, staged: Staged) -> None:
+        apply(self.target, staged)
+
+    def close(self) -> None:
+        """Abort a download in progress (the closed client makes its thread raise) and free the client."""
+        if self.client is not None:
+            with contextlib.suppress(Exception):
+                self.client.close()

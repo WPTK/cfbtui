@@ -36,7 +36,8 @@ def next_choice(setting: Setting, current: str) -> str:
 
 class SettingsScreen(Screen[None]):
     """Enter changes the highlighted setting. ``on_change(key, value)`` applies and saves it
-    and returns a note for the user (empty when all went well)."""
+    and returns a note for the user (empty when all went well). With ``on_restart`` set (an update is
+    downloaded) a last row installs it and restarts cfbtui; nothing restarts unless that row is chosen."""
 
     BINDINGS = [
         Binding("escape", "close", "Back"),
@@ -48,14 +49,20 @@ class SettingsScreen(Screen[None]):
     SettingsScreen > OptionList { height: auto; margin: 1 2; border: round $panel-lighten-2; }
     """
 
-    def __init__(self, values: dict[str, str], on_change: Callable[[str, str], str]) -> None:
+    def __init__(
+        self, values: dict[str, str], on_change: Callable[[str, str], str], on_restart: Callable[[], None] | None = None
+    ) -> None:
         super().__init__()
         self.values = dict(values)
         self.on_change = on_change
+        self.on_restart = on_restart
 
     def compose(self) -> ComposeResult:
         yield Static("Enter changes the highlighted setting. Changes apply at once and are saved.")
-        yield OptionList(*(Option(self._prompt(s), id=s.key) for s in SETTINGS))
+        rows = [Option(self._prompt(s), id=s.key) for s in SETTINGS]
+        if self.on_restart is not None:
+            rows.append(Option(f"{'Restart now':<16}install the downloaded update", id="restart"))
+        yield OptionList(*rows)
         yield Footer()
 
     def _prompt(self, setting: Setting) -> str:
@@ -66,6 +73,9 @@ class SettingsScreen(Screen[None]):
         options = self.query_one(OptionList)
         index = options.highlighted
         if index is None:
+            return
+        if event.option.id == "restart" and self.on_restart is not None:
+            self.on_restart()
             return
         setting = SETTINGS[index]
         value = next_choice(setting, self.values[setting.key])
