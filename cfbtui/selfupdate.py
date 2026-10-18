@@ -1,7 +1,9 @@
 """Download, verify and swap in a new standalone binary. Every step takes explicit paths and clients.
 
 Each failure raises UpdateError after removing whatever was staged; the installed binary is never
-modified in place, only replaced by a rename, so it is either the old file or the new one.
+modified in place, only replaced by a rename, so it is either the old file or the new one. The
+staging folder is guarded by an OS lock held from `stage` until `apply` or `discard`, so only the
+process that staged a file ever deletes it.
 """
 from __future__ import annotations
 
@@ -22,13 +24,17 @@ STAGE_DIR = ".cfbtui-update"
 PROBE_TIMEOUT = 60.0
 RENAME_TRIES = 5
 RENAME_WAIT = 0.4
-STALE_LOCK = 3600.0
 
 _SUMS_LINE = re.compile(r"^([0-9a-fA-F]{64}) [ *](\S.*)$")
+_SAFE_NAME = re.compile(r"^[A-Za-z0-9._-]+$")
 
 
 class UpdateError(Exception):
     """The update could not be staged or applied; the installed binary is untouched."""
+
+
+class RollbackError(UpdateError):
+    """The swap failed and the previous version could not be put back; the message says how."""
 
 
 def parse_sums(text: str) -> dict[str, str]:
@@ -40,7 +46,9 @@ def parse_sums(text: str) -> dict[str, str]:
         match = _SUMS_LINE.match(line.rstrip("\r"))
         if match is None:
             raise UpdateError("SHA256SUMS is malformed")
-        sums[match.group(2)] = match.group(1).lower()
+        name, digest = match.group(2), match.group(1).lower()
+        if sums.setdefault(name, digest) != digest:
+            raise UpdateError(f"SHA256SUMS lists {name} twice with different hashes")
     return sums
 
 
@@ -49,34 +57,96 @@ def _remove(path: Path) -> None:
         path.unlink()
 
 
-def _lock(directory: Path) -> Path:
-    lock = directory / "lock"
+def _fsync_dir(directory: Path) -> None:
+    if sys.platform == "win32":
+        return
     with contextlib.suppress(OSError):
-        if time.time() - lock.stat().st_mtime > STALE_LOCK:
-            lock.unlink()
+        fd = os.open(directory, os.O_RDONLY)
+        try:
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+
+
+def _lock_fd(lock: Path) -> int:
+    """Open lock and take an exclusive non-blocking OS lock on it; the lock dies with the process."""
     try:
-        os.close(os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY))
-    except FileExistsError:
-        raise UpdateError("another cfbtui is already downloading an update") from None
+        fd = os.open(lock, os.O_CREAT | os.O_RDWR)
     except OSError as exc:
-        raise UpdateError(f"cannot write to {directory}: {exc.strerror or exc}") from None
-    return lock
+        raise UpdateError(f"cannot write to {lock.parent}: {exc.strerror or exc}") from None
+    try:
+        if sys.platform == "win32":
+            import msvcrt
+
+            msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            if os.fstat(fd).st_ino != os.stat(lock).st_ino:  # the holder removed it as we opened it
+                raise OSError("lock file replaced")
+    except OSError:
+        os.close(fd)
+        raise UpdateError("another cfbtui is already downloading an update") from None
+    return fd
 
 
-def stage(asset: Asset, sums: dict[str, str], target_dir: Path, client: httpx.Client) -> Path:
-    """Download asset beside the install, verify size and sha256, and return the `.ready` file."""
+class Staged:
+    """A verified download waiting beside the install. Holds the stage lock until apply or discard."""
+
+    def __init__(self, path: Path, sha256: str, lock_fd: int):
+        self.path = path
+        self.sha256 = sha256
+        self._fd: int | None = lock_fd
+
+    def release(self) -> None:
+        """Drop the lock and tidy the stage folder; leaves the staged file if it still exists."""
+        if self._fd is None:
+            return
+        fd, self._fd = self._fd, None
+        lock = self.path.parent / "lock"
+        if sys.platform != "win32":
+            _remove(lock)  # while still holding it, so nobody can lock a file we then delete
+        os.close(fd)
+        _remove(lock)
+        with contextlib.suppress(OSError):
+            self.path.parent.rmdir()
+
+    def discard(self) -> None:
+        _remove(self.path)
+        self.release()
+
+
+def _check_url(url: httpx.URL) -> None:
+    if url.scheme == "https" or (url.scheme == "http" and url.host == "127.0.0.1"):
+        return
+    raise UpdateError(f"refusing to download from {url.scheme}://{url.host}")
+
+
+def stage(asset: Asset, sums: dict[str, str], target_dir: Path, client: httpx.Client, version: str) -> Staged:
+    """Download asset beside the install, verify size and sha256, and return it as Staged."""
+    if not _SAFE_NAME.match(asset.name) or Path(asset.name).name != asset.name or asset.name in (".", ".."):
+        raise UpdateError(f"unsafe asset name {asset.name!r}")
     expected = sums.get(asset.name)
     if expected is None:
         raise UpdateError(f"SHA256SUMS has no line for {asset.name}")
+    try:
+        _check_url(httpx.URL(asset.url))
+    except httpx.InvalidURL:
+        raise UpdateError("the release gave an invalid download URL") from None
     directory = target_dir / STAGE_DIR
     try:
         directory.mkdir(exist_ok=True)
     except OSError as exc:
         raise UpdateError(f"cannot write to {target_dir}: {exc.strerror or exc}") from None
-    lock = _lock(directory)
+    try:
+        fd = _lock_fd(directory / "lock")
+    except UpdateError:
+        with contextlib.suppress(OSError):
+            directory.rmdir()
+        raise
+    staged = Staged(directory / f"{asset.name}-{version}.ready", expected, fd)
     part = directory / (asset.name + ".part")
-    ready = directory / (asset.name + ".ready")
-    done = False
     try:
         digest = hashlib.sha256()
         size = 0
@@ -84,6 +154,8 @@ def stage(asset: Asset, sums: dict[str, str], target_dir: Path, client: httpx.Cl
             client.stream("GET", asset.url, headers={"User-Agent": USER_AGENT}, follow_redirects=True) as resp,
             open(part, "wb") as out,
         ):
+            for hop in (*resp.history, resp):
+                _check_url(hop.url)
             if resp.status_code != 200:
                 raise UpdateError(f"download failed: HTTP {resp.status_code}")
             for chunk in resp.iter_bytes():
@@ -92,38 +164,45 @@ def stage(asset: Asset, sums: dict[str, str], target_dir: Path, client: httpx.Cl
                     raise UpdateError("download is larger than the release says")
                 digest.update(chunk)
                 out.write(chunk)
+            out.flush()
+            os.fsync(out.fileno())
         if size != asset.size:
             raise UpdateError("download is smaller than the release says")
         if digest.hexdigest() != expected:
             raise UpdateError("download does not match SHA256SUMS")
         part.chmod(0o755)
-        os.replace(part, ready)
-        done = True
-        return ready
-    except UpdateError:
+        _rename(part, staged.path)
+        _fsync_dir(directory)
+        return staged
+    except BaseException as exc:
+        _remove(part)
+        staged.discard()
+        if isinstance(exc, (httpx.HTTPError, httpx.InvalidURL, httpx.StreamError, OSError)):
+            raise UpdateError(f"download failed: {exc}") from None
         raise
-    except (httpx.HTTPError, OSError) as exc:
-        raise UpdateError(f"download failed: {exc}") from None
-    finally:
-        if not done:
-            _remove(part)
-            _remove(ready)
-        _remove(lock)
-        with contextlib.suppress(OSError):
-            directory.rmdir()
 
 
-def probe(path: Path, version: str, run=subprocess.run) -> None:
-    """Raise unless the staged binary reports `version` and passes its own selftest."""
-    for args in (["--version"], ["--selftest"]):
-        try:
-            done = run([str(path), *args], capture_output=True, text=True, timeout=PROBE_TIMEOUT)
-        except (OSError, subprocess.SubprocessError) as exc:
-            raise UpdateError(f"the new version would not run: {exc}") from None
-        if done.returncode != 0:
-            raise UpdateError(f"the new version failed {args[0]}")
-        if args[0] == "--version" and version not in (done.stdout or ""):
-            raise UpdateError(f"the new version reports {(done.stdout or '').strip()!r}, not {version}")
+def probe(staged: Staged, version: str, run=subprocess.run) -> None:
+    """Raise unless the staged binary reports `cfbtui <version>` and passes its own selftest.
+
+    On any failure the staged file is deleted.
+    """
+    try:
+        for args in (["--version"], ["--selftest"]):
+            try:
+                done = run(
+                    [str(staged.path), *args], capture_output=True, text=True,
+                    encoding="utf-8", errors="replace", timeout=PROBE_TIMEOUT,
+                )
+            except (OSError, subprocess.SubprocessError) as exc:
+                raise UpdateError(f"the new version would not run: {exc}") from None
+            if done.returncode != 0:
+                raise UpdateError(f"the new version failed {args[0]}")
+            if args[0] == "--version" and (done.stdout or "").strip() != f"cfbtui {version}":
+                raise UpdateError(f"the new version reports {(done.stdout or '').strip()!r}, not {version}")
+    except BaseException:
+        staged.discard()
+        raise
 
 
 def _rename(src: Path, dst: Path) -> None:
@@ -138,26 +217,52 @@ def _rename(src: Path, dst: Path) -> None:
             time.sleep(RENAME_WAIT)
 
 
-def apply(target: Path, staged: Path) -> None:
-    """Replace target with staged by rename; on any failure target is as it was and staged is removed."""
+def _verify(staged: Staged) -> None:
+    digest = hashlib.sha256()
+    with open(staged.path, "rb") as f:
+        while chunk := f.read(1 << 20):
+            digest.update(chunk)
+    if digest.hexdigest() != staged.sha256:
+        raise UpdateError("the staged file changed after it was verified")
+
+
+def apply(target: Path, staged: Staged) -> None:
+    """Replace target with the staged file by rename; on failure target is as it was.
+
+    The staged file is removed on every failure except RollbackError, where it is kept for recovery.
+    """
     old = target.with_name(target.name + ".old")
     try:
+        _verify(staged)
         if sys.platform != "win32":
-            os.replace(staged, target)
-            return
-        # Windows cannot overwrite or delete a running exe but can rename it out of the way.
-        if old.exists():
-            old.unlink()
-        _rename(target, old)
-        try:
-            _rename(staged, target)
-        except OSError:
-            with contextlib.suppress(OSError):
-                _rename(old, target)
+            os.replace(staged.path, target)
+            _fsync_dir(target.parent)
+        else:
+            # Windows cannot overwrite or delete a running exe but can rename it out of the way.
+            if old.exists():
+                old.unlink()
+            _rename(target, old)
+            try:
+                _rename(staged.path, target)
+            except OSError as exc:
+                try:
+                    _rename(old, target)
+                except OSError:
+                    raise RollbackError(
+                        f"the update failed ({exc.strerror or exc}) and the previous version could not be "
+                        f"restored. It is at {old}; rename it to {target} to recover. The new version is "
+                        f"at {staged.path}."
+                    ) from None
+                raise
+    except RollbackError:
+        staged.release()
+        raise
+    except (OSError, UpdateError) as exc:
+        staged.discard()
+        if isinstance(exc, UpdateError):
             raise
-    except OSError as exc:
-        _remove(staged)
         raise UpdateError(f"could not install the update: {exc.strerror or exc}") from None
+    staged.release()
 
 
 def cleanup_old(target: Path) -> None:
