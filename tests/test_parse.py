@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from cfbtui.espn.models import GameState, Odds, Situation, Status
+from cfbtui.espn.models import GameInfo, GameState, Odds, Situation, Status
 from cfbtui.espn.parse import (
     parse_date,
     parse_event,
@@ -419,6 +419,142 @@ def test_summary_junk():
     assert empty.home_win_probability is None
     assert empty.status == Status()
     assert parse_summary({"winprobability": [], "scoringPlays": "x"}).home_win_probability is None
+
+
+def _summary_fixture(name: str):
+    return parse_summary(_load(name))
+
+
+def test_summary_team_stats(summary):
+    away, home = summary.team_stats
+    assert (away.team_id, home.team_id) == ("251", "201")
+    assert [s.name for s in away.stats] == [
+        "firstDowns",
+        "thirdDownEff",
+        "fourthDownEff",
+        "totalYards",
+        "netPassingYards",
+        "yardsPerPass",
+        "rushingYards",
+        "yardsPerRushAttempt",
+        "totalPenaltiesYards",
+        "turnovers",
+        "possessionTime",
+    ]
+    third = away.stats[1]
+    assert (third.label, third.display_value) == ("3rd down efficiency", "3-14")
+    assert {s.name: s.display_value for s in home.stats}["possessionTime"] == "30:31"
+
+
+def test_summary_leaders(summary):
+    assert len(summary.leaders) == 10
+    first = summary.leaders[0]
+    assert first.category == "Passing Yards"
+    assert first.athlete == "John Mateer"
+    assert first.stat_line == "18/26, 155 YDS"
+    assert first.team_id == "201"
+    assert {leader.team_id for leader in summary.leaders} == {"201", "251"}
+
+
+def test_summary_win_probability_series(summary):
+    assert len(summary.winprobability) == 191
+    assert summary.winprobability[:2] == (0.1507, 0.147)
+    assert summary.winprobability[-1] == summary.home_win_probability == 1.0
+
+
+def test_summary_drives(summary):
+    assert len(summary.drives) == 29
+    first = summary.drives[0]
+    assert (first.team_id, first.team_abbreviation, first.result) == ("201", "OU", "Punt")
+    assert (first.plays, first.yards, first.time) == (3, -2, "1:56")
+    assert first.description == "3 plays, -2 yards, 1:56"
+    assert not any(d.in_progress for d in summary.drives)
+
+
+def test_summary_current_drive_is_flagged_and_last():
+    payload = {
+        "drives": {
+            "previous": [{"id": "1", "displayResult": "Punt"}, {"id": "2", "result": "TD"}],
+            "current": {"id": "3", "team": {"id": "9", "abbreviation": "XYZ"}, "offensivePlays": 2},
+        }
+    }
+    drives = parse_summary(payload).drives
+    assert [d.result for d in drives] == ["Punt", "TD", ""]
+    assert [d.in_progress for d in drives] == [False, False, True]
+    assert (drives[-1].team_abbreviation, drives[-1].plays) == ("XYZ", 2)
+    # A current drive ESPN also lists under previous is not shown twice.
+    dup = {"drives": {"previous": [{"id": "3"}], "current": {"id": "3"}}}
+    assert [d.in_progress for d in parse_summary(dup).drives] == [True]
+
+
+def test_summary_game_info_odds_broadcasts_and_recap(summary):
+    assert summary.game_info == GameInfo(
+        venue="Cotton Bowl", city="Dallas", state="TX", grass=True, attendance=92100
+    )
+    assert summary.odds == Odds(details="TEX -7.5", over_under=40.5, spread=7.5, provider="DraftKings")
+    assert summary.broadcasts == ("ABC",)
+    assert summary.recap_headline.startswith("Oklahoma upsets No. 1 Texas")
+    assert summary.recap_description.startswith("— Oklahoma and coach Brent Venables")
+
+
+def test_summary_linescores(summary):
+    assert summary.away_linescores == (7, 10, 0, 7)
+    assert summary.home_linescores == (0, 7, 3, 17)
+    assert sum(summary.away_linescores) == summary.scoring_plays[-1].away_score
+    assert sum(summary.home_linescores) == summary.scoring_plays[-1].home_score
+
+
+def test_summary_fcs_final_has_a_different_broadcast_shape():
+    fcs = _summary_fixture("summary_401866668_fcs_final.json")
+    assert fcs.broadcasts == ("FloSports",)
+    assert fcs.odds.spread == -18.5
+    assert fcs.recap_headline is None
+    assert fcs.recap_description is None
+    assert len(fcs.winprobability) == 163
+    assert fcs.home_linescores == (10, 14, 3, 0)
+
+
+def test_summary_pregame_omits_in_game_sections():
+    pre = _summary_fixture("summary_401856835_pregame.json")
+    assert pre.team_stats == ()  # only season averages are sent before kickoff
+    assert pre.winprobability == ()
+    assert pre.home_win_probability is None
+    assert pre.drives == ()
+    assert pre.away_linescores == pre.home_linescores == ()
+    assert pre.broadcasts == ()
+    assert pre.recap_headline is None
+    assert pre.game_info == GameInfo(
+        venue="Acrisure Bounce House", city="Orlando", state="FL", grass=True
+    )
+    assert pre.odds.details == "BYU -7.5"
+
+
+def test_summary_fcs_pregame_omits_odds():
+    pre = _summary_fixture("summary_401866670_fcs_pregame.json")
+    assert pre.odds is None
+    assert pre.team_stats == ()
+    assert pre.broadcasts == ("FloSports",)
+    assert pre.game_info.attendance is None
+
+
+def test_summary_new_fields_default_on_empty_and_junk():
+    for payload in ({}, {"boxscore": "x", "leaders": 3, "drives": [], "gameInfo": "x", "pickcenter": {}}):
+        s = parse_summary(payload)
+        assert s.team_stats == s.leaders == s.winprobability == s.drives == ()
+        assert s.broadcasts == s.away_linescores == s.home_linescores == ()
+        assert s.game_info is None or s.game_info == GameInfo()
+        assert s.odds is None or s.odds == Odds()
+        assert s.recap_headline is None and s.recap_description is None
+    junk = {
+        "boxscore": {"teams": [{"statistics": "x"}, 5, {"statistics": [{"name": ["firstDowns"]}]}]},
+        "leaders": [{"leaders": [{"leaders": []}, {}]}],
+        "winprobability": [{"homeWinPercentage": "n/a"}, {"homeWinPercentage": "0.5"}],
+        "header": {"competitions": [{"competitors": [{"homeAway": "home", "linescores": [{}, 3]}]}]},
+    }
+    s = parse_summary(junk)
+    assert s.team_stats == () and s.leaders == ()
+    assert s.winprobability == (0.5,)
+    assert s.home_linescores == ()
 
 
 def test_overall_record_never_falls_back_to_a_split():
