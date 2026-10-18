@@ -261,6 +261,11 @@ class ScoreGrid(VerticalScroll):
         if card is not None:
             card.flash(team_id)
 
+    def pulse(self, game_id: str, kind: str) -> None:
+        card = self._cards.get(game_id)
+        if card is not None:
+            card.pulse(kind)
+
     def set_data_old(self, data_old: bool) -> None:
         for card in self._cards.values():
             card.set_data_old(data_old)

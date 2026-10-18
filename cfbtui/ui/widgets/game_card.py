@@ -9,6 +9,8 @@ paints.
 Border title: ``UPSET WATCH`` or ``UPSET`` from the upset verdict, and
 ``RED ZONE`` while the offense is inside the 20. The border also changes with
 the classes ``live``, ``final``, ``pregame``, ``upset`` and ``flash``.
+A pulse (:meth:`GameCard.pulse`) adds ``pulsing``, ``pulse-<kind>`` and, on the bright
+half of each breath, ``pulse-hi``.
 """
 from __future__ import annotations
 
@@ -28,6 +30,9 @@ from cfbtui.ui.labels import status_text
 from cfbtui.ui.theme import foreground_for, team_style
 
 FLASH_SECONDS = 3.0
+PULSE_HALF_SECONDS = 0.75  # one breath (dim, then bright) is 1.5 s
+PULSE_CYCLES = 5
+PULSE_KINDS = ("redzone", "upset", "overtime", "final", "locate")
 
 
 @dataclass(frozen=True, slots=True)
@@ -219,11 +224,26 @@ class GameCard(Static):
     GameCard.final { border: round $panel; }
     GameCard.upset { border: heavy $warning; border-title-color: $warning; }
     GameCard.redzone { border-title-color: $error; }
+    GameCard.pulsing { border: heavy $panel-lighten-2; }
+    GameCard.pulse-redzone { border: heavy $error 45%; }
+    GameCard.pulse-redzone.pulse-hi { border: heavy $error; }
+    GameCard.pulse-upset { border: heavy $warning 45%; }
+    GameCard.pulse-upset.pulse-hi { border: heavy $warning; }
+    GameCard.pulse-overtime { border: heavy magenta 45%; }
+    GameCard.pulse-overtime.pulse-hi { border: heavy magenta; }
+    GameCard.pulse-final { border: heavy $success 45%; }
+    GameCard.pulse-final.pulse-hi { border: heavy white; }
+    GameCard.pulse-locate { border: heavy $accent 45%; }
+    GameCard.pulse-locate.pulse-hi { border: heavy $accent; }
     GameCard.flash { border: double $accent; }
     GameCard.old { text-opacity: 55%; }
     GameCard.compact { height: 1; border: none; }
     GameCard.compact:focus { border: none; background: $boost; text-style: bold; }
     GameCard:focus { border: double $primary; }
+    GameCard.pulsing:focus { border: double $primary 60%; }
+    GameCard.pulsing.pulse-hi:focus { border: double $primary; }
+    GameCard.compact.pulsing { border: none; }
+    GameCard.compact.pulse-hi { background: $boost; text-style: bold; }
     """
 
     can_focus = True
@@ -247,6 +267,9 @@ class GameCard(Static):
         self.data_old = False
         self._flash_team: str | None = None
         self._flash_timer = None
+        self._pulse_timer = None
+        self._pulse_kind: str | None = None
+        self._pulse_steps = 0
         self.model: CardModel | None = None
         self.repaint()
 
@@ -293,9 +316,43 @@ class GameCard(Static):
         if self.is_attached:
             self._restart_flash_timer()
 
+    def pulse(self, kind: str) -> None:
+        """Breathe the border in ``kind``'s colour (and a heavy border, for monochrome) for a few seconds.
+
+        Slower and fainter than :meth:`flash`. A second pulse restarts the first rather than stacking.
+        """
+        if kind not in PULSE_KINDS:
+            raise ValueError(f"unknown pulse kind {kind!r}")
+        self._clear_pulse()
+        self._pulse_kind = kind
+        self._pulse_steps = PULSE_CYCLES * 2
+        self.add_class("pulsing", f"pulse-{kind}", "pulse-hi")
+        if self.is_attached:
+            self._start_pulse_timer()
+
+    def _start_pulse_timer(self) -> None:
+        self._pulse_timer = self.set_interval(PULSE_HALF_SECONDS, self._pulse_step)
+
+    def _pulse_step(self) -> None:
+        self._pulse_steps -= 1
+        if self._pulse_steps <= 0:
+            self._clear_pulse()
+        else:
+            self.toggle_class("pulse-hi")
+
+    def _clear_pulse(self) -> None:
+        if self._pulse_timer is not None:
+            self._pulse_timer.stop()
+            self._pulse_timer = None
+        if self._pulse_kind is not None:
+            self.remove_class("pulsing", f"pulse-{self._pulse_kind}", "pulse-hi")
+            self._pulse_kind = None
+
     def on_mount(self) -> None:
         if self._flash_team is not None:  # flashed before it was mounted
             self._restart_flash_timer()
+        if self._pulse_kind is not None:  # pulsed before it was mounted
+            self._start_pulse_timer()
 
     def _restart_flash_timer(self) -> None:
         if self._flash_timer is not None:
