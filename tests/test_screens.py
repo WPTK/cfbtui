@@ -420,3 +420,73 @@ async def test_settings_is_listed_on_the_help_screen():
     async with app.run_test(size=SIZE) as pilot:
         await pilot.press("question_mark")
         assert ("S", "Settings") in app.screen.rows
+
+
+# --- stats sections ----------------------------------------------------------------
+
+
+def _plain(renderable) -> str:
+    console = Console(width=120, record=True, file=io.StringIO())
+    console.print(renderable)
+    return console.export_text()
+
+
+def _summary_and_game(fixture: str, board: str):
+    payload = json.loads((FIXTURES / fixture).read_text(encoding="utf-8"))
+    return parse_summary(payload), load_game(board)
+
+
+def test_final_detail_has_linescore_stats_and_sparkline_in_every_glyph_set():
+    from cfbtui.ui.glyphs import GLYPH_SETS
+
+    summary, game = _summary_and_game("summary_401856717.json", "pairs/final_after.json")
+    for glyphs in GLYPH_SETS.values():
+        text = _plain(build_detail(game, summary, glyphs))
+        assert "Score by period" in text and "Team stats" in text and "Win probability, whole game" in text
+        assert "382" in text and "29:29" in text and "3-14" in text
+    ascii_text = _plain(build_detail(game, summary, ASCII))
+    row = next(line for line in ascii_text.splitlines() if "Total yds" in line)
+    assert row.index("#") < row.index("|") < row.rindex("#"), "away bar left of the divider, home bar right"
+    assert row.count("#") <= 2 * (60 - 11 - 12 - 3) // 2
+
+
+def test_linescore_adds_overtime_columns_and_totals():
+    from cfbtui.ui.screens.detail import linescore_table
+
+    summary, game = _summary_and_game("summary_401856717.json", "pairs/final_after.json")
+    ot = replace(summary, away_linescores=(7, 10, 0, 7, 6), home_linescores=(0, 7, 3, 17, 3))
+    text = linescore_table(game, ot, ASCII).plain
+    assert text.splitlines()[0].split() == ["Q1", "Q2", "Q3", "Q4", "OT", "T"]
+    assert text.splitlines()[1].split()[-1] == "30"
+
+
+def test_stats_bars_scale_to_a_narrow_width():
+    from cfbtui.ui.screens.detail import stats_block
+
+    summary, game = _summary_and_game("summary_401856717.json", "pairs/final_after.json")
+    for width in (42, 60, 100):
+        for line in stats_block(game, summary, ASCII, width).plain.splitlines():
+            assert len(line) <= width, (width, line)
+
+
+def test_sections_vanish_when_espn_sent_no_data():
+    for fixture, board in (
+        ("summary_401856835_pregame.json", "scoreboard_week7_pregame.json"),
+        ("summary_401866670_fcs_pregame.json", "scoreboard_week7_pregame.json"),
+    ):
+        payload = json.loads((FIXTURES / fixture).read_text(encoding="utf-8"))
+        summary = parse_summary(payload)
+        game = load_board(board).games[0]
+        text = _plain(build_detail(game, summary, ASCII))
+        assert "Score by period" not in text and "Team stats" not in text and "whole game" not in text
+
+
+def test_fcs_final_renders_whichever_sections_it_has_and_a_one_sided_stat_set_is_dropped():
+    from cfbtui.ui.screens.detail import stats_block
+
+    payload = json.loads((FIXTURES / "summary_401866668_fcs_final.json").read_text(encoding="utf-8"))
+    summary = parse_summary(payload)
+    game = load_game("pairs/final_after.json")
+    text = _plain(build_detail(game, summary, ASCII, width=42))
+    assert "Score by period" in text
+    assert stats_block(game, replace(summary, team_stats=summary.team_stats[:1]), ASCII) is None
