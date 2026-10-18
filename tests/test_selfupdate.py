@@ -252,7 +252,7 @@ def test_probe_runs_a_real_file_under_a_dotted_ready_name(target):
         shutil.copy(base / "python.exe", path)
         for dll in base.glob("*.dll"):
             shutil.copy(dll, folder / dll.name)
-        env = {**os.environ, "PYTHONHOME": sys.base_prefix}
+        env = {"PYTHONHOME": sys.base_prefix}
     else:
         path.write_text('#!/bin/sh\necho "cfbtui 1.2.0"\n')
         path.chmod(0o755)
@@ -261,7 +261,7 @@ def test_probe_runs_a_real_file_under_a_dotted_ready_name(target):
     def run(cmd, **kw):  # the copied interpreter ignores our flags and prints what cfbtui would
         if env is None:
             return subprocess.run(cmd, **kw)
-        return subprocess.run([cmd[0], "-c", "print('cfbtui 1.2.0')"], env=env, **kw)
+        return subprocess.run([cmd[0], "-c", "print('cfbtui 1.2.0')"], **{**kw, "env": {**kw["env"], **env}})
 
     probe(staged, "1.2.0", run)
     assert path.exists()
@@ -438,3 +438,96 @@ def test_a_crash_between_the_two_renames_is_recovered_from_old(target, tmp_path,
     cleanup_old(target)
     assert target.read_bytes() == OLD
     staged.discard()
+
+
+
+# --- cancelling, sweeping, the child environment, a running .old -------------------------
+
+
+def test_stage_stops_and_cleans_up_when_cancelled_mid_download(target):
+    cancel = threading.Event()
+
+    def chunks():
+        yield PAYLOAD[:1000]
+        cancel.set()
+        yield PAYLOAD[1000:]
+
+    def handler(request):
+        return httpx.Response(200, headers={"Content-Length": str(len(PAYLOAD))}, content=chunks())
+
+    big = Asset(NAME, "https://example.test/a", len(PAYLOAD))
+    with httpx.Client(transport=httpx.MockTransport(handler)) as mock, pytest.raises(UpdateError, match="cancelled"):
+        stage(big, {NAME: GOOD}, target.parent, mock, "1.2.0", cancel)
+    untouched(target)
+
+
+def test_probe_checks_for_cancellation_between_steps_and_discards(target):
+    staged = make_staged(target.parent)
+    cancel = threading.Event()
+
+    def run(cmd, **kw):
+        cancel.set()
+        return completed()
+
+    with pytest.raises(UpdateError, match="cancelled"):
+        probe(staged, "1.2.0", run, cancel)
+    assert not staged.path.exists()
+
+
+def test_probe_passes_a_clean_pyinstaller_environment(target, monkeypatch):
+    monkeypatch.setenv("_PYI_ARCHIVE_FILE", "/old")
+    staged = make_staged(target.parent)
+    envs = []
+
+    def run(cmd, **kw):
+        envs.append(kw["env"])
+        return completed()
+
+    probe(staged, "1.2.0", run)
+    assert envs and all("_PYI_ARCHIVE_FILE" not in e and e["PYINSTALLER_RESET_ENVIRONMENT"] == "1" for e in envs)
+    staged.discard()
+
+
+def test_sweep_deletes_an_abandoned_stage_folder(target):
+    folder = target.parent / STAGE_DIR
+    folder.mkdir()
+    (folder / "x.part").write_bytes(b"half")
+    (folder / "x.ready").write_bytes(b"done")
+    (folder / "lock").write_bytes(b"")
+    selfupdate.sweep(target.parent)
+    assert not folder.exists() and target.read_bytes() == OLD
+
+
+def test_sweep_leaves_a_folder_whose_lock_is_held(target):
+    staged = make_staged(target.parent)
+    selfupdate.sweep(target.parent)
+    assert staged.path.read_bytes() == PAYLOAD
+    staged.discard()
+
+
+def test_sweep_ignores_a_missing_folder(target):
+    selfupdate.sweep(target.parent)
+    selfupdate.sweep(target.parent / "nowhere")
+
+
+def test_apply_parks_a_previous_version_that_is_still_running(target, tmp_path, monkeypatch):
+    old = target.with_name("cfbtui.old")
+    old.write_bytes(b"still running")
+    staged = make_staged(tmp_path)
+    real = Path.unlink
+
+    def unlink(self, *args, **kwargs):
+        if self.name == "cfbtui.old":
+            raise PermissionError("in use")
+        return real(self, *args, **kwargs)
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, "platform", "win32")
+        m.setattr(Path, "unlink", unlink)
+        apply(target, staged)
+    assert target.read_bytes() == PAYLOAD
+    assert old.read_bytes() == OLD  # the version just replaced
+    (parked,) = list(tmp_path.glob("cfbtui.old.*"))
+    assert parked.read_bytes() == b"still running"
+    cleanup_old(target)
+    assert not old.exists() and not parked.exists()

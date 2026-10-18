@@ -5,6 +5,9 @@ Flags override the config file for this run only and are never written back.
 from __future__ import annotations
 
 import argparse
+import contextlib
+import os
+import subprocess
 import sys
 from functools import partial
 from pathlib import Path
@@ -105,6 +108,37 @@ def selftest() -> int:
     return 0
 
 
+def restart(target: Path, args: list[str], execve=os.execve, call=subprocess.call) -> None:
+    """Start the installed binary again with the same arguments and a clean PyInstaller environment.
+
+    Windows has no exec, so it waits for the child.
+    """
+    from cfbtui.selfupdate import child_env
+
+    if sys.platform == "win32":
+        raise SystemExit(call([str(target), *args], env=child_env()))
+    execve(target, [str(target), *args], child_env())
+
+
+def install_update(updater, staged, app) -> bool:
+    """Swap the staged binary in after the app has exited, or discard it. Returns whether it was installed.
+
+    A staged update is installed only if cfbtui exited normally and auto-update is still on (or the user chose
+    Restart now). A failure leaves the old version in place and says why on stderr.
+    """
+    from cfbtui.selfupdate import UpdateError
+
+    if app.return_code not in (0, None) or not (app.config.updates.auto or app.restart_requested):
+        staged.discard()
+        return False
+    try:
+        updater.apply(staged)
+    except UpdateError as exc:  # RollbackError says how to recover by hand
+        print(f"cfbtui: the update was not installed: {exc}", file=sys.stderr)
+        return False
+    return True
+
+
 def main(argv: list[str] | None = None) -> int:
     if argv is None and "--selftest" in sys.argv[1:]:
         return selftest()
@@ -112,16 +146,30 @@ def main(argv: list[str] | None = None) -> int:
 
     # Imported lazily so `--version` stays instant and never touches the terminal.
     from cfbtui.app import CfbApp
+    from cfbtui.selfupdate import Updater, cleanup_old, sweep
     from cfbtui.update import check_for_update
 
     update_check = partial(check_for_update, __version__) if config.updates.check else None
-    CfbApp(
+    updater = Updater.detect(__version__)
+    if updater.kind == "binary":
+        with contextlib.suppress(Exception):
+            cleanup_old(updater.target)  # drop the previous version, or restore it after a crashed swap
+            sweep(updater.target.parent)  # and any download an earlier run left behind
+    if update_check is None:
+        updater = None  # --no-update-check: no checking and no downloading
+    app = CfbApp(
         config=config,
         file_config=loaded.config,
         config_path=save_path,
         warnings=loaded.warnings,
         update_check=update_check,
-    ).run()
+        updater=updater,
+    )
+    app.run()
+    if app.staged is not None and updater is not None:
+        installed = install_update(updater, app.staged, app)
+        if installed and app.restart_requested:
+            restart(updater.target, sys.argv[1:] if argv is None else argv)
     return 0
 
 

@@ -30,6 +30,7 @@ the change for this run and says so.
 """
 from __future__ import annotations
 
+import asyncio
 import contextlib
 from collections.abc import Awaitable, Callable
 from dataclasses import replace
@@ -42,13 +43,14 @@ from textual.css.query import NoMatches
 from textual.message import Message
 from textual.widgets import Footer
 
-from cfbtui import share
+from cfbtui import __version__, share
 from cfbtui.clipboard import ClipboardError, copy_text
 from cfbtui.config import Config, favorite_ids, save_config
 from cfbtui.espn.client import GROUP_FBS, GROUP_FCS, EspnClient
 from cfbtui.espn.models import Game, Ranking
 from cfbtui.espn.periods import MAX_WEEK, MIN_WEEK, week_label
 from cfbtui.poll import PollIntervals, PollResult, PollScheduler, ScoreboardSource
+from cfbtui.selfupdate import Staged, UpdateError, Updater
 from cfbtui.state.events import Scored
 from cfbtui.state.store import GameStore
 from cfbtui.ui import glyphs as glyph_tables
@@ -63,7 +65,7 @@ from cfbtui.ui.screens.settings import SettingsScreen
 from cfbtui.ui.widgets.score_grid import ScoreGrid
 from cfbtui.ui.widgets.status_bar import StatusBar, StatusView
 from cfbtui.ui.widgets.ticker import Ticker
-from cfbtui.update import UpdateInfo, update_message
+from cfbtui.update import UpdateInfo, decide, pip_message, update_message
 
 GROUP_NAMES = {GROUP_FBS: "FBS", GROUP_FCS: "FCS"}
 
@@ -120,12 +122,14 @@ class CfbApp(App[None]):
         config_path: Path | None = None,
         warnings: tuple[str, ...] = (),
         update_check: Callable[[], Awaitable[UpdateInfo | None]] | None = None,
+        updater: Updater | None = None,
         detail_refresh: float | None = None,
     ) -> None:
         """Explicit arguments win over ``config``, which wins over the built-in defaults.
 
         ``config_path`` is where favorites are saved; ``None`` means nowhere.
         ``update_check`` is an async callable that finds a newer release (or ``None``).
+        ``updater`` downloads and installs a release for a standalone binary; ``None`` only ever shows the link.
         ``detail_refresh`` is the seconds between the detail screen's fetches; ``None`` keeps its own.
         """
         super().__init__()
@@ -155,6 +159,10 @@ class CfbApp(App[None]):
         self._copy_parts: list[str] = []
         self._copy_next = 0
         self.update_check = update_check
+        self.updater = updater
+        self.staged: Staged | None = None  # a verified download that the entry point installs after the app exits
+        self.staged_version = ""
+        self.restart_requested = False
         self.layout = view.layout
         self.filter = "all"
         self.conference: str | None = None
@@ -181,6 +189,8 @@ class CfbApp(App[None]):
 
     async def on_unmount(self) -> None:
         self.scheduler.stop()
+        if self.updater is not None:
+            self.updater.close(keep=self.staged)  # a download still running stops here
         if self._owns_client and isinstance(self.client, EspnClient):
             await self.client.aclose()
 
@@ -239,6 +249,7 @@ class CfbApp(App[None]):
             glyph_set=self.glyphs.name,
             errors=len(self.store.last_errors),
             view_note=describe(self.filter, self.conference, self.layout),
+            update_ready=self.staged_version,
         )
         self.query_one(StatusBar).show(view, self.glyphs)
         self.query_one(ScoreGrid).set_data_old(freshness.data_old)
@@ -388,7 +399,8 @@ class CfbApp(App[None]):
             "glyph_set": self.glyphs.name,
             "layout": self.layout,
         }
-        self.push_screen(SettingsScreen(values, self._setting_changed))
+        restart = self.action_restart if self.staged is not None else None
+        self.push_screen(SettingsScreen(values, self._setting_changed, restart))
 
     def _setting_changed(self, key: str, value: str) -> str:
         """Apply one setting now and save it; returns the save note ('' when saved). Flags are never saved."""
@@ -406,6 +418,11 @@ class CfbApp(App[None]):
             self.layout = value
             self._view_changed(f"Layout: {value}")
         return self._save()
+
+    def action_restart(self) -> None:
+        """Quit so the entry point installs the staged update and starts the new version."""
+        self.restart_requested = True
+        self.exit()
 
     def _remember_cfp(self, poll: Ranking) -> None:
         self.cfp = poll
@@ -481,8 +498,34 @@ class CfbApp(App[None]):
         if self.update_check is None:
             return
         info = await self.update_check()
-        if info is not None:
+        if info is None:
+            return
+        updater = self.updater
+        action = "link" if updater is None else decide(
+            updater.kind, auto=self.config.updates.auto, no_config=self.config_path is None,
+            current=__version__, info=info, asset=updater.asset_name,
+        )
+        if action == "message":
+            message = f"cfbtui {info.version} is available. {pip_message(updater.kind)}"
+            self.notify(message, title="Update available", timeout=20)
+        elif action == "download":
+            await self._download(updater, info)
+        else:
             self.notify(update_message(info), title="Update available", timeout=20)
+
+    async def _download(self, updater: Updater, info: UpdateInfo) -> None:
+        """Stage and probe the release in a thread; any failure leaves the install alone and says so once."""
+        try:
+            self.staged = await asyncio.to_thread(updater.stage, info)
+        except Exception as exc:  # UpdateError is expected; anything else must not take the app down either
+            detail = exc if isinstance(exc, UpdateError) else "unexpected error"
+            self.notify(f"Could not download cfbtui {info.version}: {detail}. {update_message(info)}",
+                        title="Update", severity="warning", timeout=20)
+            return
+        self.staged_version = info.version
+        self.notify(f"cfbtui {info.version} downloaded; it takes over when you quit", title="Update", timeout=10)
+        with contextlib.suppress(NoMatches):
+            self._update_status()
 
     # --- copy ------------------------------------------------------------------
 

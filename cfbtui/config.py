@@ -37,7 +37,9 @@ matched against each team's abbreviation as games arrive.
 
     [updates]
     check = true         # look for a newer release at startup
-    auto = true          # install it on its own (stored here; the settings screen toggles it)
+    auto = true          # standalone binaries download a new minor or patch version and install it when
+                         # you quit, if it is still on then and cfbtui exited normally (the settings screen
+                         # toggles it); a new major version only shows a link
 """
 from __future__ import annotations
 
