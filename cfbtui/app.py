@@ -5,11 +5,12 @@ back as a :class:`PollUpdated` message. Everything the user sees is repainted
 from the store's current games, so a failed poll simply leaves the last good
 cards on screen while the status bar says how old they are.
 
-Keys: ``q`` quit, ``r`` refresh now, ``g`` cycle the glyph set, ``[`` and ``]``
-previous and next week, ``t`` this week, ``f`` toggle FBS and FCS, arrow keys
-move between cards, ``1`` and ``2`` star or unstar the focused card's away and
-home team, ``Enter`` opens the focused game's detail screen, ``R`` the AP and
-Coaches polls (``Esc`` returns from either), ``c`` copies the focused game as
+Keys: ``?`` lists every key (the footer shows only the core five), ``q`` quit,
+``r`` refresh now, ``g`` cycle the glyph set, ``[`` and ``]`` previous and next
+week, ``t`` this week, ``f`` toggle FBS and FCS, arrow keys move between cards,
+``1`` and ``2`` star or unstar the focused card's away and home team, ``Enter``
+opens the focused game's detail screen, ``R`` the AP and Coaches polls (``Esc``
+returns from either), ``c`` copies the focused game as
 Discord Markdown and ``C`` copies every visible game.
 
 **Screens.** Detail and rankings are pushed over the grid. Polling keeps
@@ -55,6 +56,7 @@ from cfbtui.ui.filters import FILTER_LABELS, conference_name, conferences_on, de
 from cfbtui.ui.glyphs import Glyphs
 from cfbtui.ui.screens.conferences import ConferenceScreen
 from cfbtui.ui.screens.detail import DetailScreen
+from cfbtui.ui.screens.help import HelpScreen, help_rows
 from cfbtui.ui.screens.rankings import RankingsScreen
 from cfbtui.ui.widgets.score_grid import ScoreGrid
 from cfbtui.ui.widgets.status_bar import StatusBar, StatusView
@@ -75,29 +77,31 @@ class PollUpdated(Message):
 class CfbApp(App[None]):
     TITLE = "cfbtui"
     CSS_PATH = "ui/app.tcss"
+    # Only the first five show in the footer, so it fits 60 columns; `?` lists the rest.
     BINDINGS = [
         ("q", "quit", "Quit"),
-        ("r", "refresh", "Refresh"),
-        ("g", "cycle_glyphs", "Glyphs"),
-        Binding("left_square_bracket", "week(-1)", "Prev week"),
-        Binding("right_square_bracket", "week(1)", "Next week"),
-        ("t", "this_week", "This week"),
-        ("f", "toggle_group", "FBS/FCS"),
-        Binding("1", "favorite('away')", "Star away"),
-        Binding("2", "favorite('home')", "Star home"),
+        Binding("question_mark", "help", "Help", key_display="?"),
         Binding("enter", "detail", "Detail"),
-        Binding("R", "rankings", "Rankings"),
-        Binding("c", "copy_game", "Copy game"),
-        Binding("C", "copy_board", "Copy all"),
-        Binding("v", "toggle_layout", "Grid/list"),
         Binding("l", "cycle_filter", "Filter"),
-        Binding("o", "conference", "Conference"),
+        Binding("R", "rankings", "Rankings"),
+        Binding("r", "refresh", "Refresh", show=False),
+        Binding("g", "cycle_glyphs", "Glyphs", show=False),
+        Binding("left_square_bracket", "week(-1)", "Prev week", show=False),
+        Binding("right_square_bracket", "week(1)", "Next week", show=False),
+        Binding("t", "this_week", "This week", show=False),
+        Binding("f", "toggle_group", "FBS/FCS", show=False),
+        Binding("1", "favorite('away')", "Star away", show=False),
+        Binding("2", "favorite('home')", "Star home", show=False),
+        Binding("c", "copy_game", "Copy game", show=False),
+        Binding("C", "copy_board", "Copy all", show=False),
+        Binding("v", "toggle_layout", "Grid/list", show=False),
+        Binding("o", "conference", "Conference", show=False),
     ]
 
     # Actions that belong to the grid; they are off while a detail or rankings screen is on top.
     GRID_ACTIONS = frozenset(
-        {"refresh", "week", "this_week", "toggle_group", "favorite", "detail", "rankings", "copy_game", "copy_board",
-         "toggle_layout", "cycle_filter", "conference"}
+        {"help", "refresh", "week", "this_week", "toggle_group", "favorite", "detail", "rankings", "copy_game",
+         "copy_board", "toggle_layout", "cycle_filter", "conference"}
     )
 
     def __init__(
@@ -343,6 +347,10 @@ class CfbApp(App[None]):
         self._switch(week=self.scheduler.week, group=other, what=GROUP_NAMES[other])
 
     # --- screens ---------------------------------------------------------------
+
+    def action_help(self) -> None:
+        bindings = Binding.make_bindings(self.BINDINGS)
+        self.push_screen(HelpScreen(help_rows(bindings, lambda b: b.key_display or self.get_key_display(b))))
 
     def action_detail(self) -> None:
         card = self.query_one(ScoreGrid).focused_card
