@@ -616,7 +616,7 @@ async def test_favorite_filter_shows_starred_games_and_an_empty_message_otherwis
         assert gids(app) == []
         assert "No games match this view" in message(app)
         assert "Favorites" in status(app)
-        await pilot.press("l")  # back to all
+        await pilot.press(*["l"] * 5)  # back to all
         await pilot.pause()
         assert len(gids(app)) == 12 and message(app) == ""
         await pilot.press("right", "1")
@@ -666,15 +666,15 @@ async def test_l_cycles_all_top25_live_favorites_and_shows_matching_games():
         await booted(pilot, app, 12)
         seen = []
         counts = []
-        for _ in range(4):
+        for _ in range(8):
             await pilot.press("l")
             await pilot.pause()
             seen.append(app.filter)
             counts.append(len(gids(app)))
             await wait_for(pilot, lambda: True)
-        assert seen == ["top25", "live", "favorites", "all"]
-        # games 0,2,5,8 involve a ranked team; 0,1,8 are live; no favorites; all = 12
-        assert counts == [4, 3, 0, 12]
+        assert seen == ["top25", "live", "favorites", "upset", "redzone", "overtime", "interesting", "all"]
+        # games 0,2,5,8 involve a ranked team; 0,1,8 are live; no favorites; one upset watch; no red zone or OT; all = 12
+        assert counts == [4, 3, 0, 1, 0, 0, 1, 12], counts
         assert any("Showing: Top 25" in t for t in toasts(app))
         await pilot.press("l")
         await pilot.pause()
@@ -693,7 +693,7 @@ async def test_live_filter_with_no_live_games_shows_the_empty_message_and_keeps_
         assert app.filter == "live" and gids(app) == []
         assert "No games match this view" in message(app)
         assert "0 live of 9" in status(app)
-        await pilot.press("l", "l")
+        await pilot.press(*["l"] * 6)  # back to all
         await pilot.pause(0.2)
         assert len(gids(app)) == 9
 
@@ -927,7 +927,7 @@ async def test_changing_the_view_restarts_C_at_part_one():
         assert app._copy_next == 0
         await pilot.press("C")
         assert any("No games to copy" in t for t in toasts(app))
-        await pilot.press("l", "l", "l")
+        await pilot.press(*["l"] * 7)
         await pilot.pause()
         await pilot.press("C")
         assert "part 1 of" in toasts(app)[-2] or "part 1 of" in " ".join(toasts(app)[-3:])
@@ -1182,7 +1182,7 @@ async def test_errors_after_a_good_board_keep_the_cards_and_flag_the_status_bar(
         await pilot.pause()
         assert isinstance(app.screen, DetailScreen)
         await pilot.press("escape")
-        await pilot.press("l", "l", "l", "l", "g")
+        await pilot.press(*["l"] * 8, "g")
         await pilot.pause()
         assert len(app.query(GameCard)) == 62 and "ERROR" in status(app)
 

@@ -258,7 +258,7 @@ class GameStore:
             ):
                 events.append(PeriodChanged(cur, cur.status.period))
 
-        if cur.is_live and cur.situation is not None and cur.situation.is_red_zone:
+        if cur.in_red_zone and cur.situation is not None:
             ps = prev.situation
             if ps is None or not ps.is_red_zone or ps.possession != cur.situation.possession:
                 events.append(RedZone(cur, cur.competitor(cur.situation.possession)))

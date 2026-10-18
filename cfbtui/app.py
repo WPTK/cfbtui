@@ -280,7 +280,7 @@ class CfbApp(App[None]):
         return ""
 
     def _visible(self) -> list[Game]:
-        return [g for g in self.store.games if keep(g, self.filter, self.favorites, self.conference)]
+        return [g for g in self.store.games if keep(g, self.filter, self.favorites, self.conference, self.store.rule)]
 
     def _paint_grid(self, *, data_old: bool) -> None:
         plain = self.filter == "all" and self.conference is None

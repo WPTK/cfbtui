@@ -13,10 +13,21 @@ from cfbtui.__main__ import _week, build_parser
 from cfbtui.app import CfbApp
 from cfbtui.config import Config, FavoritesConfig, ViewConfig, parse_config
 from cfbtui.espn.client import GROUP_FCS, EspnClient
-from cfbtui.espn.models import RankEntry, Ranking
+from cfbtui.espn.models import Competitor, Game, GameState, RankEntry, Ranking, Situation, Status, Team
 from cfbtui.espn.parse import parse_scoreboard
 from cfbtui.espn.periods import WEEK_BOWLS, WEEK_PLAYOFF, espn_request, from_espn, week_label
-from cfbtui.ui.filters import CONFERENCES, conference_name, conferences_on, describe, keep, next_filter
+from cfbtui.state.upset import UpsetRule
+from cfbtui.ui.filters import (
+    CONFERENCES,
+    conference_name,
+    conferences_on,
+    describe,
+    is_interesting,
+    is_overtime,
+    is_upset_watch,
+    keep,
+    next_filter,
+)
 from cfbtui.ui.glyphs import ASCII, UNICODE
 from cfbtui.ui.screens.conferences import ConferenceScreen
 from cfbtui.ui.screens.rankings import is_cfp, pick_polls
@@ -25,6 +36,8 @@ from cfbtui.ui.widgets.score_grid import ScoreGrid
 from cfbtui.ui.widgets.status_bar import StatusBar
 from tests.fakes import FIXTURES, FakeClient, load_board
 from tests.test_app_smoke import FAST, SIZE, wait_for
+
+RULE = UpsetRule()
 
 
 def poll(kind: str, name: str, ranks: int = 3) -> Ranking:
@@ -129,10 +142,10 @@ def board():
 
 def test_filters_cycle_and_describe():
     seen, mode = [], "all"
-    for _ in range(4):
+    for _ in range(8):
         mode = next_filter(mode)
         seen.append(mode)
-    assert seen == ["top25", "live", "favorites", "all"]
+    assert seen == ["top25", "live", "favorites", "upset", "redzone", "overtime", "interesting", "all"]
     assert describe("all", None, "grid") == ""
     assert describe("top25", "8", "list") == "Top 25 SEC list"
 
@@ -141,12 +154,12 @@ def test_keep_top25_favorites_and_conference():
     games = board().games
     ranked = [g for g in games if g.away.rank is not None or g.home.rank is not None]
     assert ranked and len(ranked) < len(games)
-    assert [g for g in games if keep(g, "top25", frozenset(), None)] == ranked
-    assert not [g for g in games if keep(g, "live", frozenset(), None)]
+    assert [g for g in games if keep(g, "top25", frozenset(), None, RULE)] == ranked
+    assert not [g for g in games if keep(g, "live", frozenset(), None, RULE)]
     star = ranked[0].home.id
-    assert [g for g in games if keep(g, "favorites", frozenset({star}), None)]
-    assert all(g.home.id == star or g.away.id == star for g in games if keep(g, "favorites", frozenset({star}), None))
-    sec = [g for g in games if keep(g, "all", frozenset(), "8")]
+    assert [g for g in games if keep(g, "favorites", frozenset({star}), None, RULE)]
+    assert all(g.home.id == star or g.away.id == star for g in games if keep(g, "favorites", frozenset({star}), None, RULE))
+    sec = [g for g in games if keep(g, "all", frozenset(), "8", RULE)]
     assert sec and all("8" in (g.away.team.conference_id, g.home.team.conference_id) for g in sec)
 
 
@@ -158,6 +171,78 @@ def test_conferences_on_the_board_are_named_and_sorted():
     assert named == sorted(named)
     assert names[: len(named)] == named  # unnamed ones sort last
     assert conference_name("99999") == "Conference 99999"
+
+
+def mk(
+    *,
+    state: GameState = GameState.IN,
+    period: int = 2,
+    home: int = 0,
+    away: int = 0,
+    away_rank: int | None = None,
+    red_zone: bool = False,
+    conf: str = "8",
+    completed: bool = False,
+) -> Game:
+    def t(abbr: str, i: str) -> Team:
+        return Team(id=i, abbreviation=abbr, display_name=abbr, short_name=abbr, color="#000000",
+                    alt_color="#ffffff", conference_id=conf)
+
+    return Game(
+        id="1",
+        date=datetime(2026, 10, 10, tzinfo=UTC),
+        name="Away at Home",
+        short_name="AWY @ HOM",
+        home=Competitor(team=t("HOM", "201"), home_away="home", score=home),
+        away=Competitor(team=t("AWY", "251"), home_away="away", score=away, rank=away_rank),
+        status=Status(state=state, completed=completed, period=period),
+        situation=Situation(is_red_zone=red_zone) if state == GameState.IN else None,
+    )
+
+
+def test_upset_watch_is_a_live_underdog_lead_only():
+    watch = mk(away_rank=3, home=17, away=10)
+    assert is_upset_watch(watch, RULE)
+    assert not is_upset_watch(mk(away_rank=3, home=10, away=17), RULE)
+    assert not is_upset_watch(mk(away_rank=3, home=17, away=10, state=GameState.POST, completed=True), RULE)
+    assert not is_upset_watch(mk(state=GameState.PRE, away_rank=3), RULE)
+
+
+def test_red_zone_filter_matches_the_card_definition():
+    hot = mk(red_zone=True)
+    assert hot.in_red_zone and keep(hot, "redzone", frozenset(), None, RULE)
+    assert not keep(mk(), "redzone", frozenset(), None, RULE)
+    assert not keep(mk(state=GameState.POST, completed=True), "redzone", frozenset(), None, RULE)
+
+
+def test_overtime_includes_live_and_finished_but_not_regulation():
+    assert is_overtime(mk(period=5))
+    assert is_overtime(mk(period=6, state=GameState.POST, completed=True))
+    assert not is_overtime(mk(period=4))
+    assert not is_overtime(mk(period=5, state=GameState.PRE))
+
+
+def test_interesting_is_the_union_of_the_three():
+    cases = [
+        mk(away_rank=3, home=17, away=10),
+        mk(red_zone=True),
+        mk(period=5),
+        mk(),
+        mk(state=GameState.PRE),
+    ]
+    for g in cases:
+        expected = is_upset_watch(g, RULE) or g.in_red_zone or is_overtime(g)
+        assert is_interesting(g, RULE) is expected
+        assert keep(g, "interesting", frozenset(), None, RULE) is expected
+    assert [is_interesting(g, RULE) for g in cases] == [True, True, True, False, False]
+
+
+def test_new_filters_compose_with_the_conference_filter():
+    sec, acc = mk(period=5, conf="8"), mk(period=5, conf="1")
+    for mode in ("overtime", "interesting"):
+        assert keep(sec, mode, frozenset(), "8", RULE)
+        assert not keep(acc, mode, frozenset(), "8", RULE)
+    assert describe("redzone", "8", "grid") == "Red Zone SEC"
 
 
 # --- the list layout --------------------------------------------------------
@@ -225,7 +310,7 @@ async def test_l_cycles_the_filter_and_the_grid_follows():
         await pilot.pause()
         assert len(app.query(GameCard)) == 0
         assert "No games match" in str(app.query_one("#message").render())
-        await pilot.press("l", "l")  # Favorites (none), then back to all
+        await pilot.press(*["l"] * 6)  # Favorites, the four game-day filters, then back to all
         await pilot.pause()
         assert len(app.query(GameCard)) == total
 
