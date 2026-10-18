@@ -807,7 +807,7 @@ async def test_g_repaints_cards_the_ticker_and_an_open_detail():
     async with app.run_test(size=SIZE) as pilot:
         await wait_for(pilot, lambda: app.query_one(Ticker).entry_count >= 1)
         ticker = app.query_one(Ticker)
-        ascii_line = text_of(ticker.lines[0]) if ticker.lines else ""
+        ascii_line = text_of(ticker.lines[0].text) if ticker.lines else ""
         await pilot.press("g")
         await pilot.pause()
         assert app.glyphs.name == "unicode" and ticker.glyphs is app.glyphs
@@ -1249,7 +1249,7 @@ async def test_config_warnings_are_toasted_at_launch():
 
 
 def ticker_text(app: CfbApp) -> str:
-    return "\n".join(text_of(Text("".join(seg.text for seg in line))) for line in app.query_one(Ticker).lines)
+    return "\n".join(text_of(line.text) for line in app.query_one(Ticker).lines)
 
 
 async def test_a_touchdown_lands_in_the_ticker_flashes_the_card_and_survives_g():

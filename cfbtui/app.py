@@ -426,6 +426,36 @@ class CfbApp(App[None]):
         self._tick()
         self.notify(note, timeout=2)
 
+    def on_ticker_line_selected(self, message: Ticker.LineSelected) -> None:
+        """A ticker line was clicked: show its game, clearing the filter or conference that hides it."""
+        game = self.store.get(message.game_id) if message.game_id in self.store else None
+        if game is None:
+            self.notify("That game is no longer on the board.", timeout=3)
+            return
+        if not keep(game, self.filter, self.favorites, self.conference, self.store.rule):
+            hidden_by = []
+            if self.filter != "all" and not keep(game, self.filter, self.favorites, None, self.store.rule):
+                hidden_by.append(f"the {FILTER_LABELS[self.filter]} filter")
+                self.filter = "all"
+            if self.conference is not None and not keep(
+                game, self.filter, self.favorites, self.conference, self.store.rule
+            ):
+                hidden_by.append(f"the {conference_name(self.conference)} conference")
+                self.conference = None
+            matchup = f"{game.away.abbreviation} {self.glyphs.at} {game.home.abbreviation}"
+            self._view_changed(f"{matchup} was hidden by {' and '.join(hidden_by)}; showing all games")
+            self.call_after_refresh(self._locate, game.id)
+            return
+        self._locate(game.id)
+
+    def _locate(self, game_id: str) -> None:
+        grid = self.query_one(ScoreGrid)
+        card = grid.card_for(game_id)
+        if card is not None:
+            card.scroll_visible()
+            card.focus()
+            card.pulse("locate")
+
     def action_toggle_layout(self) -> None:
         self.layout = "grid" if self.layout == "list" else "list"
         self._view_changed(f"Layout: {self.layout}")

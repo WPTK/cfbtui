@@ -50,7 +50,7 @@ async def test_a_touchdown_flashes_the_card_and_lands_in_the_ticker():
     async with app.run_test(size=SIZE) as pilot:
         await wait_for(pilot, lambda: app.query_one(Ticker).entry_count >= 2)
         ticker = app.query_one(Ticker)
-        text = " ".join("".join(seg.text for seg in line) for line in ticker.lines)
+        text = " ".join(line.text.plain for line in ticker.lines)
         assert "KICKOFF" in text, "first sight of a live game announces it"
         assert "TD TEX +7" in text
         card = app.query_one(GameCard)
@@ -74,7 +74,7 @@ async def test_failure_keeps_the_cards_says_error_and_recovers():
         await wait_for(pilot, lambda: not status.has_class("error"))
         await wait_for(pilot, lambda: app.query_one(GameCard).model.rows[0].score.strip() == "14")
         ticker = app.query_one(Ticker)
-        text = " ".join("".join(seg.text for seg in line) for line in ticker.lines)
+        text = " ".join(line.text.plain for line in ticker.lines)
         assert "TD TEX +7" in text, "the touchdown scored during the outage is reported on recovery"
 
 

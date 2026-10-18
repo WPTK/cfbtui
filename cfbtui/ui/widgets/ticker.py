@@ -11,7 +11,10 @@ from collections.abc import Iterable
 from datetime import datetime
 
 from rich.text import Text
-from textual.widgets import RichLog
+from textual.binding import Binding
+from textual.containers import VerticalScroll
+from textual.message import Message
+from textual.widgets import Static
 
 from cfbtui.espn.models import Game
 from cfbtui.state.events import (
@@ -130,7 +133,51 @@ def _body(event: Event, glyphs: Glyphs) -> str:
             return f"{glyphs.score} {matchup(game, glyphs)}  {scores(game)}"
 
 
-class Ticker(RichLog):
+class TickerLine(Static):
+    """One event's line. Clicking it, or Enter while it has focus, asks the app to locate its game."""
+
+    BINDINGS = [
+        Binding("enter", "select", show=False),
+        Binding("up", "move(-1)", show=False),
+        Binding("down", "move(1)", show=False),
+    ]
+
+    DEFAULT_CSS = """
+    TickerLine { height: auto; }
+    TickerLine:hover { background: $boost; }
+    TickerLine:focus { background: $accent 30%; }
+    """
+
+    can_focus = True
+
+    def __init__(self, event: Event, stamp: datetime, glyphs: Glyphs, favorites: frozenset[str]) -> None:
+        self.text = format_event(event, glyphs, stamp=stamp, favorites=favorites)
+        super().__init__(self.text, markup=False)
+        self.event = event
+        self.stamp = stamp
+
+    def redraw(self, glyphs: Glyphs, favorites: frozenset[str]) -> None:
+        self.text = format_event(self.event, glyphs, stamp=self.stamp, favorites=favorites)
+        self.update(self.text)
+
+    def on_click(self) -> None:
+        self.focus()
+        self.action_select()
+
+    def action_select(self) -> None:
+        self.post_message(Ticker.LineSelected(self.event.game_id, self.event))
+
+    def action_move(self, step: int) -> None:
+        lines = list(self.parent.children) if self.parent else []
+        if self in lines:
+            target = lines[max(0, min(len(lines) - 1, lines.index(self) + step))]
+            target.focus()
+            target.scroll_visible()
+
+
+class Ticker(VerticalScroll):
+    """The log: one :class:`TickerLine` per event (up to ``CAP``), newest at the bottom."""
+
     DEFAULT_CSS = """
     Ticker {
         height: 8;
@@ -140,27 +187,48 @@ class Ticker(RichLog):
     }
     """
 
+    class LineSelected(Message):
+        """A line was clicked or chosen with Enter; the app locates ``game_id``."""
+
+        def __init__(self, game_id: str, event: Event) -> None:
+            super().__init__()
+            self.game_id = game_id
+            self.event = event
+
     def __init__(self, glyphs: Glyphs, favorites: frozenset[str] = frozenset(), **kwargs) -> None:
-        super().__init__(max_lines=CAP, wrap=True, markup=False, highlight=False, auto_scroll=True, **kwargs)
+        super().__init__(**kwargs)
         self.glyphs = glyphs
         self.favorites = favorites
-        self._entries: deque[tuple[datetime, Event]] = deque(maxlen=CAP)
+        self._lines: deque[TickerLine] = deque()
         self.border_title = "ticker"
+
+    def on_mount(self) -> None:
+        self.anchor()  # stay on the newest line until the user scrolls up
+
+    @property
+    def lines(self) -> list[TickerLine]:
+        """The live lines, oldest first."""
+        return list(self._lines)
 
     def add_events(self, events: Iterable[Event], *, stamp: datetime | None = None) -> None:
         stamp = stamp or datetime.now()
-        for event in events:
-            self._entries.append((stamp, event))
-            self.write(format_event(event, self.glyphs, stamp=stamp, favorites=self.favorites))
+        new = [TickerLine(e, stamp, self.glyphs, self.favorites) for e in events]
+        self._lines.extend(new)
+        excess = [self._lines.popleft() for _ in range(max(0, len(self._lines) - CAP))]
+        for line in excess:
+            if line.is_attached:
+                line.remove()
+        self.mount_all([line for line in new if line not in excess])
 
     @property
     def entry_count(self) -> int:
-        return len(self._entries)
+        return len(self._lines)
 
     def clear_log(self) -> None:
         """Forget every line, for a week or group switch."""
-        self._entries.clear()
-        self.clear()
+        for line in self._lines:
+            line.remove()
+        self._lines.clear()
 
     def set_glyphs(self, glyphs: Glyphs) -> None:
         """Redraw the whole log in another glyph set."""
@@ -173,6 +241,5 @@ class Ticker(RichLog):
         self._redraw()
 
     def _redraw(self) -> None:
-        self.clear()
-        for stamp, event in self._entries:
-            self.write(format_event(event, self.glyphs, stamp=stamp, favorites=self.favorites))
+        for line in self._lines:
+            line.redraw(self.glyphs, self.favorites)
