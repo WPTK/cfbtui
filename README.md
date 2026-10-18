@@ -120,7 +120,7 @@ it again for the next part.
 |---|---|
 | arrow keys | Move between games |
 | `Enter` | Open the game: every scoring play and win probability |
-| `R` | Rankings |
+| `R` | Rankings. In there, `c` copies the polls for Discord, one per press |
 | `[` `]` | Previous / next week. After week 15 come **Bowls** and the **Playoff** |
 | `t` | Back to this week |
 | `f` | Switch between FBS and FCS |

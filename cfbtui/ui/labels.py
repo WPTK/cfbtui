@@ -5,7 +5,7 @@ import re
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from cfbtui.espn.models import Game
+from cfbtui.espn.models import Game, Ranking
 from cfbtui.ui.glyphs import Glyphs
 
 EASTERN = ZoneInfo("America/New_York")
@@ -65,3 +65,15 @@ _PLAYING = frozenset(
         "STATUS_OVERTIME",
     }
 )
+
+
+def poll_title(poll: Ranking) -> str:
+    week = f"  Week {poll.week}" if poll.week else ""
+    when = f"  {poll.date:%b} {poll.date.day}" if poll.date else ""
+    return f"{poll.name}{week}{when}"
+
+
+def trend_text(previous: int | None, trend: str | None) -> str:
+    if trend and trend not in {"-", "0"}:
+        return trend
+    return "new" if previous is None else ""
