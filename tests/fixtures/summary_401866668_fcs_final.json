@@ -1,0 +1,2930 @@
+{
+ "boxscore": {
+  "teams": [
+   {
+    "team": {
+     "id": "2130",
+     "slug": "chicago-state-cougars",
+     "location": "Chicago State",
+     "name": "Cougars",
+     "abbreviation": "CHST",
+     "displayName": "Chicago State Cougars",
+     "shortDisplayName": "Chicago St"
+    },
+    "statistics": [
+     {
+      "name": "firstDowns",
+      "displayValue": "14",
+      "value": 14.0,
+      "label": "1st Downs"
+     },
+     {
+      "name": "thirdDownEff",
+      "displayValue": "6-14",
+      "value": 0.4285714286,
+      "label": "3rd down efficiency"
+     },
+     {
+      "name": "fourthDownEff",
+      "displayValue": "0-3",
+      "value": 0,
+      "label": "4th down efficiency"
+     },
+     {
+      "name": "totalYards",
+      "displayValue": "239",
+      "value": "-",
+      "label": "Total Yards"
+     },
+     {
+      "name": "netPassingYards",
+      "displayValue": "171",
+      "value": 171.0,
+      "label": "Passing"
+     },
+     {
+      "name": "completionAttempts",
+      "displayValue": "18/34",
+      "value": "-",
+      "label": "Comp/Att"
+     },
+     {
+      "name": "yardsPerPass",
+      "displayValue": "5.0",
+      "value": 5.029,
+      "label": "Yards per pass"
+     },
+     {
+      "name": "rushingYards",
+      "displayValue": "68",
+      "value": 68.0,
+      "label": "Rushing"
+     },
+     {
+      "name": "rushingAttempts",
+      "displayValue": "25",
+      "value": 25.0,
+      "label": "Rushing Attempts"
+     },
+     {
+      "name": "yardsPerRushAttempt",
+      "displayValue": "2.7",
+      "value": 2.72,
+      "label": "Yards per rush"
+     },
+     {
+      "name": "totalPenaltiesYards",
+      "displayValue": "3-25",
+      "value": "-",
+      "label": "Penalties"
+     },
+     {
+      "name": "turnovers",
+      "displayValue": "3",
+      "value": "-",
+      "label": "Turnovers"
+     },
+     {
+      "name": "fumblesLost",
+      "displayValue": "1",
+      "value": 1.0,
+      "label": "Fumbles lost"
+     },
+     {
+      "name": "interceptions",
+      "displayValue": "2",
+      "value": 2.0,
+      "label": "Interceptions thrown"
+     },
+     {
+      "name": "possessionTime",
+      "displayValue": "27:59",
+      "value": 1679,
+      "label": "Possession"
+     }
+    ],
+    "displayOrder": 1,
+    "homeAway": "away"
+   },
+   {
+    "team": {
+     "id": "2448",
+     "slug": "north-carolina-at-aggies",
+     "location": "North Carolina A&T",
+     "name": "Aggies",
+     "abbreviation": "NCAT",
+     "displayName": "North Carolina A&T Aggies",
+     "shortDisplayName": "NC A&T",
+     "color": "0505aa",
+     "alternateColor": "004684"
+    },
+    "statistics": [
+     {
+      "name": "firstDowns",
+      "displayValue": "15",
+      "value": 15.0,
+      "label": "1st Downs"
+     },
+     {
+      "name": "thirdDownEff",
+      "displayValue": "5-13",
+      "value": 0.3846153846,
+      "label": "3rd down efficiency"
+     },
+     {
+      "name": "fourthDownEff",
+      "displayValue": "0-0",
+      "value": "-",
+      "label": "4th down efficiency"
+     },
+     {
+      "name": "totalYards",
+      "displayValue": "286",
+      "value": "-",
+      "label": "Total Yards"
+     },
+     {
+      "name": "netPassingYards",
+      "displayValue": "199",
+      "value": 199.0,
+      "label": "Passing"
+     },
+     {
+      "name": "completionAttempts",
+      "displayValue": "15/26",
+      "value": "-",
+      "label": "Comp/Att"
+     },
+     {
+      "name": "yardsPerPass",
+      "displayValue": "7.7",
+      "value": 7.654,
+      "label": "Yards per pass"
+     },
+     {
+      "name": "rushingYards",
+      "displayValue": "87",
+      "value": 87.0,
+      "label": "Rushing"
+     },
+     {
+      "name": "rushingAttempts",
+      "displayValue": "32",
+      "value": 32.0,
+      "label": "Rushing Attempts"
+     },
+     {
+      "name": "yardsPerRushAttempt",
+      "displayValue": "2.7",
+      "value": 2.719,
+      "label": "Yards per rush"
+     },
+     {
+      "name": "totalPenaltiesYards",
+      "displayValue": "14-83",
+      "value": "-",
+      "label": "Penalties"
+     },
+     {
+      "name": "turnovers",
+      "displayValue": "2",
+      "value": "-",
+      "label": "Turnovers"
+     },
+     {
+      "name": "fumblesLost",
+      "displayValue": "1",
+      "value": 1.0,
+      "label": "Fumbles lost"
+     },
+     {
+      "name": "interceptions",
+      "displayValue": "1",
+      "value": 1.0,
+      "label": "Interceptions thrown"
+     },
+     {
+      "name": "possessionTime",
+      "displayValue": "32:01",
+      "value": 1921,
+      "label": "Possession"
+     }
+    ],
+    "displayOrder": 2,
+    "homeAway": "home"
+   }
+  ]
+ },
+ "gameInfo": {
+  "venue": {
+   "id": "3603",
+   "fullName": "Truist Stadium",
+   "address": {
+    "city": "Greensboro",
+    "state": "NC",
+    "zipCode": "30339",
+    "country": "USA"
+   },
+   "grass": true
+  },
+  "attendance": 3521
+ },
+ "drives": {
+  "previous": [
+   {
+    "id": "4018666682",
+    "description": "4 plays, 30 yards, 2:33",
+    "team": {
+     "id": "2448",
+     "name": "Aggies",
+     "abbreviation": "NCAT",
+     "displayName": "North Carolina A&T Aggies",
+     "shortDisplayName": "NC A&T"
+    },
+    "start": {
+     "period": {
+      "type": "quarter",
+      "number": 1
+     },
+     "clock": {
+      "displayValue": "14:47"
+     },
+     "yardLine": 70,
+     "text": "CHST 30"
+    },
+    "end": {
+     "period": {
+      "type": "quarter",
+      "number": 1
+     },
+     "clock": {
+      "displayValue": "12:14"
+     },
+     "yardLine": 78,
+     "text": "CHST 22"
+    },
+    "timeElapsed": {
+     "displayValue": "2:33"
+    },
+    "yards": 30,
+    "isScore": true,
+    "offensivePlays": 4,
+    "result": "TD",
+    "shortDisplayResult": "TD",
+    "displayResult": "Touchdown"
+   },
+   {
+    "id": "4018666684",
+    "description": "4 plays, -2 yards, 1:04",
+    "team": {
+     "id": "2448",
+     "name": "Aggies",
+     "abbreviation": "NCAT",
+     "displayName": "North Carolina A&T Aggies",
+     "shortDisplayName": "NC A&T"
+    },
+    "start": {
+     "period": {
+      "type": "quarter",
+      "number": 1
+     },
+     "clock": {
+      "displayValue": "12:12"
+     },
+     "yardLine": 77,
+     "text": "CHST 23"
+    },
+    "end": {
+     "period": {
+      "type": "quarter",
+      "number": 1
+     },
+     "clock": {
+      "displayValue": "11:08"
+     },
+     "yardLine": 75,
+     "text": "CHST 25"
+    },
+    "timeElapsed": {
+     "displayValue": "1:04"
+    },
+    "yards": -2,
+    "isScore": true,
+    "offensivePlays": 4,
+    "result": "FG",
+    "shortDisplayResult": "FG",
+    "displayResult": "Field Goal"
+   },
+   {
+    "id": "4018666686",
+    "description": "4 plays, 20 yards, 2:52",
+    "team": {
+     "id": "2130",
+     "name": "Cougars",
+     "abbreviation": "CHST",
+     "displayName": "Chicago State Cougars",
+     "shortDisplayName": "Chicago St"
+    },
+    "start": {
+     "period": {
+      "type": "quarter",
+      "number": 1
+     },
+     "clock": {
+      "displayValue": "11:02"
+     },
+     "yardLine": 64,
+     "text": "CHST 36"
+    },
+    "end": {
+     "period": {
+      "type": "quarter",
+      "number": 1
+     },
+     "clock": {
+      "displayValue": "8:10"
+     },
+     "yardLine": 44,
+     "text": "NCAT 44"
+    },
+    "timeElapsed": {
+     "displayValue": "2:52"
+    },
+    "yards": 20,
+    "isScore": false,
+    "offensivePlays": 4,
+    "result": "PUNT",
+    "shortDisplayResult": "PUNT",
+    "displayResult": "Punt"
+   },
+   {
+    "id": "4018666687",
+    "description": "7 plays, 23 yards, 5:09",
+    "team": {
+     "id": "2448",
+     "name": "Aggies",
+     "abbreviation": "NCAT",
+     "displayName": "North Carolina A&T Aggies",
+     "shortDisplayName": "NC A&T"
+    },
+    "start": {
+     "period": {
+      "type": "quarter",
+      "number": 1
+     },
+     "clock": {
+      "displayValue": "8:10"
+     },
+     "yardLine": 2,
+     "text": "NCAT 2"
+    },
+    "end": {
+     "period": {
+      "type": "quarter",
+      "number": 1
+     },
+     "clock": {
+      "displayValue": "3:01"
+     },
+     "yardLine": 25,
+     "text": "NCAT 25"
+    },
+    "timeElapsed": {
+     "displayValue": "5:09"
+    },
+    "yards": 23,
+    "isScore": false,
+    "offensivePlays": 7,
+    "result": "PUNT",
+    "shortDisplayResult": "PUNT",
+    "displayResult": "Punt"
+   },
+   {
+    "id": "4018666688",
+    "description": "5 plays, 24 yards, 2:11",
+    "team": {
+     "id": "2130",
+     "name": "Cougars",
+     "abbreviation": "CHST",
+     "displayName": "Chicago State Cougars",
+     "shortDisplayName": "Chicago St"
+    },
+    "start": {
+     "period": {
+      "type": "quarter",
+      "number": 1
+     },
+     "clock": {
+      "displayValue": "3:01"
+     },
+     "yardLine": 52,
+     "text": "CHST 48"
+    },
+    "end": {
+     "period": {
+      "type": "quarter",
+      "number": 1
+     },
+     "clock": {
+      "displayValue": "0:50"
+     },
+     "yardLine": 28,
+     "text": "NCAT 28"
+    },
+    "timeElapsed": {
+     "displayValue": "2:11"
+    },
+    "yards": 24,
+    "isScore": false,
+    "offensivePlays": 5,
+    "result": "DOWNS",
+    "shortDisplayResult": "DOWNS",
+    "displayResult": "Downs"
+   },
+   {
+    "id": "4018666689",
+    "description": "3 plays, 8 yards, 2:41",
+    "team": {
+     "id": "2448",
+     "name": "Aggies",
+     "abbreviation": "NCAT",
+     "displayName": "North Carolina A&T Aggies",
+     "shortDisplayName": "NC A&T"
+    },
+    "start": {
+     "period": {
+      "type": "quarter",
+      "number": 1
+     },
+     "clock": {
+      "displayValue": "0:50"
+     },
+     "yardLine": 28,
+     "text": "NCAT 28"
+    },
+    "end": {
+     "period": {
+      "type": "quarter",
+      "number": 2
+     },
+     "clock": {
+      "displayValue": "13:09"
+     },
+     "yardLine": 26,
+     "text": "NCAT 26"
+    },
+    "timeElapsed": {
+     "displayValue": "2:41"
+    },
+    "yards": 8,
+    "isScore": false,
+    "offensivePlays": 3,
+    "result": "PUNT",
+    "shortDisplayResult": "PUNT",
+    "displayResult": "Punt"
+   },
+   {
+    "id": "40186666810",
+    "description": "3 plays, 3 yards, 1:10",
+    "team": {
+     "id": "2130",
+     "name": "Cougars",
+     "abbreviation": "CHST",
+     "displayName": "Chicago State Cougars",
+     "shortDisplayName": "Chicago St"
+    },
+    "start": {
+     "period": {
+      "type": "quarter",
+      "number": 2
+     },
+     "clock": {
+      "displayValue": "13:15"
+     },
+     "yardLine": 75,
+     "text": "CHST 25"
+    },
+    "end": {
+     "period": {
+      "type": "quarter",
+      "number": 2
+     },
+     "clock": {
+      "displayValue": "11:59"
+     },
+     "yardLine": 72,
+     "text": "CHST 28"
+    },
+    "timeElapsed": {
+     "displayValue": "1:10"
+    },
+    "yards": 3,
+    "isScore": false,
+    "offensivePlays": 3,
+    "result": "PUNT",
+    "shortDisplayResult": "PUNT",
+    "displayResult": "Punt"
+   },
+   {
+    "id": "40186666811",
+    "description": "6 plays, 3 yards, 3:51",
+    "team": {
+     "id": "2448",
+     "name": "Aggies",
+     "abbreviation": "NCAT",
+     "displayName": "North Carolina A&T Aggies",
+     "shortDisplayName": "NC A&T"
+    },
+    "start": {
+     "period": {
+      "type": "quarter",
+      "number": 2
+     },
+     "clock": {
+      "displayValue": "11:59"
+     },
+     "yardLine": 32,
+     "text": "NCAT 32"
+    },
+    "end": {
+     "period": {
+      "type": "quarter",
+      "number": 2
+     },
+     "clock": {
+      "displayValue": "8:08"
+     },
+     "yardLine": 35,
+     "text": "NCAT 35"
+    },
+    "timeElapsed": {
+     "displayValue": "3:51"
+    },
+    "yards": 3,
+    "isScore": false,
+    "offensivePlays": 6,
+    "result": "PUNT",
+    "shortDisplayResult": "PUNT",
+    "displayResult": "Punt"
+   },
+   {
+    "id": "40186666812",
+    "description": "3 plays, 2 yards, 0:51",
+    "team": {
+     "id": "2130",
+     "name": "Cougars",
+     "abbreviation": "CHST",
+     "displayName": "Chicago State Cougars",
+     "shortDisplayName": "Chicago St"
+    },
+    "start": {
+     "period": {
+      "type": "quarter",
+      "number": 2
+     },
+     "clock": {
+      "displayValue": "8:08"
+     },
+     "yardLine": 70,
+     "text": "CHST 30"
+    },
+    "end": {
+     "period": {
+      "type": "quarter",
+      "number": 2
+     },
+     "clock": {
+      "displayValue": "7:17"
+     },
+     "yardLine": 73,
+     "text": "CHST 27"
+    },
+    "timeElapsed": {
+     "displayValue": "0:51"
+    },
+    "yards": 2,
+    "isScore": false,
+    "offensivePlays": 3,
+    "result": "INT",
+    "shortDisplayResult": "INT",
+    "displayResult": "Interception"
+   },
+   {
+    "id": "40186666813",
+    "description": "2 plays, 27 yards, 0:42",
+    "team": {
+     "id": "2448",
+     "name": "Aggies",
+     "abbreviation": "NCAT",
+     "displayName": "North Carolina A&T Aggies",
+     "shortDisplayName": "NC A&T"
+    },
+    "start": {
+     "period": {
+      "type": "quarter",
+      "number": 2
+     },
+     "clock": {
+      "displayValue": "7:17"
+     },
+     "yardLine": 73,
+     "text": "CHST 27"
+    },
+    "end": {
+     "period": {
+      "type": "quarter",
+      "number": 2
+     },
+     "clock": {
+      "displayValue": "6:35"
+     },
+     "yardLine": 99,
+     "text": "CHST 1"
+    },
+    "timeElapsed": {
+     "displayValue": "0:42"
+    },
+    "yards": 27,
+    "isScore": true,
+    "offensivePlays": 2,
+    "result": "TD",
+    "shortDisplayResult": "TD",
+    "displayResult": "Touchdown"
+   },
+   {
+    "id": "40186666815",
+    "description": "3 plays, 6 yards, 1:42",
+    "team": {
+     "id": "2130",
+     "name": "Cougars",
+     "abbreviation": "CHST",
+     "displayName": "Chicago State Cougars",
+     "shortDisplayName": "Chicago St"
+    },
+    "start": {
+     "period": {
+      "type": "quarter",
+      "number": 2
+     },
+     "clock": {
+      "displayValue": "6:24"
+     },
+     "yardLine": 69,
+     "text": "CHST 31"
+    },
+    "end": {
+     "period": {
+      "type": "quarter",
+      "number": 2
+     },
+     "clock": {
+      "displayValue": "4:42"
+     },
+     "yardLine": 63,
+     "text": "CHST 37"
+    },
+    "timeElapsed": {
+     "displayValue": "1:42"
+    },
+    "yards": 6,
+    "isScore": false,
+    "offensivePlays": 3,
+    "result": "PUNT",
+    "shortDisplayResult": "PUNT",
+    "displayResult": "Punt"
+   },
+   {
+    "id": "40186666816",
+    "description": "3 plays, -25 yards, 2:07",
+    "team": {
+     "id": "2448",
+     "name": "Aggies",
+     "abbreviation": "NCAT",
+     "displayName": "North Carolina A&T Aggies",
+     "shortDisplayName": "NC A&T"
+    },
+    "start": {
+     "period": {
+      "type": "quarter",
+      "number": 2
+     },
+     "clock": {
+      "displayValue": "4:42"
+     },
+     "yardLine": 44,
+     "text": "NCAT 44"
+    },
+    "end": {
+     "period": {
+      "type": "quarter",
+      "number": 2
+     },
+     "clock": {
+      "displayValue": "2:35"
+     },
+     "yardLine": 19,
+     "text": "NCAT 19"
+    },
+    "timeElapsed": {
+     "displayValue": "2:07"
+    },
+    "yards": -25,
+    "isScore": false,
+    "offensivePlays": 3,
+    "result": "PUNT",
+    "shortDisplayResult": "PUNT",
+    "displayResult": "Punt"
+   },
+   {
+    "id": "40186666817",
+    "description": "3 plays, 19 yards, 0:59",
+    "team": {
+     "id": "2130",
+     "name": "Cougars",
+     "abbreviation": "CHST",
+     "displayName": "Chicago State Cougars",
+     "shortDisplayName": "Chicago St"
+    },
+    "start": {
+     "period": {
+      "type": "quarter",
+      "number": 2
+     },
+     "clock": {
+      "displayValue": "2:35"
+     },
+     "yardLine": 45,
+     "text": "NCAT 45"
+    },
+    "end": {
+     "period": {
+      "type": "quarter",
+      "number": 2
+     },
+     "clock": {
+      "displayValue": "1:36"
+     },
+     "yardLine": 16,
+     "text": "NCAT 16"
+    },
+    "timeElapsed": {
+     "displayValue": "0:59"
+    },
+    "yards": 19,
+    "isScore": false,
+    "offensivePlays": 3,
+    "result": "INT",
+    "shortDisplayResult": "INT",
+    "displayResult": "Interception"
+   },
+   {
+    "id": "40186666818",
+    "description": "9 plays, 84 yards, 0:53",
+    "team": {
+     "id": "2448",
+     "name": "Aggies",
+     "abbreviation": "NCAT",
+     "displayName": "North Carolina A&T Aggies",
+     "shortDisplayName": "NC A&T"
+    },
+    "start": {
+     "period": {
+      "type": "quarter",
+      "number": 2
+     },
+     "clock": {
+      "displayValue": "1:36"
+     },
+     "yardLine": 16,
+     "text": "NCAT 16"
+    },
+    "end": {
+     "period": {
+      "type": "quarter",
+      "number": 2
+     },
+     "clock": {
+      "displayValue": "0:43"
+     },
+     "yardLine": 97,
+     "text": "CHST 3"
+    },
+    "timeElapsed": {
+     "displayValue": "0:53"
+    },
+    "yards": 84,
+    "isScore": true,
+    "offensivePlays": 9,
+    "result": "TD",
+    "shortDisplayResult": "TD",
+    "displayResult": "Touchdown"
+   },
+   {
+    "id": "40186666820",
+    "description": "1 play, 6 yards, 0:43",
+    "team": {
+     "id": "2130",
+     "name": "Cougars",
+     "abbreviation": "CHST",
+     "displayName": "Chicago State Cougars",
+     "shortDisplayName": "Chicago St"
+    },
+    "start": {
+     "period": {
+      "type": "quarter",
+      "number": 2
+     },
+     "clock": {
+      "displayValue": "0:43"
+     },
+     "yardLine": 75,
+     "text": "CHST 25"
+    },
+    "end": {
+     "period": {
+      "type": "quarter",
+      "number": 2
+     },
+     "clock": {
+      "displayValue": "0:43"
+     },
+     "yardLine": 69,
+     "text": "CHST 31"
+    },
+    "timeElapsed": {
+     "displayValue": "0:43"
+    },
+    "yards": 6,
+    "isScore": false,
+    "offensivePlays": 1,
+    "result": "END OF HALF",
+    "shortDisplayResult": "END OF HALF",
+    "displayResult": "End Of Half"
+   },
+   {
+    "id": "40186666822",
+    "description": "14 plays, 63 yards, 7:21",
+    "team": {
+     "id": "2130",
+     "name": "Cougars",
+     "abbreviation": "CHST",
+     "displayName": "Chicago State Cougars",
+     "shortDisplayName": "Chicago St"
+    },
+    "start": {
+     "period": {
+      "type": "quarter",
+      "number": 3
+     },
+     "clock": {
+      "displayValue": "14:56"
+     },
+     "yardLine": 77,
+     "text": "CHST 23"
+    },
+    "end": {
+     "period": {
+      "type": "quarter",
+      "number": 3
+     },
+     "clock": {
+      "displayValue": "7:35"
+     },
+     "yardLine": 14,
+     "text": "NCAT 14"
+    },
+    "timeElapsed": {
+     "displayValue": "7:21"
+    },
+    "yards": 63,
+    "isScore": false,
+    "offensivePlays": 14,
+    "result": "DOWNS",
+    "shortDisplayResult": "DOWNS",
+    "displayResult": "Downs"
+   },
+   {
+    "id": "40186666823",
+    "description": "11 plays, 75 yards, 5:39",
+    "team": {
+     "id": "2448",
+     "name": "Aggies",
+     "abbreviation": "NCAT",
+     "displayName": "North Carolina A&T Aggies",
+     "shortDisplayName": "NC A&T"
+    },
+    "start": {
+     "period": {
+      "type": "quarter",
+      "number": 3
+     },
+     "clock": {
+      "displayValue": "7:35"
+     },
+     "yardLine": 14,
+     "text": "NCAT 14"
+    },
+    "end": {
+     "period": {
+      "type": "quarter",
+      "number": 3
+     },
+     "clock": {
+      "displayValue": "1:56"
+     },
+     "yardLine": 89,
+     "text": "CHST 11"
+    },
+    "timeElapsed": {
+     "displayValue": "5:39"
+    },
+    "yards": 75,
+    "isScore": true,
+    "offensivePlays": 11,
+    "result": "FG",
+    "shortDisplayResult": "FG",
+    "displayResult": "Field Goal"
+   },
+   {
+    "id": "40186666825",
+    "description": "4 plays, 18 yards, 1:44",
+    "team": {
+     "id": "2130",
+     "name": "Cougars",
+     "abbreviation": "CHST",
+     "displayName": "Chicago State Cougars",
+     "shortDisplayName": "Chicago St"
+    },
+    "start": {
+     "period": {
+      "type": "quarter",
+      "number": 3
+     },
+     "clock": {
+      "displayValue": "1:44"
+     },
+     "yardLine": 71,
+     "text": "CHST 29"
+    },
+    "end": {
+     "period": {
+      "type": "quarter",
+      "number": 3
+     },
+     "clock": {
+      "displayValue": "1:44"
+     },
+     "yardLine": 53,
+     "text": "CHST 47"
+    },
+    "timeElapsed": {
+     "displayValue": "1:44"
+    },
+    "yards": 18,
+    "isScore": false,
+    "offensivePlays": 4,
+    "result": "PUNT",
+    "shortDisplayResult": "PUNT",
+    "displayResult": "Punt"
+   },
+   {
+    "id": "40186666826",
+    "description": "3 plays, 2 yards, 2:36",
+    "team": {
+     "id": "2448",
+     "name": "Aggies",
+     "abbreviation": "NCAT",
+     "displayName": "North Carolina A&T Aggies",
+     "shortDisplayName": "NC A&T"
+    },
+    "start": {
+     "period": {
+      "type": "quarter",
+      "number": 4
+     },
+     "clock": {
+      "displayValue": "15:00"
+     },
+     "yardLine": 8,
+     "text": "NCAT 8"
+    },
+    "end": {
+     "period": {
+      "type": "quarter",
+      "number": 4
+     },
+     "clock": {
+      "displayValue": "12:24"
+     },
+     "yardLine": 10,
+     "text": "NCAT 10"
+    },
+    "timeElapsed": {
+     "displayValue": "2:36"
+    },
+    "yards": 2,
+    "isScore": false,
+    "offensivePlays": 3,
+    "result": "PUNT",
+    "shortDisplayResult": "PUNT",
+    "displayResult": "Punt"
+   },
+   {
+    "id": "40186666827",
+    "description": "9 plays, 50 yards, 3:44",
+    "team": {
+     "id": "2130",
+     "name": "Cougars",
+     "abbreviation": "CHST",
+     "displayName": "Chicago State Cougars",
+     "shortDisplayName": "Chicago St"
+    },
+    "start": {
+     "period": {
+      "type": "quarter",
+      "number": 4
+     },
+     "clock": {
+      "displayValue": "12:24"
+     },
+     "yardLine": 50,
+     "text": "50"
+    },
+    "end": {
+     "period": {
+      "type": "quarter",
+      "number": 4
+     },
+     "clock": {
+      "displayValue": "8:40"
+     },
+     "yardLine": 3,
+     "text": "NCAT 3"
+    },
+    "timeElapsed": {
+     "displayValue": "3:44"
+    },
+    "yards": 50,
+    "isScore": true,
+    "offensivePlays": 9,
+    "result": "TD",
+    "shortDisplayResult": "TD",
+    "displayResult": "Touchdown"
+   },
+   {
+    "id": "40186666829",
+    "description": "6 plays, 38 yards, 2:20",
+    "team": {
+     "id": "2130",
+     "name": "Cougars",
+     "abbreviation": "CHST",
+     "displayName": "Chicago State Cougars",
+     "shortDisplayName": "Chicago St"
+    },
+    "start": {
+     "period": {
+      "type": "quarter",
+      "number": 4
+     },
+     "clock": {
+      "displayValue": "8:38"
+     },
+     "yardLine": 38,
+     "text": "NCAT 38"
+    },
+    "end": {
+     "period": {
+      "type": "quarter",
+      "number": 4
+     },
+     "clock": {
+      "displayValue": "6:18"
+     },
+     "yardLine": 3,
+     "text": "NCAT 3"
+    },
+    "timeElapsed": {
+     "displayValue": "2:20"
+    },
+    "yards": 38,
+    "isScore": true,
+    "offensivePlays": 6,
+    "result": "TD",
+    "shortDisplayResult": "TD",
+    "displayResult": "Touchdown"
+   },
+   {
+    "id": "40186666831",
+    "description": "3 plays, 2 yards, 1:19",
+    "team": {
+     "id": "2448",
+     "name": "Aggies",
+     "abbreviation": "NCAT",
+     "displayName": "North Carolina A&T Aggies",
+     "shortDisplayName": "NC A&T"
+    },
+    "start": {
+     "period": {
+      "type": "quarter",
+      "number": 4
+     },
+     "clock": {
+      "displayValue": "6:18"
+     },
+     "yardLine": 25,
+     "text": "NCAT 25"
+    },
+    "end": {
+     "period": {
+      "type": "quarter",
+      "number": 4
+     },
+     "clock": {
+      "displayValue": "4:59"
+     },
+     "yardLine": 29,
+     "text": "NCAT 29"
+    },
+    "timeElapsed": {
+     "displayValue": "1:19"
+    },
+    "yards": 2,
+    "isScore": false,
+    "offensivePlays": 3,
+    "result": "INT",
+    "shortDisplayResult": "INT",
+    "displayResult": "Interception"
+   },
+   {
+    "id": "40186666832",
+    "description": "4 plays, 4 yards, 1:47",
+    "team": {
+     "id": "2130",
+     "name": "Cougars",
+     "abbreviation": "CHST",
+     "displayName": "Chicago State Cougars",
+     "shortDisplayName": "Chicago St"
+    },
+    "start": {
+     "period": {
+      "type": "quarter",
+      "number": 4
+     },
+     "clock": {
+      "displayValue": "5:22"
+     },
+     "yardLine": 29,
+     "text": "NCAT 29"
+    },
+    "end": {
+     "period": {
+      "type": "quarter",
+      "number": 4
+     },
+     "clock": {
+      "displayValue": "3:12"
+     },
+     "yardLine": 25,
+     "text": "NCAT 25"
+    },
+    "timeElapsed": {
+     "displayValue": "1:47"
+    },
+    "yards": 4,
+    "isScore": false,
+    "offensivePlays": 4,
+    "result": "DOWNS",
+    "shortDisplayResult": "DOWNS",
+    "displayResult": "Downs"
+   },
+   {
+    "id": "40186666833",
+    "description": "5 plays, 22 yards, 3:12",
+    "team": {
+     "id": "2448",
+     "name": "Aggies",
+     "abbreviation": "NCAT",
+     "displayName": "North Carolina A&T Aggies",
+     "shortDisplayName": "NC A&T"
+    },
+    "start": {
+     "period": {
+      "type": "quarter",
+      "number": 4
+     },
+     "clock": {
+      "displayValue": "3:12"
+     },
+     "yardLine": 25,
+     "text": "NCAT 25"
+    },
+    "end": {
+     "period": {
+      "type": "quarter",
+      "number": 4
+     },
+     "clock": {
+      "displayValue": "2:00"
+     },
+     "yardLine": 47,
+     "text": "NCAT 47"
+    },
+    "timeElapsed": {
+     "displayValue": "3:12"
+    },
+    "yards": 22,
+    "isScore": false,
+    "offensivePlays": 5,
+    "result": "END OF HALF",
+    "shortDisplayResult": "END OF HALF",
+    "displayResult": "End of Half"
+   }
+  ]
+ },
+ "leaders": [
+  {
+   "team": {
+    "id": "2448",
+    "displayName": "North Carolina A&T Aggies",
+    "abbreviation": "NCAT"
+   },
+   "leaders": [
+    {
+     "name": "passingYards",
+     "displayName": "Passing Yards",
+     "leaders": [
+      {
+       "displayValue": "15/26, 199 YDS, 3 TD, 1 INT",
+       "value": 199.0,
+       "athlete": {
+        "id": "5164567",
+        "lastName": "White",
+        "fullName": "Kevin White",
+        "displayName": "Kevin White",
+        "shortName": "K. White",
+        "jersey": "0",
+        "position": {
+         "name": "Quarterback",
+         "displayName": "Quarterback",
+         "abbreviation": "QB"
+        },
+        "status": {
+         "id": "1",
+         "name": "Active",
+         "type": "active",
+         "abbreviation": "Active"
+        }
+       },
+       "mainStat": {
+        "value": "199",
+        "label": "YDS"
+       },
+       "summary": "15/26, 3 TD, 1 INT"
+      }
+     ]
+    },
+    {
+     "name": "rushingYards",
+     "displayName": "Rushing Yards",
+     "leaders": [
+      {
+       "displayValue": "14 CAR, 39 YDS",
+       "value": 39.0,
+       "athlete": {
+        "id": "4871051",
+        "lastName": "Smith",
+        "fullName": "J.T. Smith",
+        "displayName": "J.T. Smith",
+        "shortName": "J.T. Smith",
+        "jersey": "1",
+        "position": {
+         "name": "Running Back",
+         "displayName": "Running Back",
+         "abbreviation": "RB"
+        },
+        "status": {
+         "id": "1",
+         "name": "Active",
+         "type": "active",
+         "abbreviation": "Active"
+        }
+       },
+       "mainStat": {
+        "value": "39",
+        "label": "YDS"
+       },
+       "summary": "14 CAR"
+      }
+     ]
+    },
+    {
+     "name": "receivingYards",
+     "displayName": "Receiving Yards",
+     "leaders": [
+      {
+       "displayValue": "5 REC, 50 YDS",
+       "value": 50.0,
+       "athlete": {
+        "id": "5086946",
+        "lastName": "Kennedy",
+        "fullName": "Elijah Kennedy",
+        "displayName": "Elijah Kennedy",
+        "shortName": "E. Kennedy",
+        "jersey": "88",
+        "position": {
+         "name": "Wide Receiver",
+         "displayName": "Wide Receiver",
+         "abbreviation": "WR"
+        },
+        "status": {
+         "id": "1",
+         "name": "Active",
+         "type": "active",
+         "abbreviation": "Active"
+        }
+       },
+       "mainStat": {
+        "value": "50",
+        "label": "YDS"
+       },
+       "summary": "5 REC"
+      }
+     ]
+    },
+    {
+     "name": "sacks",
+     "displayName": "Sacks",
+     "leaders": [
+      {
+       "displayValue": "1",
+       "value": 1.0,
+       "athlete": {
+        "id": "5405356",
+        "lastName": "Stanley",
+        "fullName": "Cadricus Stanley",
+        "displayName": "Cadricus Stanley",
+        "shortName": "C. Stanley",
+        "jersey": "92",
+        "position": {
+         "name": "Defensive Lineman",
+         "displayName": "Defensive Lineman",
+         "abbreviation": "DL"
+        },
+        "status": {
+         "id": "1",
+         "name": "Active",
+         "type": "active",
+         "abbreviation": "Active"
+        }
+       },
+       "mainStat": {
+        "value": "1",
+        "label": "SACKS"
+       },
+       "summary": ""
+      }
+     ]
+    },
+    {
+     "name": "totalTackles",
+     "displayName": "Tackles",
+     "leaders": [
+      {
+       "displayValue": "11",
+       "value": 11.0,
+       "athlete": {
+        "id": "5086923",
+        "lastName": "Kimbrough-Campbell",
+        "fullName": "Jonathan Kimbrough-Campbell",
+        "displayName": "Jonathan Kimbrough-Campbell",
+        "shortName": "J. Kimbrough-Campbell",
+        "jersey": "27",
+        "position": {
+         "name": "Safety",
+         "displayName": "Safety",
+         "abbreviation": "S"
+        },
+        "status": {
+         "id": "1",
+         "name": "Active",
+         "type": "active",
+         "abbreviation": "Active"
+        }
+       },
+       "mainStat": {
+        "value": "11",
+        "label": "TOT"
+       },
+       "summary": "9 SOLO"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "team": {
+    "id": "2130",
+    "displayName": "Chicago State Cougars",
+    "abbreviation": "CHST"
+   },
+   "leaders": [
+    {
+     "name": "passingYards",
+     "displayName": "Passing Yards",
+     "leaders": [
+      {
+       "displayValue": "18/34, 171 YDS, 2 TD, 2 INT",
+       "value": 171.0,
+       "athlete": {
+        "id": "5159024",
+        "lastName": "Pannell",
+        "fullName": "Ashton Pannell",
+        "displayName": "Ashton Pannell",
+        "shortName": "A. Pannell",
+        "jersey": "9",
+        "position": {
+         "name": "Quarterback",
+         "displayName": "Quarterback",
+         "abbreviation": "QB"
+        },
+        "status": {
+         "id": "1",
+         "name": "Active",
+         "type": "active",
+         "abbreviation": "Active"
+        }
+       },
+       "mainStat": {
+        "value": "171",
+        "label": "YDS"
+       },
+       "summary": "18/34, 2 TD, 2 INT"
+      }
+     ]
+    },
+    {
+     "name": "rushingYards",
+     "displayName": "Rushing Yards",
+     "leaders": [
+      {
+       "displayValue": "10 CAR, 35 YDS",
+       "value": 35.0,
+       "athlete": {
+        "id": "5440786",
+        "lastName": "Dabney Jr.",
+        "fullName": "Michael Dabney Jr.",
+        "displayName": "Michael Dabney Jr.",
+        "shortName": "M. Dabney Jr.",
+        "jersey": "28",
+        "position": {
+         "name": "Running Back",
+         "displayName": "Running Back",
+         "abbreviation": "RB"
+        },
+        "status": {
+         "id": "1",
+         "name": "Active",
+         "type": "active",
+         "abbreviation": "Active"
+        }
+       },
+       "mainStat": {
+        "value": "35",
+        "label": "YDS"
+       },
+       "summary": "10 CAR"
+      }
+     ]
+    },
+    {
+     "name": "receivingYards",
+     "displayName": "Receiving Yards",
+     "leaders": [
+      {
+       "displayValue": "5 REC, 65 YDS",
+       "value": 65.0,
+       "athlete": {
+        "id": "5449074",
+        "lastName": "Gray",
+        "fullName": "Keyontae Gray",
+        "displayName": "Keyontae Gray",
+        "shortName": "K. Gray",
+        "position": {
+         "name": "Wide Receiver",
+         "displayName": "Wide Receiver",
+         "abbreviation": "WR"
+        },
+        "status": {
+         "id": "1",
+         "name": "Active",
+         "type": "active",
+         "abbreviation": "Active"
+        }
+       },
+       "mainStat": {
+        "value": "65",
+        "label": "YDS"
+       },
+       "summary": "5 REC"
+      }
+     ]
+    },
+    {
+     "name": "sacks",
+     "displayName": "Sacks",
+     "leaders": [
+      {
+       "displayValue": "3",
+       "value": 3.0,
+       "athlete": {
+        "id": "5160584",
+        "lastName": "Itote",
+        "fullName": "Armani Itote",
+        "displayName": "Armani Itote",
+        "shortName": "A. Itote",
+        "jersey": "0",
+        "position": {
+         "name": "Linebacker",
+         "displayName": "Linebacker",
+         "abbreviation": "LB"
+        },
+        "status": {
+         "id": "1",
+         "name": "Active",
+         "type": "active",
+         "abbreviation": "Active"
+        }
+       },
+       "mainStat": {
+        "value": "3",
+        "label": "SACKS"
+       },
+       "summary": ""
+      }
+     ]
+    },
+    {
+     "name": "totalTackles",
+     "displayName": "Tackles",
+     "leaders": [
+      {
+       "displayValue": "10",
+       "value": 10.0,
+       "athlete": {
+        "id": "5160584",
+        "lastName": "Itote",
+        "fullName": "Armani Itote",
+        "displayName": "Armani Itote",
+        "shortName": "A. Itote",
+        "jersey": "0",
+        "position": {
+         "name": "Linebacker",
+         "displayName": "Linebacker",
+         "abbreviation": "LB"
+        },
+        "status": {
+         "id": "1",
+         "name": "Active",
+         "type": "active",
+         "abbreviation": "Active"
+        }
+       },
+       "mainStat": {
+        "value": "10",
+        "label": "TOT"
+       },
+       "summary": "8 SOLO"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "broadcasts": [
+  {
+   "type": {
+    "id": "4",
+    "shortName": "Streaming",
+    "longName": "Streaming",
+    "slug": "streaming"
+   },
+   "station": "FloSports",
+   "market": {
+    "id": "2",
+    "type": "Home"
+   },
+   "media": {
+    "callLetters": "FloSports",
+    "name": "FloSports",
+    "shortName": "FloSports"
+   },
+   "lang": "en",
+   "region": "us",
+   "isNational": false
+  }
+ ],
+ "pickcenter": [
+  {
+   "provider": {
+    "id": "100",
+    "name": "DraftKings",
+    "priority": 1
+   },
+   "details": "NCAT -18.5",
+   "overUnder": 54.5,
+   "spread": -18.5,
+   "overOdds": -113.0,
+   "underOdds": -110.0,
+   "awayTeamOdds": {
+    "favorite": false,
+    "underdog": true,
+    "moneyLine": 710,
+    "spreadOdds": -107.0,
+    "team": {},
+    "teamId": "2130",
+    "favoriteAtOpen": false
+   },
+   "homeTeamOdds": {
+    "favorite": true,
+    "underdog": false,
+    "moneyLine": -1340,
+    "spreadOdds": -116.0,
+    "team": {},
+    "teamId": "2448",
+    "favoriteAtOpen": true
+   },
+   "moneyline": {
+    "displayName": "Moneyline",
+    "shortDisplayName": "ML",
+    "home": {
+     "close": {
+      "odds": "-1340"
+     },
+     "open": {
+      "odds": "-314"
+     }
+    },
+    "away": {
+     "close": {
+      "odds": "+710"
+     },
+     "open": {
+      "odds": "+240"
+     }
+    }
+   },
+   "pointSpread": {
+    "displayName": "Spread",
+    "shortDisplayName": "Spread",
+    "home": {
+     "close": {
+      "line": "-18.5",
+      "odds": "-116"
+     },
+     "open": {
+      "line": "-13.5",
+      "odds": "-112"
+     }
+    },
+    "away": {
+     "close": {
+      "line": "+18.5",
+      "odds": "-107"
+     },
+     "open": {
+      "line": "+13.5",
+      "odds": "-110"
+     }
+    }
+   },
+   "total": {
+    "displayName": "Total",
+    "shortDisplayName": "Total",
+    "over": {
+     "close": {
+      "line": "o54.5",
+      "odds": "-113"
+     },
+     "open": {
+      "line": "o54.5",
+      "odds": "-113"
+     }
+    },
+    "under": {
+     "close": {
+      "line": "u54.5",
+      "odds": "-110"
+     },
+     "open": {
+      "line": "u54.5",
+      "odds": "-110"
+     }
+    }
+   },
+   "link": {
+    "text": "See More Odds",
+    "language": "en-US",
+    "rel": [
+     "main",
+     "desktop",
+     "bets"
+    ],
+    "href": "https://sportsbook.draftkings.com",
+    "isExternal": true,
+    "isPremium": false
+   },
+   "header": {
+    "text": "Game Odds"
+   },
+   "footer": {
+    "disclaimer": "GAMBLING PROBLEM? CALL 1-800-GAMBLER or 1-800-MY-RESET, (800) 327-5050 or visit gamblinghelplinema.org (MA). Call 877-8-HOPENY/text HOPENY (467369) (NY). Call 888-789-7777/visit ccpg.org (CT), or visit www.mdgamblinghelp.org (MD), 1-800-981-0023 (PR). 21+ and present in most states. (18+ DC/KY/NH/PR/WY). Void in ONT. Eligibility restrictions apply. Terms: draftkings.com/sportsbook. On behalf of Boot Hill Casino (KS). Pass-thru of per wager tax may apply in IL."
+   }
+  }
+ ],
+ "scoringPlays": [
+  {
+   "id": "40186666829",
+   "type": {
+    "id": "24",
+    "text": "Pass Reception",
+    "abbreviation": "REC"
+   },
+   "text": "J.T. Smith 22 Yd pass from Kevin White (Asher Holland Kick)",
+   "awayScore": 0,
+   "homeScore": 7,
+   "period": {
+    "number": 1
+   },
+   "clock": {
+    "value": 734.0,
+    "displayValue": "12:14"
+   },
+   "team": {
+    "id": "2448",
+    "displayName": "North Carolina A&T Aggies",
+    "abbreviation": "NCAT"
+   },
+   "scoringType": {
+    "name": "touchdown",
+    "displayName": "Touchdown",
+    "abbreviation": "TD"
+   }
+  },
+  {
+   "id": "40186666854",
+   "type": {
+    "id": "59",
+    "text": "Field Goal Good",
+    "abbreviation": "FG"
+   },
+   "text": "Asher Holland 42 Yd Field Goal  ",
+   "awayScore": 0,
+   "homeScore": 10,
+   "period": {
+    "number": 1
+   },
+   "clock": {
+    "value": 668.0,
+    "displayValue": "11:08"
+   },
+   "team": {
+    "id": "2448",
+    "displayName": "North Carolina A&T Aggies",
+    "abbreviation": "NCAT"
+   },
+   "scoringType": {
+    "name": "field-goal",
+    "displayName": "Field Goal",
+    "abbreviation": "FG"
+   }
+  },
+  {
+   "id": "401866668266",
+   "type": {
+    "id": "67",
+    "text": "Passing Touchdown",
+    "abbreviation": "TD"
+   },
+   "text": "Michael Carlock-Williams 25 Yd pass from Kevin White (Asher Holland Kick)",
+   "awayScore": 0,
+   "homeScore": 17,
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 395.0,
+    "displayValue": "6:35"
+   },
+   "team": {
+    "id": "2448",
+    "displayName": "North Carolina A&T Aggies",
+    "abbreviation": "NCAT"
+   },
+   "scoringType": {
+    "name": "touchdown",
+    "displayName": "Touchdown",
+    "abbreviation": "TD"
+   }
+  },
+  {
+   "id": "401866668369",
+   "type": {
+    "id": "67",
+    "text": "Passing Touchdown",
+    "abbreviation": "TD"
+   },
+   "text": "Michael Carlock-Williams 21 Yd pass from Kevin White (Asher Holland Kick)",
+   "awayScore": 0,
+   "homeScore": 24,
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 43.0,
+    "displayValue": "0:43"
+   },
+   "team": {
+    "id": "2448",
+    "displayName": "North Carolina A&T Aggies",
+    "abbreviation": "NCAT"
+   },
+   "scoringType": {
+    "name": "touchdown",
+    "displayName": "Touchdown",
+    "abbreviation": "TD"
+   }
+  },
+  {
+   "id": "401866668510",
+   "type": {
+    "id": "59",
+    "text": "Field Goal Good",
+    "abbreviation": "FG"
+   },
+   "text": "Asher Holland 28 Yd Field Goal  ",
+   "awayScore": 0,
+   "homeScore": 27,
+   "period": {
+    "number": 3
+   },
+   "clock": {
+    "value": 116.0,
+    "displayValue": "1:56"
+   },
+   "team": {
+    "id": "2448",
+    "displayName": "North Carolina A&T Aggies",
+    "abbreviation": "NCAT"
+   },
+   "scoringType": {
+    "name": "field-goal",
+    "displayName": "Field Goal",
+    "abbreviation": "FG"
+   }
+  },
+  {
+   "id": "401866668605",
+   "type": {
+    "id": "67",
+    "text": "Passing Touchdown",
+    "abbreviation": "TD"
+   },
+   "text": "Tre' Hartwell 3 Yd pass from Ashton Pannell (Two-Point Pass Conversion Failed)",
+   "awayScore": 6,
+   "homeScore": 27,
+   "period": {
+    "number": 4
+   },
+   "clock": {
+    "value": 520.0,
+    "displayValue": "8:40"
+   },
+   "team": {
+    "id": "2130",
+    "displayName": "Chicago State Cougars",
+    "abbreviation": "CHST"
+   },
+   "scoringType": {
+    "name": "touchdown",
+    "displayName": "Touchdown",
+    "abbreviation": "TD"
+   }
+  },
+  {
+   "id": "401866668641",
+   "type": {
+    "id": "67",
+    "text": "Passing Touchdown",
+    "abbreviation": "TD"
+   },
+   "text": "Develle Barksdale 9 Yd pass from Ashton Pannell (Two-Point Pass Conversion Failed)",
+   "awayScore": 12,
+   "homeScore": 27,
+   "period": {
+    "number": 4
+   },
+   "clock": {
+    "value": 378.0,
+    "displayValue": "6:18"
+   },
+   "team": {
+    "id": "2130",
+    "displayName": "Chicago State Cougars",
+    "abbreviation": "CHST"
+   },
+   "scoringType": {
+    "name": "touchdown",
+    "displayName": "Touchdown",
+    "abbreviation": "TD"
+   }
+  }
+ ],
+ "winprobability": [
+  {
+   "homeWinPercentage": 0.59,
+   "tiePercentage": 0.0,
+   "playId": "4018666682"
+  },
+  {
+   "homeWinPercentage": 0.6635,
+   "tiePercentage": 0.0,
+   "playId": "4018666683"
+  },
+  {
+   "homeWinPercentage": 0.674,
+   "tiePercentage": 0.0,
+   "playId": "40186666814"
+  },
+  {
+   "homeWinPercentage": 0.689,
+   "tiePercentage": 0.0,
+   "playId": "40186666818"
+  },
+  {
+   "homeWinPercentage": 0.6682,
+   "tiePercentage": 0.0,
+   "playId": "40186666822"
+  },
+  {
+   "homeWinPercentage": 0.6534,
+   "tiePercentage": 0.0,
+   "playId": "40186666826"
+  },
+  {
+   "homeWinPercentage": 0.733,
+   "tiePercentage": 0.0,
+   "playId": "40186666829"
+  },
+  {
+   "homeWinPercentage": 0.8048,
+   "tiePercentage": 0.0,
+   "playId": "40186666837"
+  },
+  {
+   "homeWinPercentage": 0.7959,
+   "tiePercentage": 0.0,
+   "playId": "40186666844"
+  },
+  {
+   "homeWinPercentage": 0.7783,
+   "tiePercentage": 0.0,
+   "playId": "40186666847"
+  },
+  {
+   "homeWinPercentage": 0.7593,
+   "tiePercentage": 0.0,
+   "playId": "40186666851"
+  },
+  {
+   "homeWinPercentage": 0.7872,
+   "tiePercentage": 0.0,
+   "playId": "40186666854"
+  },
+  {
+   "homeWinPercentage": 0.7739,
+   "tiePercentage": 0.0,
+   "playId": "40186666857"
+  },
+  {
+   "homeWinPercentage": 0.7613,
+   "tiePercentage": 0.0,
+   "playId": "40186666862"
+  },
+  {
+   "homeWinPercentage": 0.7557,
+   "tiePercentage": 0.0,
+   "playId": "40186666867"
+  },
+  {
+   "homeWinPercentage": 0.7716,
+   "tiePercentage": 0.0,
+   "playId": "40186666871"
+  },
+  {
+   "homeWinPercentage": 0.7994,
+   "tiePercentage": 0.0,
+   "playId": "40186666876"
+  },
+  {
+   "homeWinPercentage": 0.7938,
+   "tiePercentage": 0.0,
+   "playId": "40186666881"
+  },
+  {
+   "homeWinPercentage": 0.7815,
+   "tiePercentage": 0.0,
+   "playId": "40186666885"
+  },
+  {
+   "homeWinPercentage": 0.7757,
+   "tiePercentage": 0.0,
+   "playId": "40186666889"
+  },
+  {
+   "homeWinPercentage": 0.7662,
+   "tiePercentage": 0.0,
+   "playId": "40186666892"
+  },
+  {
+   "homeWinPercentage": 0.8,
+   "tiePercentage": 0.0,
+   "playId": "40186666896"
+  },
+  {
+   "homeWinPercentage": 0.7829,
+   "tiePercentage": 0.0,
+   "playId": "401866668100"
+  },
+  {
+   "homeWinPercentage": 0.8134,
+   "tiePercentage": 0.0,
+   "playId": "401866668105"
+  },
+  {
+   "homeWinPercentage": 0.7928,
+   "tiePercentage": 0.0,
+   "playId": "401866668109"
+  },
+  {
+   "homeWinPercentage": 0.778,
+   "tiePercentage": 0.0,
+   "playId": "401866668115"
+  },
+  {
+   "homeWinPercentage": 0.7759,
+   "tiePercentage": 0.0,
+   "playId": "401866668119"
+  },
+  {
+   "homeWinPercentage": 0.7715,
+   "tiePercentage": 0.0,
+   "playId": "401866668124"
+  },
+  {
+   "homeWinPercentage": 0.7495,
+   "tiePercentage": 0.0,
+   "playId": "401866668128"
+  },
+  {
+   "homeWinPercentage": 0.7417,
+   "tiePercentage": 0.0,
+   "playId": "401866668132"
+  },
+  {
+   "homeWinPercentage": 0.756,
+   "tiePercentage": 0.0,
+   "playId": "401866668136"
+  },
+  {
+   "homeWinPercentage": 0.7894,
+   "tiePercentage": 0.0,
+   "playId": "401866668140"
+  },
+  {
+   "homeWinPercentage": 0.8191,
+   "tiePercentage": 0.0,
+   "playId": "401866668143"
+  },
+  {
+   "homeWinPercentage": 0.8223,
+   "tiePercentage": 0.0,
+   "playId": "401866668146"
+  },
+  {
+   "homeWinPercentage": 0.8251,
+   "tiePercentage": 0.0,
+   "playId": "401866668150"
+  },
+  {
+   "homeWinPercentage": 0.8264,
+   "tiePercentage": 0.0,
+   "playId": "401866668156"
+  },
+  {
+   "homeWinPercentage": 0.8166,
+   "tiePercentage": 0.0,
+   "playId": "401866668160"
+  },
+  {
+   "homeWinPercentage": 0.8094,
+   "tiePercentage": 0.0,
+   "playId": "401866668165"
+  },
+  {
+   "homeWinPercentage": 0.7998,
+   "tiePercentage": 0.0,
+   "playId": "401866668169"
+  },
+  {
+   "homeWinPercentage": 0.7968,
+   "tiePercentage": 0.0,
+   "playId": "401866668172"
+  },
+  {
+   "homeWinPercentage": 0.7986,
+   "tiePercentage": 0.0,
+   "playId": "401866668178"
+  },
+  {
+   "homeWinPercentage": 0.8021,
+   "tiePercentage": 0.0,
+   "playId": "401866668176"
+  },
+  {
+   "homeWinPercentage": 0.7963,
+   "tiePercentage": 0.0,
+   "playId": "401866668182"
+  },
+  {
+   "homeWinPercentage": 0.7922,
+   "tiePercentage": 0.0,
+   "playId": "401866668186"
+  },
+  {
+   "homeWinPercentage": 0.8048,
+   "tiePercentage": 0.0,
+   "playId": "401866668190"
+  },
+  {
+   "homeWinPercentage": 0.8143,
+   "tiePercentage": 0.0,
+   "playId": "401866668194"
+  },
+  {
+   "homeWinPercentage": 0.8268,
+   "tiePercentage": 0.0,
+   "playId": "401866668197"
+  },
+  {
+   "homeWinPercentage": 0.8308,
+   "tiePercentage": 0.0,
+   "playId": "401866668200"
+  },
+  {
+   "homeWinPercentage": 0.8304,
+   "tiePercentage": 0.0,
+   "playId": "401866668203"
+  },
+  {
+   "homeWinPercentage": 0.8225,
+   "tiePercentage": 0.0,
+   "playId": "401866668207"
+  },
+  {
+   "homeWinPercentage": 0.8114,
+   "tiePercentage": 0.0,
+   "playId": "401866668212"
+  },
+  {
+   "homeWinPercentage": 0.8416,
+   "tiePercentage": 0.0,
+   "playId": "401866668218"
+  },
+  {
+   "homeWinPercentage": 0.8381,
+   "tiePercentage": 0.0,
+   "playId": "401866668223"
+  },
+  {
+   "homeWinPercentage": 0.8216,
+   "tiePercentage": 0.0,
+   "playId": "401866668227"
+  },
+  {
+   "homeWinPercentage": 0.8076,
+   "tiePercentage": 0.0,
+   "playId": "401866668231"
+  },
+  {
+   "homeWinPercentage": 0.8002,
+   "tiePercentage": 0.0,
+   "playId": "401866668236"
+  },
+  {
+   "homeWinPercentage": 0.8078,
+   "tiePercentage": 0.0,
+   "playId": "401866668239"
+  },
+  {
+   "homeWinPercentage": 0.8211,
+   "tiePercentage": 0.0,
+   "playId": "401866668245"
+  },
+  {
+   "homeWinPercentage": 0.8296,
+   "tiePercentage": 0.0,
+   "playId": "401866668249"
+  },
+  {
+   "homeWinPercentage": 0.821,
+   "tiePercentage": 0.0,
+   "playId": "401866668252"
+  },
+  {
+   "homeWinPercentage": 0.8745,
+   "tiePercentage": 0.0,
+   "playId": "401866668255"
+  },
+  {
+   "homeWinPercentage": 0.8735,
+   "tiePercentage": 0.0,
+   "playId": "401866668262"
+  },
+  {
+   "homeWinPercentage": 0.919,
+   "tiePercentage": 0.0,
+   "playId": "401866668266"
+  },
+  {
+   "homeWinPercentage": 0.9218,
+   "tiePercentage": 0.0,
+   "playId": "401866668274"
+  },
+  {
+   "homeWinPercentage": 0.9209,
+   "tiePercentage": 0.0,
+   "playId": "401866668279"
+  },
+  {
+   "homeWinPercentage": 0.923,
+   "tiePercentage": 0.0,
+   "playId": "401866668283"
+  },
+  {
+   "homeWinPercentage": 0.9334,
+   "tiePercentage": 0.0,
+   "playId": "401866668287"
+  },
+  {
+   "homeWinPercentage": 0.9433,
+   "tiePercentage": 0.0,
+   "playId": "401866668290"
+  },
+  {
+   "homeWinPercentage": 0.9375,
+   "tiePercentage": 0.0,
+   "playId": "401866668294"
+  },
+  {
+   "homeWinPercentage": 0.9339,
+   "tiePercentage": 0.0,
+   "playId": "401866668299"
+  },
+  {
+   "homeWinPercentage": 0.9323,
+   "tiePercentage": 0.0,
+   "playId": "401866668302"
+  },
+  {
+   "homeWinPercentage": 0.9267,
+   "tiePercentage": 0.0,
+   "playId": "401866668305"
+  },
+  {
+   "homeWinPercentage": 0.9229,
+   "tiePercentage": 0.0,
+   "playId": "401866668309"
+  },
+  {
+   "homeWinPercentage": 0.9194,
+   "tiePercentage": 0.0,
+   "playId": "401866668313"
+  },
+  {
+   "homeWinPercentage": 0.9188,
+   "tiePercentage": 0.0,
+   "playId": "401866668316"
+  },
+  {
+   "homeWinPercentage": 0.9222,
+   "tiePercentage": 0.0,
+   "playId": "401866668321"
+  },
+  {
+   "homeWinPercentage": 0.9251,
+   "tiePercentage": 0.0,
+   "playId": "401866668328"
+  },
+  {
+   "homeWinPercentage": 0.9024,
+   "tiePercentage": 0.0,
+   "playId": "401866668326"
+  },
+  {
+   "homeWinPercentage": 0.9367,
+   "tiePercentage": 0.0,
+   "playId": "401866668332"
+  },
+  {
+   "homeWinPercentage": 0.9344,
+   "tiePercentage": 0.0,
+   "playId": "401866668337"
+  },
+  {
+   "homeWinPercentage": 0.9414,
+   "tiePercentage": 0.0,
+   "playId": "401866668340"
+  },
+  {
+   "homeWinPercentage": 0.9408,
+   "tiePercentage": 0.0,
+   "playId": "401866668346"
+  },
+  {
+   "homeWinPercentage": 0.9384,
+   "tiePercentage": 0.0,
+   "playId": "401866668349"
+  },
+  {
+   "homeWinPercentage": 0.9465,
+   "tiePercentage": 0.0,
+   "playId": "401866668352"
+  },
+  {
+   "homeWinPercentage": 0.9465,
+   "tiePercentage": 0.0,
+   "playId": "401866668356"
+  },
+  {
+   "homeWinPercentage": 0.9592,
+   "tiePercentage": 0.0,
+   "playId": "401866668359"
+  },
+  {
+   "homeWinPercentage": 0.9642,
+   "tiePercentage": 0.0,
+   "playId": "401866668364"
+  },
+  {
+   "homeWinPercentage": 0.9826,
+   "tiePercentage": 0.0,
+   "playId": "401866668369"
+  },
+  {
+   "homeWinPercentage": 0.985,
+   "tiePercentage": 0.0,
+   "playId": "401866668377"
+  },
+  {
+   "homeWinPercentage": 0.9834,
+   "tiePercentage": 0.0,
+   "playId": "401866668380"
+  },
+  {
+   "homeWinPercentage": 0.984,
+   "tiePercentage": 0.0,
+   "playId": "401866668386"
+  },
+  {
+   "homeWinPercentage": 0.9777,
+   "tiePercentage": 0.0,
+   "playId": "401866668391"
+  },
+  {
+   "homeWinPercentage": 0.9832,
+   "tiePercentage": 0.0,
+   "playId": "401866668400"
+  },
+  {
+   "homeWinPercentage": 0.9792,
+   "tiePercentage": 0.0,
+   "playId": "401866668404"
+  },
+  {
+   "homeWinPercentage": 0.9781,
+   "tiePercentage": 0.0,
+   "playId": "401866668409"
+  },
+  {
+   "homeWinPercentage": 0.9809,
+   "tiePercentage": 0.0,
+   "playId": "401866668414"
+  },
+  {
+   "homeWinPercentage": 0.9773,
+   "tiePercentage": 0.0,
+   "playId": "401866668418"
+  },
+  {
+   "homeWinPercentage": 0.9784,
+   "tiePercentage": 0.0,
+   "playId": "401866668423"
+  },
+  {
+   "homeWinPercentage": 0.9735,
+   "tiePercentage": 0.0,
+   "playId": "401866668427"
+  },
+  {
+   "homeWinPercentage": 0.9731,
+   "tiePercentage": 0.0,
+   "playId": "401866668432"
+  },
+  {
+   "homeWinPercentage": 0.9703,
+   "tiePercentage": 0.0,
+   "playId": "401866668438"
+  },
+  {
+   "homeWinPercentage": 0.9676,
+   "tiePercentage": 0.0,
+   "playId": "401866668444"
+  },
+  {
+   "homeWinPercentage": 0.9698,
+   "tiePercentage": 0.0,
+   "playId": "401866668448"
+  },
+  {
+   "homeWinPercentage": 0.9718,
+   "tiePercentage": 0.0,
+   "playId": "401866668452"
+  },
+  {
+   "homeWinPercentage": 0.9796,
+   "tiePercentage": 0.0,
+   "playId": "401866668457"
+  },
+  {
+   "homeWinPercentage": 0.9933,
+   "tiePercentage": 0.0,
+   "playId": "401866668460"
+  },
+  {
+   "homeWinPercentage": 0.9911,
+   "tiePercentage": 0.0,
+   "playId": "401866668465"
+  },
+  {
+   "homeWinPercentage": 0.9898,
+   "tiePercentage": 0.0,
+   "playId": "401866668469"
+  },
+  {
+   "homeWinPercentage": 0.9959,
+   "tiePercentage": 0.0,
+   "playId": "401866668472"
+  },
+  {
+   "homeWinPercentage": 0.9949,
+   "tiePercentage": 0.0,
+   "playId": "401866668476"
+  },
+  {
+   "homeWinPercentage": 0.9964,
+   "tiePercentage": 0.0,
+   "playId": "401866668480"
+  },
+  {
+   "homeWinPercentage": 0.9968,
+   "tiePercentage": 0.0,
+   "playId": "401866668485"
+  },
+  {
+   "homeWinPercentage": 0.9976,
+   "tiePercentage": 0.0,
+   "playId": "401866668490"
+  },
+  {
+   "homeWinPercentage": 0.998,
+   "tiePercentage": 0.0,
+   "playId": "401866668495"
+  },
+  {
+   "homeWinPercentage": 0.9973,
+   "tiePercentage": 0.0,
+   "playId": "401866668500"
+  },
+  {
+   "homeWinPercentage": 0.9966,
+   "tiePercentage": 0.0,
+   "playId": "401866668503"
+  },
+  {
+   "homeWinPercentage": 0.9955,
+   "tiePercentage": 0.0,
+   "playId": "401866668507"
+  },
+  {
+   "homeWinPercentage": 0.9987,
+   "tiePercentage": 0.0,
+   "playId": "401866668510"
+  },
+  {
+   "homeWinPercentage": 0.9987,
+   "tiePercentage": 0.0,
+   "playId": "401866668513"
+  },
+  {
+   "homeWinPercentage": 0.9982,
+   "tiePercentage": 0.0,
+   "playId": "401866668518"
+  },
+  {
+   "homeWinPercentage": 0.9982,
+   "tiePercentage": 0.0,
+   "playId": "401866668522"
+  },
+  {
+   "homeWinPercentage": 0.9983,
+   "tiePercentage": 0.0,
+   "playId": "401866668526"
+  },
+  {
+   "homeWinPercentage": 0.999,
+   "tiePercentage": 0.0,
+   "playId": "401866668530"
+  },
+  {
+   "homeWinPercentage": 0.9979,
+   "tiePercentage": 0.0,
+   "playId": "401866668533"
+  },
+  {
+   "homeWinPercentage": 0.9987,
+   "tiePercentage": 0.0,
+   "playId": "401866668542"
+  },
+  {
+   "homeWinPercentage": 0.999,
+   "tiePercentage": 0.0,
+   "playId": "401866668547"
+  },
+  {
+   "homeWinPercentage": 0.9988,
+   "tiePercentage": 0.0,
+   "playId": "401866668553"
+  },
+  {
+   "homeWinPercentage": 0.9986,
+   "tiePercentage": 0.0,
+   "playId": "401866668557"
+  },
+  {
+   "homeWinPercentage": 0.999,
+   "tiePercentage": 0.0,
+   "playId": "401866668561"
+  },
+  {
+   "homeWinPercentage": 0.999,
+   "tiePercentage": 0.0,
+   "playId": "401866668570"
+  },
+  {
+   "homeWinPercentage": 0.999,
+   "tiePercentage": 0.0,
+   "playId": "401866668574"
+  },
+  {
+   "homeWinPercentage": 0.9989,
+   "tiePercentage": 0.0,
+   "playId": "401866668577"
+  },
+  {
+   "homeWinPercentage": 0.9987,
+   "tiePercentage": 0.0,
+   "playId": "401866668582"
+  },
+  {
+   "homeWinPercentage": 0.9985,
+   "tiePercentage": 0.0,
+   "playId": "401866668587"
+  },
+  {
+   "homeWinPercentage": 0.9977,
+   "tiePercentage": 0.0,
+   "playId": "401866668592"
+  },
+  {
+   "homeWinPercentage": 0.9972,
+   "tiePercentage": 0.0,
+   "playId": "401866668597"
+  },
+  {
+   "homeWinPercentage": 0.9978,
+   "tiePercentage": 0.0,
+   "playId": "401866668601"
+  },
+  {
+   "homeWinPercentage": 0.9983,
+   "tiePercentage": 0.0,
+   "playId": "401866668605"
+  },
+  {
+   "homeWinPercentage": 0.9969,
+   "tiePercentage": 0.0,
+   "playId": "401866668613"
+  },
+  {
+   "homeWinPercentage": 0.9973,
+   "tiePercentage": 0.0,
+   "playId": "401866668620"
+  },
+  {
+   "homeWinPercentage": 0.9984,
+   "tiePercentage": 0.0,
+   "playId": "401866668623"
+  },
+  {
+   "homeWinPercentage": 0.993,
+   "tiePercentage": 0.0,
+   "playId": "401866668627"
+  },
+  {
+   "homeWinPercentage": 0.9935,
+   "tiePercentage": 0.0,
+   "playId": "401866668633"
+  },
+  {
+   "homeWinPercentage": 0.9937,
+   "tiePercentage": 0.0,
+   "playId": "401866668638"
+  },
+  {
+   "homeWinPercentage": 0.9955,
+   "tiePercentage": 0.0,
+   "playId": "401866668636"
+  },
+  {
+   "homeWinPercentage": 0.9962,
+   "tiePercentage": 0.0,
+   "playId": "401866668641"
+  },
+  {
+   "homeWinPercentage": 0.9968,
+   "tiePercentage": 0.0,
+   "playId": "401866668651"
+  },
+  {
+   "homeWinPercentage": 0.9952,
+   "tiePercentage": 0.0,
+   "playId": "401866668654"
+  },
+  {
+   "homeWinPercentage": 0.9939,
+   "tiePercentage": 0.0,
+   "playId": "401866668658"
+  },
+  {
+   "homeWinPercentage": 0.9959,
+   "tiePercentage": 0.0,
+   "playId": "401866668664"
+  },
+  {
+   "homeWinPercentage": 0.9898,
+   "tiePercentage": 0.0,
+   "playId": "401866668662"
+  },
+  {
+   "homeWinPercentage": 0.9877,
+   "tiePercentage": 0.0,
+   "playId": "401866668671"
+  },
+  {
+   "homeWinPercentage": 0.9842,
+   "tiePercentage": 0.0,
+   "playId": "401866668674"
+  },
+  {
+   "homeWinPercentage": 0.9945,
+   "tiePercentage": 0.0,
+   "playId": "401866668679"
+  },
+  {
+   "homeWinPercentage": 0.9952,
+   "tiePercentage": 0.0,
+   "playId": "401866668683"
+  },
+  {
+   "homeWinPercentage": 0.999,
+   "tiePercentage": 0.0,
+   "playId": "401866668688"
+  },
+  {
+   "homeWinPercentage": 0.9987,
+   "tiePercentage": 0.0,
+   "playId": "401866668692"
+  },
+  {
+   "homeWinPercentage": 0.9987,
+   "tiePercentage": 0.0,
+   "playId": "401866668696"
+  },
+  {
+   "homeWinPercentage": 0.999,
+   "tiePercentage": 0.0,
+   "playId": "401866668702"
+  },
+  {
+   "homeWinPercentage": 0.999,
+   "tiePercentage": 0.0,
+   "playId": "401866668700"
+  },
+  {
+   "homeWinPercentage": 0.999,
+   "tiePercentage": 0.0,
+   "playId": "401866668706"
+  },
+  {
+   "homeWinPercentage": 1.0,
+   "tiePercentage": 0.0,
+   "playId": "401866668710"
+  },
+  {
+   "homeWinPercentage": 1.0,
+   "tiePercentage": 0.0,
+   "playId": "401866668716"
+  }
+ ],
+ "header": {
+  "id": "401866668",
+  "season": {
+   "year": 2026,
+   "current": true,
+   "type": 2
+  },
+  "timeValid": true,
+  "competitions": [
+   {
+    "id": "401866668",
+    "date": "2026-10-17T16:00Z",
+    "dateValid": true,
+    "neutralSite": false,
+    "conferenceCompetition": false,
+    "boxscoreAvailable": true,
+    "commentaryAvailable": false,
+    "liveAvailable": false,
+    "onWatchESPN": false,
+    "recent": false,
+    "wallclockAvailable": true,
+    "boxscoreSource": "full",
+    "playByPlaySource": "full",
+    "competitors": [
+     {
+      "id": "2448",
+      "order": 0,
+      "homeAway": "home",
+      "winner": true,
+      "team": {
+       "id": "2448",
+       "location": "North Carolina A&T",
+       "name": "Aggies",
+       "nickname": "NC A&T",
+       "abbreviation": "NCAT",
+       "displayName": "North Carolina A&T Aggies",
+       "color": "0505aa",
+       "alternateColor": "004684",
+       "groups": {
+        "id": "48"
+       }
+      },
+      "score": "27",
+      "linescores": [
+       {
+        "displayValue": "10"
+       },
+       {
+        "displayValue": "14"
+       },
+       {
+        "displayValue": "3"
+       },
+       {
+        "displayValue": "0"
+       }
+      ],
+      "record": [
+       {
+        "type": "total",
+        "summary": "3-5",
+        "displayValue": "3-5"
+       },
+       {
+        "type": "home",
+        "summary": "3-1",
+        "displayValue": "3-1"
+       },
+       {
+        "type": "vsconf",
+        "summary": "2-2",
+        "displayValue": "2-2"
+       }
+      ],
+      "possession": false
+     },
+     {
+      "id": "2130",
+      "order": 1,
+      "homeAway": "away",
+      "winner": false,
+      "team": {
+       "id": "2130",
+       "location": "Chicago State",
+       "name": "Cougars",
+       "nickname": "Chicago St",
+       "abbreviation": "CHST",
+       "displayName": "Chicago State Cougars",
+       "groups": {
+        "id": "32"
+       }
+      },
+      "score": "12",
+      "linescores": [
+       {
+        "displayValue": "0"
+       },
+       {
+        "displayValue": "0"
+       },
+       {
+        "displayValue": "0"
+       },
+       {
+        "displayValue": "12"
+       }
+      ],
+      "record": [
+       {
+        "type": "total",
+        "summary": "1-6",
+        "displayValue": "1-6"
+       },
+       {
+        "type": "road",
+        "summary": "0-4",
+        "displayValue": "0-4"
+       },
+       {
+        "type": "vsconf",
+        "summary": "0-0",
+        "displayValue": "0-0"
+       }
+      ],
+      "possession": false
+     }
+    ],
+    "status": {
+     "type": {
+      "id": "3",
+      "name": "STATUS_FINAL",
+      "state": "post",
+      "completed": true,
+      "description": "Final",
+      "detail": "Final",
+      "shortDetail": "Final"
+     }
+    },
+    "broadcasts": [
+     {
+      "type": {
+       "id": "4",
+       "shortName": "Streaming"
+      },
+      "market": {
+       "id": "2",
+       "type": "Home"
+      },
+      "media": {
+       "shortName": "FloSports"
+      },
+      "lang": "en",
+      "region": "us",
+      "isNational": false
+     }
+    ],
+    "boxscoreMinutes": true
+   }
+  ],
+  "week": 7,
+  "league": {
+   "id": "23",
+   "name": "NCAA - Football",
+   "abbreviation": "NCAAF",
+   "shortName": "NCAA Football",
+   "midsizeName": "NCAA Football",
+   "slug": "college-football",
+   "isTournament": false
+  }
+ },
+ "wallclockAvailable": true
+}
