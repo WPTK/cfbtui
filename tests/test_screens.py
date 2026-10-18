@@ -15,7 +15,16 @@ from cfbtui.espn.client import EspnNetworkError
 from cfbtui.espn.models import GameState, Status
 from cfbtui.espn.parse import parse_summary
 from cfbtui.ui.glyphs import ASCII
-from cfbtui.ui.screens.detail import DetailScreen, build_detail, play_line, win_bar
+from cfbtui.ui.screens.detail import (
+    DetailScreen,
+    build_detail,
+    drives_block,
+    info_lines,
+    leaders_block,
+    play_line,
+    recap_lines,
+    win_bar,
+)
 from cfbtui.ui.screens.rankings import RankingsScreen, pick_polls, poll_title
 from cfbtui.ui.screens.settings import SettingsScreen
 from cfbtui.ui.widgets.game_card import GameCard
@@ -490,3 +499,88 @@ def test_fcs_final_renders_whichever_sections_it_has_and_a_one_sided_stat_set_is
     text = _plain(build_detail(game, summary, ASCII, width=42))
     assert "Score by period" in text
     assert stats_block(game, replace(summary, team_stats=summary.team_stats[:1]), ASCII) is None
+
+
+# --- leaders, drives, info and recap -------------------------------------------------
+
+
+def _live(game, possession_text="TEX 35", **sit):
+    from cfbtui.espn.models import Situation
+
+    situation = Situation(down=2, distance=6, down_distance_text="2nd & 6", possession_text=possession_text, **sit)
+    return replace(game, status=Status(state=GameState.IN, name="STATUS_IN_PROGRESS", period=3), situation=situation)
+
+
+def test_final_detail_orders_sections_and_shows_leaders_drives_info_and_recap():
+    from cfbtui.ui.glyphs import GLYPH_SETS
+
+    summary, game = _summary_and_game("summary_401856717.json", "pairs/final_after.json")
+    summary = replace(summary, recap_description="— A short description.")
+    for glyphs in GLYPH_SETS.values():
+        text = _plain(build_detail(game, summary, glyphs))
+        order = ["Score by period", "Scoring plays", "Team stats", "Game leaders", "Drives", "Info"]
+        assert [text.index(t) for t in order] == sorted(text.index(t) for t in order)
+        assert "Arch Manning" in text and "Pass " in text and "Season leaders" not in text
+        assert "Line TEX -7.5 o/u 40.5" in text and "Dallas, TX" in text and "Grass" in text and "Att 92,100" in text
+        assert "TV ABC" in text and "Oklahoma upsets No. 1 Texas" in text and "A short description." in text
+        assert "in progress" not in text and "RED ZONE" not in text
+
+
+def test_long_recap_description_is_left_out_but_the_headline_stays():
+    summary, game = _summary_and_game("summary_401856717.json", "pairs/final_after.json")
+    assert len(summary.recap_description) > 120
+    assert recap_lines(game, summary, 60)[0].endswith("...")
+    assert len(recap_lines(game, summary, 60)) == 1
+
+
+def test_pregame_leaders_are_season_leaders_and_there_is_no_recap_or_drives():
+    summary = parse_summary(json.loads((FIXTURES / "summary_401856835_pregame.json").read_text(encoding="utf-8")))
+    game = load_board("scoreboard_week7_pregame.json").games[0]
+    ids = {"2116": game.away.team.id, "252": game.home.team.id}  # the fixture's teams, on the board's game
+    summary = replace(summary, leaders=tuple(replace(x, team_id=ids[x.team_id]) for x in summary.leaders))
+    text = _plain(build_detail(game, summary, ASCII))
+    assert "Season leaders" in text and "Game leaders" not in text and "Drives" not in text
+    assert "Line BYU -7.5" in text and "Orlando, FL" in text
+    assert recap_lines(game, summary) == []
+
+
+def test_live_drive_shows_down_distance_field_strip_and_recent_drives():
+    from cfbtui.espn.models import Drive
+    from cfbtui.ui.glyphs import GLYPH_SETS
+
+    summary, game = _summary_and_game("summary_401856717.json", "pairs/final_after.json")
+    now = Drive("251", "TEX", "", 3, 14, "1:20", "3 plays, 14 yards, 1:20", True)
+    summary = replace(summary, drives=(*summary.drives[:5], now))
+    live = _live(game, is_red_zone=True)
+    abbr = game.away.abbreviation
+    for glyphs in GLYPH_SETS.values():
+        text = _plain(build_detail(live, summary, glyphs))
+        assert "TEX   in progress" in text and "2nd & 6 at TEX 35" in text and "RED ZONE" in text
+        strip = next(line for line in text.splitlines() if line.startswith(f"{abbr} ["))
+        assert strip.count(glyphs.possession) == 1 and strip.endswith(game.home.abbreviation)
+    assert len([line for line in _plain(build_detail(live, summary, ASCII)).splitlines() if " pl, " in line]) == 4
+
+
+def test_field_strip_puts_the_ball_on_the_side_named_by_the_possession_text():
+    from cfbtui.ui.screens.detail import _field_strip
+
+    _, game = _summary_and_game("summary_401856717.json", "pairs/final_after.json")
+    away, home = game.away.abbreviation, game.home.abbreviation
+    pos = [_field_strip(_live(game, f"{side} {n}"), ASCII).plain.index(">") for side, n in ((away, 10), (home, 10))]
+    assert pos[0] < pos[1]
+    assert _field_strip(_live(game, "midfield"), ASCII) is None
+    assert _field_strip(_live(game, "ZZZ 10"), ASCII) is None
+
+
+def test_new_sections_fit_60_and_42_columns_and_vanish_without_data():
+    summary, game = _summary_and_game("summary_401856717.json", "pairs/final_after.json")
+    for width in (42, 60):
+        for fn in (leaders_block, drives_block):
+            args = (game, summary, ASCII, width) if fn is drives_block else (game, summary, width)
+            block = fn(*args)
+            block = block[1] if isinstance(block, tuple) else block
+            assert all(len(line) <= width for line in block.plain.splitlines()), (fn.__name__, width)
+        assert all(len(x) <= width for x in info_lines(game, summary, ASCII, width))
+    bare = replace(summary, leaders=(), drives=(), game_info=None, odds=None, broadcasts=(), recap_headline=None)
+    text = _plain(build_detail(game, bare, ASCII))
+    assert not any(t in text for t in ("leaders", "Drives", "Info"))

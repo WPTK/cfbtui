@@ -8,11 +8,13 @@ header keeps moving even between summary fetches.
 
 Rendering is split out as pure functions of the game, the summary and a glyph
 table (:func:`win_bar`, :func:`play_line`, :func:`build_detail`, plus the stats sections:
-:func:`linescore_table`, :func:`stats_block`, :func:`win_sparkline`), each ``None`` when ESPN sent nothing.
+:func:`linescore_table`, :func:`stats_block`, :func:`win_sparkline`, :func:`leaders_block`, :func:`drives_block`,
+:func:`info_lines`, :func:`recap_lines`), each empty or ``None`` when ESPN sent nothing.
 """
 from __future__ import annotations
 
 import asyncio
+import re
 from datetime import UTC, datetime
 from typing import Protocol
 
@@ -27,7 +29,7 @@ from textual.screen import Screen
 from textual.widgets import Footer, Static
 
 from cfbtui.espn.client import EspnError
-from cfbtui.espn.models import Competitor, Game, ScoringPlay, Summary, TeamStat
+from cfbtui.espn.models import Competitor, Drive, Game, ScoringPlay, Summary, TeamStat
 from cfbtui.ui.glyphs import Glyphs
 from cfbtui.ui.labels import period_name, status_text
 from cfbtui.ui.theme import hex_color, team_style
@@ -50,6 +52,9 @@ STAT_ROWS = (
     ("totalPenaltiesYards", "Penalties", "penalty"),
     ("possessionTime", "Possession", "clock"),
 )
+LEADER_ROWS = (("Passing", "Pass"), ("Rushing", "Rush"), ("Receiving", "Rec"))
+RECENT_DRIVES = 3
+FIELD_WIDTH = 20
 
 
 class SummarySource(Protocol):
@@ -157,6 +162,113 @@ def win_sparkline(game: Game, summary: Summary, glyphs: Glyphs, width: int = BAR
     return out
 
 
+def _clip(text: str, width: int) -> str:
+    return text if len(text) <= width else text[: max(0, width - 3)] + "..."
+
+
+def leaders_block(game: Game, summary: Summary, width: int = DEFAULT_WIDTH) -> tuple[str, Text] | None:
+    """Top passer, rusher and receiver per team. Before kickoff ESPN sends season leaders, and the title says so."""
+    out = Text()
+    for side in (game.away, game.home):
+        rows = []
+        for category, label in LEADER_ROWS:
+            lead = next(
+                (x for x in summary.leaders if x.team_id == side.team.id and x.category.startswith(category)), None
+            )
+            if lead:
+                rows.append(_clip(f"  {label:<5} {lead.athlete}  {lead.stat_line}", width))
+        if rows:
+            out.append("\n" if out else "")
+            out.append_text(_team_text(side.team.abbreviation, side.team.color, bold=True))
+            out.append("\n" + "\n".join(rows))
+    return ("Season leaders" if game.is_pregame else "Game leaders", out) if out else None
+
+
+def _drive_line(drive: Drive, width: int) -> str:
+    result = drive.result or "in progress"
+    return _clip(f"{drive.team_abbreviation:<5} {result:<14} {drive.plays} pl, {drive.yards} yds, {drive.time}", width)
+
+
+def _field_strip(game: Game, glyphs: Glyphs) -> Text | None:
+    """``OU [-----------> --------] TEX``; the ball's side comes from the ``TEX 35`` possession text."""
+    sit = game.situation
+    match = re.fullmatch(r"(\S+) (\d+)", sit.possession_text.strip()) if sit and sit.possession_text else None
+    if not match:
+        return None
+    abbr, yards = match.group(1), min(50, int(match.group(2)))
+    if abbr == game.away.abbreviation:
+        spot = yards
+    elif abbr == game.home.abbreviation:
+        spot = 100 - yards
+    else:
+        return None
+    cell = min(FIELD_WIDTH - 1, spot * FIELD_WIDTH // 100)
+    out = Text()
+    out.append_text(_team_text(game.away.abbreviation, game.away.team.color, bold=True))
+    out.append(" [" + glyphs.bar_empty * cell + glyphs.possession + glyphs.bar_empty * (FIELD_WIDTH - 1 - cell) + "] ")
+    out.append_text(_team_text(game.home.abbreviation, game.home.team.color, bold=True))
+    return out
+
+
+def drives_block(game: Game, summary: Summary, glyphs: Glyphs, width: int = DEFAULT_WIDTH) -> Text | None:
+    """The live drive with down, distance and a field strip, then the last few finished drives a line each."""
+    current = next((d for d in summary.drives if d.in_progress), None)
+    done = [d for d in summary.drives if not d.in_progress][-RECENT_DRIVES:]
+    sit = game.situation if game.is_live else None
+    out = Text()
+    if current:
+        out.append(_drive_line(current, width) + "\n", style="bold")
+    if sit and (sit.down_distance_text or sit.possession_text):
+        where = " at ".join(x for x in (sit.down_distance_text, sit.possession_text) if x)
+        red = f"  {glyphs.red_zone} RED ZONE" if sit.is_red_zone else ""
+        out.append(_clip(where, width - len(red)) + red + "\n")
+        strip = _field_strip(game, glyphs)
+        if strip:
+            out.append_text(strip)
+            out.append("\n")
+    for drive in reversed(done):
+        out.append(_drive_line(drive, width) + "\n", style="dim" if current or sit else "")
+    out.rstrip()
+    return out if out.plain else None
+
+
+def info_lines(game: Game, summary: Summary, glyphs: Glyphs, width: int = DEFAULT_WIDTH) -> list[str]:
+    """Odds (ESPN's ``details`` text; the spread's sign is unreliable), place, surface, crowd, TV, packed."""
+    info, odds = summary.game_info, summary.odds
+    items: list[str] = []
+    if odds and odds.details:
+        over = f" o/u {odds.over_under:g}" if odds.over_under is not None else ""
+        items.append(f"Line {odds.details}{over}")
+    if info:
+        place = ", ".join(x for x in (info.city, info.state) if x)
+        if place:
+            items.append(place)
+        if info.grass is not None:
+            items.append("Grass" if info.grass else "Turf")
+        if info.attendance:
+            items.append(f"Att {info.attendance:,}")
+    if summary.broadcasts:
+        items.append("TV " + "/".join(summary.broadcasts))
+    lines: list[str] = []
+    for item in items:
+        if lines and len(lines[-1]) + len(glyphs.sep) + len(item) <= width:
+            lines[-1] += glyphs.sep + item
+        else:
+            lines.append(_clip(item, width))
+    return lines
+
+
+def recap_lines(game: Game, summary: Summary, width: int = DEFAULT_WIDTH) -> list[str]:
+    """Headline of a finished game, with ESPN's description only when it is short enough."""
+    if not game.is_final or not summary.recap_headline:
+        return []
+    lines = [_clip(summary.recap_headline, width)]
+    desc = (summary.recap_description or "").lstrip("— -").strip()
+    if desc and len(desc) <= 2 * width:
+        lines.append(desc)
+    return lines
+
+
 def _kind_icon(play: ScoringPlay, glyphs: Glyphs) -> str:
     key = f"{play.scoring_type} {play.type_text}".lower()
     if "touchdown" in key:
@@ -207,6 +319,10 @@ def build_detail(
         else:
             head.append(line + "\n", style="dim")
     parts.append(head)
+    def section(title: str, content: RenderableType | None) -> None:
+        if content:
+            parts.extend([Text(title, style="bold underline"), content, Text()])
+
     if summary is not None:
         bar = win_bar(summary.home_win_probability, game, glyphs)
         if bar:
@@ -214,25 +330,27 @@ def build_detail(
         spark = win_sparkline(game, summary, glyphs, min(BAR_WIDTH, width - 10))
         if spark:
             parts.extend([Text("Win probability, whole game", style="dim"), spark, Text()])
-        for title, section in (
-            ("Score by period", linescore_table(game, summary, glyphs)),
-            ("Team stats", stats_block(game, summary, glyphs, width)),
-        ):
-            if section:
-                parts.extend([Text(title, style="bold underline"), section, Text()])
+        section("Score by period", linescore_table(game, summary, glyphs))
     if error:
         parts.append(Text(f"{glyphs.error} Could not refresh ({error}). Trying again.\n", style="yellow"))
     if summary is None:
         if not error:
             parts.append(Text(f"{glyphs.loading} Loading scoring plays", style="dim"))
-    elif not summary.scoring_plays:
-        parts.append(Text("No scoring yet.", style="dim"))
     else:
-        parts.append(Text("Scoring plays", style="bold underline"))
-        body = Text()
-        for play in summary.scoring_plays:
-            body.append(play_line(play, game, glyphs) + "\n")
-        parts.append(body)
+        if not summary.scoring_plays:
+            parts.append(Text("No scoring yet.\n", style="dim"))
+        else:
+            plays = Text()
+            for play in summary.scoring_plays:
+                plays.append(play_line(play, game, glyphs) + "\n")
+            section("Scoring plays", plays)
+        section("Team stats", stats_block(game, summary, glyphs, width))
+        leaders = leaders_block(game, summary, width)
+        if leaders:
+            section(*leaders)
+        section("Drives", drives_block(game, summary, glyphs, width))
+        extra = info_lines(game, summary, glyphs, width) + recap_lines(game, summary, width)
+        section("Info", Text("\n".join(extra), style="dim") if extra else None)
     return Group(*parts)
 
 
