@@ -24,6 +24,8 @@ python3 -m venv .venv
 
 ```powershell
 .venv\Scripts\python -m pytest
+.venv\Scripts\python -m ruff check .
+.venv\Scripts\python -m vulture cfbtui scripts --min-confidence 80
 ```
 
 Tests run against saved payloads in `tests/fixtures/` and a fake client; none touch the network. CI runs them
@@ -123,7 +125,10 @@ Commit `uv.lock` with the change. Lock updates need the same review as code: the
 ## Releasing
 
 1. Finish the work, add a section to `CHANGELOG.md`, bump the version with
-   `python -m cfbtui.version bump minor --write` (never edit `__version__` by hand).
+   `python -m cfbtui.version bump minor --write` (never edit `__version__` by hand). Before bumping, list what
+   merged since the last tag with `git log --oneline vLAST..origin/main -- cfbtui` and confirm each behaviour
+   change has a bullet in the new `## X.Y.Z` section (the release workflow only checks that the section exists
+   and is not empty).
 2. Commit and push to `main`.
 3. Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`. The release workflow checks the tag against the
    version and the changelog runs the
@@ -152,6 +157,6 @@ Before announcing a release, run through [smoke-test.md](smoke-test.md) on a mac
 
 ## Conventions
 
-Versions are FibVer: each part advances to the next Fibonacci number (0, 1, 2, 3, 5, 8, 13 ...). Use
+Versions are FibVer: each part advances to the next Fibonacci number (0, 1, 2, 3, 5, 8, 13 ...), so numbers are skipped by design (1.3 to 1.5). Use
 `python -m cfbtui.version bump {major|minor|patch} --write` rather than editing `__version__` by hand.
 The changelog is written as a simulation log, one event per bullet.

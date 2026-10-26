@@ -4,15 +4,12 @@ __pycache__/
 *.egg-info/
 .venv/
 .pytest_cache/
-.mypy_cache/
 .ruff_cache/
 
-# PyInstaller (work dir is redirected to .pyi-build so build/ stays versioned)
+# Build output: PyInstaller (work dir is redirected to .pyi-build) and `python -m build`
+build/
 dist/
 .pyi-build/
-
-# Snapshot test reports
-snapshot_report.html
 
 # Editors / OS
 .vscode/
