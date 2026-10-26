@@ -21,7 +21,8 @@ from pathlib import Path
 
 import httpx
 
-from cfbtui.update import SUMS_NAME, USER_AGENT, Asset, UpdateInfo, asset_name, install_kind
+from cfbtui.sigverify import SIG_MAX, SignatureError, verify_manifest
+from cfbtui.update import SIG_NAME, SUMS_NAME, USER_AGENT, Asset, UpdateInfo, asset_name, install_kind
 
 STAGE_DIR = ".cfbtui-update"
 SUMS_MAX = 1 << 20
@@ -345,13 +346,28 @@ class Updater:
         return cls(install_kind(), asset_name(), Path(sys.executable).resolve(), version)
 
     def stage(self, info: UpdateInfo) -> Staged:
-        """Download this platform's asset and SHA256SUMS, verify and probe it. Blocking; run in a thread."""
+        """Download this platform's asset, check the signed SHA256SUMS and the hash, probe it. Blocking; use a thread.
+
+        Order matters: the signature on SHA256SUMS is checked first, before the binary is downloaded, and the
+        binary is only ever run (by `probe`) after both the signature and its hash have passed.
+        """
         by_name = {a.name: a for a in info.assets}
-        asset, sums_asset = by_name.get(self.asset_name or ""), by_name.get(SUMS_NAME)
-        if asset is None or sums_asset is None:
-            raise UpdateError(f"the release has no {self.asset_name if asset is None else SUMS_NAME}")
+        asset = by_name.get(self.asset_name or "")
+        sums_asset, sig_asset = by_name.get(SUMS_NAME), by_name.get(SIG_NAME)
+        for wanted, found in ((self.asset_name, asset), (SUMS_NAME, sums_asset), (SIG_NAME, sig_asset)):
+            if found is None:
+                raise UpdateError(f"the release has no {wanted}")
         _check_cancel(self._cancel)
-        sums = parse_sums(self._sums_text(sums_asset))
+        sums_bytes = self._fetch(sums_asset, SUMS_NAME, SUMS_MAX)
+        sig_bytes = self._fetch(sig_asset, SIG_NAME, SIG_MAX)
+        try:
+            verify_manifest(sums_bytes, sig_bytes)
+        except SignatureError as exc:
+            raise UpdateError(f"the release signature check failed: {exc}") from None
+        try:
+            sums = parse_sums(sums_bytes.decode("utf-8"))
+        except UnicodeDecodeError:
+            raise UpdateError("SHA256SUMS is malformed") from None
         staged = stage(asset, sums, self.target.parent, self.client, info.version, self._cancel)
         probe(staged, info.version, self._run, self._cancel)
         with self._lock:
@@ -377,19 +393,20 @@ class Updater:
                 self._procs.remove(proc)
         return subprocess.CompletedProcess(cmd, proc.returncode, out, err)
 
-    def _sums_text(self, sums_asset: Asset) -> str:
+    def _fetch(self, asset: Asset, label: str, limit: int) -> bytes:
+        """The body of a small release asset (SHA256SUMS or its signature), at most `limit` bytes."""
         try:
-            _check_url(httpx.URL(sums_asset.url))
-            if sums_asset.size > SUMS_MAX:
-                raise UpdateError("SHA256SUMS is too large")
-            resp = self.client.get(sums_asset.url, headers={"User-Agent": USER_AGENT}, follow_redirects=True)
+            _check_url(httpx.URL(asset.url))
+            if asset.size > limit:
+                raise UpdateError(f"{label} is too large")
+            resp = self.client.get(asset.url, headers={"User-Agent": USER_AGENT}, follow_redirects=True)
             for hop in (*resp.history, resp):
                 _check_url(hop.url)
-            if resp.status_code != 200 or len(resp.content) > SUMS_MAX:
-                raise UpdateError(f"could not read SHA256SUMS: HTTP {resp.status_code}")
-            return resp.content.decode("utf-8")
-        except (httpx.HTTPError, httpx.InvalidURL, UnicodeDecodeError, RuntimeError) as exc:
-            raise UpdateError(f"could not read SHA256SUMS: {exc}") from None
+            if resp.status_code != 200 or len(resp.content) > limit:
+                raise UpdateError(f"could not read {label}: HTTP {resp.status_code}")
+            return resp.content
+        except (httpx.HTTPError, httpx.InvalidURL, RuntimeError) as exc:
+            raise UpdateError(f"could not read {label}: {exc}") from None
 
     def apply(self, staged: Staged) -> None:
         apply(self.target, staged)

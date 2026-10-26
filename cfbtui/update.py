@@ -14,6 +14,7 @@ from cfbtui import __version__
 from cfbtui.version import parse
 
 SUMS_NAME = "SHA256SUMS"  # the release asset that lists every other asset's sha256
+SIG_NAME = "SHA256SUMS.sig"  # its detached Ed25519 signature (cfbtui/sigverify.py)
 RELEASES_URL = "https://api.github.com/repos/WPTK/cfbtui/releases/latest"
 RELEASES_URL_ENV = "CFBTUI_RELEASES_URL"  # test-only override, honoured for 127.0.0.1 only (see releases_url)
 USER_AGENT = f"cfbtui/{__version__} (+https://github.com/WPTK/cfbtui)"
@@ -140,8 +141,8 @@ def decide(kind: str, *, auto: bool, no_config: bool, current: str, info: Update
     """What to do about a newer release: "download" it, show the upgrade "message", or show the "link".
 
     Only a standalone binary downloads, and only for [updates] auto, a config file, this platform's asset in
-    the release (plus its SHA256SUMS) and a minor or patch bump; a new major version is announced, never
-    installed unasked.
+    the release (plus its SHA256SUMS and the signature on it) and a minor or patch bump; a new major version
+    is announced, never installed unasked.
     """
     if kind != "binary":
         return "message"
@@ -150,7 +151,7 @@ def decide(kind: str, *, auto: bool, no_config: bool, current: str, info: Update
     except ValueError:
         return "link"
     names = {a.name for a in info.assets}
-    if not auto or no_config or major or asset not in names or SUMS_NAME not in names:
+    if not auto or no_config or major or asset not in names or SUMS_NAME not in names or SIG_NAME not in names:
         return "link"
     return "download"
 

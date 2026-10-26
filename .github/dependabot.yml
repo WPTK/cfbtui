@@ -4,7 +4,12 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # Wait a week after a release before proposing it. Security updates ignore the cooldown.
+    cooldown:
+      default-days: 7
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: monthly
+    cooldown:
+      default-days: 7
