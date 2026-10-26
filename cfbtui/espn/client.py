@@ -39,6 +39,14 @@ class EspnNetworkError(EspnError):
     """The request never produced a response (transport error or timeout)."""
 
 
+class EspnSchemaError(EspnError):
+    """ESPN answered, but nothing in the payload could be read (its format probably changed)."""
+
+
+# Retrying cannot fix a corrupt body or a redirect loop.
+_NOT_RETRIED = (httpx.DecodingError, httpx.TooManyRedirects)
+
+
 class EspnClient:
     """Thin retrying wrapper over httpx for the three endpoints cfbtui uses."""
 
@@ -81,9 +89,12 @@ class EspnClient:
                 response = await self._client.get(
                     url, params=params, headers={"User-Agent": USER_AGENT}, timeout=self._timeout
                 )
-            except httpx.TransportError as exc:
-                last_error = EspnNetworkError(f"{type(exc).__name__} fetching {url}: {exc}")
-                last_error.__cause__ = exc
+            except httpx.RequestError as exc:
+                error = EspnNetworkError(f"{type(exc).__name__} fetching {url}: {exc}")
+                error.__cause__ = exc
+                if isinstance(exc, _NOT_RETRIED):
+                    raise error from exc
+                last_error = error
                 continue
             status = response.status_code
             if status >= 500 or status in (408, 429):
@@ -142,9 +153,17 @@ class EspnClient:
         from cfbtui.espn.parse import parse_scoreboard
 
         week, season_type = espn_request(week)
-        return parse_scoreboard(
-            await self.scoreboard_raw(week=week, date=date, group=group, limit=limit, season_type=season_type)
+        raw = await self.scoreboard_raw(
+            week=week, date=date, group=group, limit=limit, season_type=season_type
         )
+        board = parse_scoreboard(raw)
+        # A quiet day is `"events": []`. Events that all fail to parse, or an `events` key that vanished
+        # from an otherwise populated payload, mean ESPN changed its format.
+        events = raw.get("events")
+        dropped = bool(events) and isinstance(events, list) and not board.games
+        if dropped or ("events" not in raw and raw):
+            raise EspnSchemaError("ESPN changed its scoreboard format; no games could be read")
+        return board
 
     async def rankings(self) -> tuple[Ranking, ...]:
         from cfbtui.espn.parse import parse_rankings

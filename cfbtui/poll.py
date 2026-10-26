@@ -279,7 +279,7 @@ class PollScheduler:
 
     async def _maybe_fetch_rankings(self) -> None:
         """Rankings feed the upset rule's fallback. Failing here never hurts freshness."""
-        if self._rankings_loaded or self._clock() < self._rankings_retry_at:
+        if self._rankings_loaded or self._failures or self._clock() < self._rankings_retry_at:
             return
         try:
             rankings = await self.client.rankings()

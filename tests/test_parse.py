@@ -579,3 +579,26 @@ def test_scoreboard_week_falls_back_to_the_events():
         ]
     }
     assert parse_scoreboard(payload).week == 9
+
+
+# --- postseason and FCS fixtures (real payloads, hand-trimmed) ---------------------
+
+
+def test_postseason_scoreboard_parses_cfp_and_bowls():
+    from cfbtui.espn.periods import POSTSEASON, from_espn
+
+    raw = _load("scoreboard_postseason_cfp_bowls.json")
+    board = parse_scoreboard(raw)
+    assert len(board.games) == 3
+    assert {g.season_type for g in board.games} == {POSTSEASON}
+    assert board.week == from_espn(raw["week"]["number"], POSTSEASON)
+    assert all(g.home.team.id and g.away.team.id for g in board.games)
+    notes = [n["headline"] for e in raw["events"] for n in e["competitions"][0].get("notes", [])]
+    assert any("College Football Playoff" in n for n in notes)
+
+
+def test_fcs_scoreboard_handles_a_team_without_a_record():
+    board = parse_scoreboard(_load("scoreboard_fcs_week9.json"))
+    assert len(board.games) == 5
+    records = [t.record for g in board.games for t in (g.home, g.away)]
+    assert None in records and any(records)
