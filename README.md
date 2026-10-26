@@ -80,8 +80,10 @@ the `.whl` and install it with [pipx](https://pipx.pypa.io/) or [uv](https://doc
 `cfbtui` command on any system:
 
 ```
-pipx install ./cfbtui-1.5.0-py3-none-any.whl
+pipx install ./cfbtui-X.Y.Z-py3-none-any.whl
 ```
+
+(X.Y.Z is the release number.)
 
 **Checking a download.** Every release carries a `SHA256SUMS` file. Save it next to the file you downloaded and run
 `sha256sum -c --ignore-missing SHA256SUMS` on Linux, `shasum -a 256 -c --ignore-missing SHA256SUMS` on macOS, or
@@ -142,6 +144,7 @@ it again for the next part.
 | `C` | Copy every game on screen for Discord |
 | `r` | Refresh now |
 | `g` | Change the icon style |
+| `?` | Help: every key |
 | `Esc` | Close a screen |
 | `q` | Quit |
 
@@ -162,7 +165,7 @@ cfbtui --version
 
 ## Configuration
 
-cfbtui creates a settings file the first time you star a team, and you can edit it in any text editor. Anything
+cfbtui creates a settings file the first time you star a team or change a setting, and you can edit it in any text editor. Anything
 you leave out uses the default, and a bad value is ignored with a warning.
 
 | System | Settings file |
@@ -188,7 +191,7 @@ team_ids = ["251"]
 abbreviations = ["TEX"]   # you can also list teams by abbreviation
 
 [alerts]
-enabled = true     # pulse a card on a score or a lead change
+enabled = true     # pulse a card on Red Zone, Upset Watch, Overtime or Final
 
 [updates]
 check = true       # set to false to never check for a newer version

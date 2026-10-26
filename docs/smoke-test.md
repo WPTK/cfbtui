@@ -15,7 +15,7 @@ Record the date, the exe's SHA-256 and the result of each line.
 
 ## Command line
 
-- [ ] `.\cfbtui.exe --version` prints `cfbtui 1.0.0` (or the release's version).
+- [ ] `.\cfbtui.exe --version` prints `cfbtui X.Y.Z` for the release you are testing.
 - [ ] `.\cfbtui.exe --help` lists `--week`, `--group`, `--glyphs`, `--config`, `--no-config`.
 - [ ] `.\cfbtui.exe --glyphs bogus` exits with a usage error, not a traceback.
 

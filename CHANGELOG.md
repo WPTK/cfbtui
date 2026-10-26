@@ -1,6 +1,6 @@
 # Simulation Log
 
-Release notes for cfbtui, kept the way a fortress overseer keeps a journal. Newest first. Versions follow FibVer.
+Release notes for cfbtui, kept the way a fortress overseer keeps a journal. Newest first. Versions follow FibVer. Versions before 1.2.0 were never tagged or released, and FibVer skips numbers by design, so there is no 1.4.0.
 
 ## 1.5.0 (2026-10-18)
 
