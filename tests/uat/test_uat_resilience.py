@@ -464,6 +464,7 @@ async def test_app_survives_errors_of_every_kind_and_recovers():
     app = CfbApp(client=client, intervals=FAST, glyph_set="ascii")
     async with app.run_test(size=SIZE) as pilot:
         await wait_for(pilot, lambda: len(app.query(GameCard)) == 1)
+        assert app.scheduler.freshness().state is FreshnessState.FRESH
 
 
 async def test_app_offline_at_start_shows_message_then_cards():
