@@ -37,6 +37,8 @@ dev = [
     "build>=1,<2",
     "ruff>=0.8",
     "vulture>=2.14",
+    "mypy>=1.13",
+    "types-pyperclip",
 ]
 # Installed only when building a standalone binary, so every binary carries its own zone files (see release.yml).
 binary = ["tzdata>=2024.1"]
