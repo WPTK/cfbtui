@@ -36,6 +36,7 @@ from collections.abc import Awaitable, Callable
 from dataclasses import replace
 from datetime import datetime
 from pathlib import Path
+from typing import Protocol
 
 from textual.app import App, ComposeResult
 from textual.binding import Binding
@@ -58,7 +59,7 @@ from cfbtui.ui.filters import FILTER_LABELS, conference_name, conferences_on, de
 from cfbtui.ui.glyphs import Glyphs
 from cfbtui.ui.pulse import PulseGate, pulse_kind
 from cfbtui.ui.screens.conferences import ConferenceScreen
-from cfbtui.ui.screens.detail import DetailScreen
+from cfbtui.ui.screens.detail import DetailScreen, SummarySource
 from cfbtui.ui.screens.help import HelpScreen, help_rows
 from cfbtui.ui.screens.rankings import RankingsScreen
 from cfbtui.ui.screens.settings import SettingsScreen
@@ -68,6 +69,10 @@ from cfbtui.ui.widgets.ticker import Ticker
 from cfbtui.update import UpdateInfo, decide, pip_message, update_message
 
 GROUP_NAMES = {GROUP_FBS: "FBS", GROUP_FCS: "FCS"}
+
+
+class EspnSource(ScoreboardSource, SummarySource, Protocol):
+    """What the app asks of its client: the poll loop's scoreboard and rankings, and the detail screen's summary."""
 
 
 class PollUpdated(Message):
@@ -112,7 +117,7 @@ class CfbApp(App[None]):
     def __init__(
         self,
         *,
-        client: ScoreboardSource | None = None,
+        client: EspnSource | None = None,
         intervals: PollIntervals | None = None,
         glyph_set: str | None = None,
         week: int | None = None,
@@ -139,7 +144,7 @@ class CfbApp(App[None]):
         self.config_warnings = warnings
         view = self.config.view
         self._owns_client = client is None
-        self.client: ScoreboardSource = client if client is not None else EspnClient()
+        self.client: EspnSource = client if client is not None else EspnClient()
         self.glyphs: Glyphs = glyph_tables.get(glyph_set if glyph_set is not None else view.glyph_set)
         self.store = GameStore()
         self.scheduler = PollScheduler(
