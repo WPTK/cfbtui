@@ -82,6 +82,11 @@ def _decode(data: bytes) -> tuple[int, int, int, int] | None:
     return x, y, 1, x * y % _P
 
 
+def _small_order(point: tuple[int, int, int, int]) -> bool:
+    """True for the identity and the other points of order 2, 4 or 8, which would make signatures forgeable."""
+    return _mul(8, point)[0] % _P == 0
+
+
 def _same(a: tuple[int, int, int, int], b: tuple[int, int, int, int]) -> bool:
     return (a[0] * b[2] - b[0] * a[2]) % _P == 0 and (a[1] * b[2] - b[1] * a[2]) % _P == 0
 
@@ -97,21 +102,23 @@ def verify(public_key: bytes, message: bytes, signature: bytes) -> bool:
         return False
     point_a, point_r = _decode(public_key), _decode(signature[:32])
     s = int.from_bytes(signature[32:], "little")
-    if point_a is None or point_r is None or s >= _Q:
+    if point_a is None or point_r is None or s >= _Q or _small_order(point_a):
         return False
     h = int.from_bytes(hashlib.sha512(signature[:32] + public_key + message).digest(), "little") % _Q
     return _same(_mul(s, _BASE), _add(point_r, _mul(h, point_a)))
 
 
 def decode_keys(values: tuple[str, ...] = PUBLIC_KEYS) -> list[bytes]:
-    """The usable keys among `values`: base64 of exactly 32 bytes that form a curve point. Others are skipped."""
+    """The usable keys among `values`: base64 of exactly 32 bytes that form a curve point of large order. Others
+    (placeholders, typos, the identity and other small-order points that any signature would satisfy) are skipped."""
     keys = []
     for value in values:
         try:
             raw = base64.b64decode(value, validate=True)
         except (binascii.Error, ValueError):
             continue
-        if len(raw) == 32 and _decode(raw) is not None:
+        point = _decode(raw) if len(raw) == 32 else None
+        if point is not None and not _small_order(point):
             keys.append(raw)
     return keys
 

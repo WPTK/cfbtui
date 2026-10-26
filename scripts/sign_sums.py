@@ -2,7 +2,8 @@
 
     python scripts/sign_sums.py keygen KEYFILE        make a key pair; writes the private seed, prints the public key
     python scripts/sign_sums.py pubkey KEYFILE        print the public key for a seed file
-    python scripts/sign_sums.py sign KEYFILE SUMS     write SUMS.sig (base64 of the raw 64-byte signature)
+    python scripts/sign_sums.py sign KEYFILE SUMS     write SUMS.sig (base64 of the raw 64-byte signature), but only
+                                                      if every file SUMS lists sits beside it with that hash
     python scripts/sign_sums.py verify SUMS SIG       check SUMS against the keys built into cfbtui/sigverify.py
 
 This script never stores a key anywhere but the file you name, refuses to write one inside a git checkout and
@@ -82,7 +83,35 @@ def keygen(path: Path) -> None:
     print(f"public key: {b64(public_key(seed))}")
 
 
+def files_match_manifest(sums_path: Path) -> list[str]:
+    """Problems with the files that sit beside SUMS: every line of the manifest must name a file there with that
+    hash, and every release file there must be listed. Empty means the manifest describes exactly this folder."""
+    problems = []
+    listed = {}
+    for line in sums_path.read_text(encoding="utf-8").splitlines():
+        digest, _, name = line.partition("  ")
+        if len(digest) != 64 or not name:
+            problems.append(f"malformed line: {line!r}")
+        else:
+            listed[name.lstrip("*")] = digest.lower()
+    for name, digest in listed.items():
+        path = sums_path.parent / name
+        if not path.is_file():
+            problems.append(f"{name} is listed but not in {sums_path.parent}")
+        elif hashlib.sha256(path.read_bytes()).hexdigest() != digest:
+            problems.append(f"{name} does not match its hash")
+    for path in sums_path.parent.iterdir():
+        if path.is_file() and path.name not in listed and path.name not in (sums_path.name, sums_path.name + ".sig"):
+            problems.append(f"{path.name} is here but not listed")
+    return problems
+
+
 def sign_file(key_path: Path, sums_path: Path) -> None:
+    problems = files_match_manifest(sums_path)
+    if problems:
+        listing = "".join(f"\n  {problem}" for problem in problems)
+        sys.exit("not signing: the manifest does not describe the folder it sits in (download the whole draft "
+                 f"into an empty folder, docs/release-signing.md):{listing}")
     seed = read_seed(key_path)
     pub = b64(public_key(seed))
     if pub not in sigverify.PUBLIC_KEYS:

@@ -93,8 +93,8 @@ The built-in updater checks it before installing anything; to check it yourself 
 build attestations, which you can check with the GitHub CLI:
 
 ```
-gh release verify vX.Y.Z -R WPTK/cfbtui
 gh attestation verify cfbtui-linux-x86_64 -R WPTK/cfbtui
+gh release verify vX.Y.Z -R WPTK/cfbtui   # once the repository has immutable releases turned on
 ```
 
 ## Usage

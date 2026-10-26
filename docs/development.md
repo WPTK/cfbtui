@@ -109,7 +109,7 @@ goes to `docs/img/`.
 
 `pyproject.toml` keeps version ranges, and `ci.yml` installs from them so a new upstream release shows up as a CI
 failure early. The release and updater e2e workflows instead install from `uv.lock` (`uv sync --locked`, with the
-`dev` and `binary` extras), so a shipped binary is built from exactly the reviewed set of packages, and the lock
+`dev` and `binary` extras), so a shipped binary is built from the locked set of packages (the uv version and the setuptools build backend are the exceptions), and the lock
 records a hash for every file. `--locked` fails the build if `pyproject.toml` and the lock disagree.
 
 Refresh it when dependencies change (a Dependabot PR, or a deliberate bump), with the uv version the workflows pin

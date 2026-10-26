@@ -410,7 +410,7 @@ def test_fetch_reads_a_good_file(tmp_path):
         (lambda r: httpx.Response(200 if r.url.host == "evil.test" else 302, headers={"location": "http://evil.test/x"}),
          sums_asset(), "refusing"),
         (lambda r: httpx.Response(200, content=b"x" * (2 << 20)), sums_asset(size=2 << 20), "too large"),
-        (lambda r: httpx.Response(200, content=b"x" * (2 << 20)), sums_asset(), "HTTP 200"),
+        (lambda r: httpx.Response(200, content=b"x" * (2 << 20)), sums_asset(), "larger than"),
         (lambda r: httpx.Response(404), sums_asset(), "HTTP 404"),
         (lambda r: httpx.Response(200), sums_asset("http://example.test/SHA256SUMS"), "refusing"),
     ],

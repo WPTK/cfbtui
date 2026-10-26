@@ -83,9 +83,27 @@ def test_placeholder_keys_verify_nothing():
         verify_manifest(msg, b64(sig), keys=placeholders)
 
 
-def test_the_shipped_keys_are_all_placeholders_or_all_real():
-    """Fail closed while unfinished, and never half-finished: a lone key would leave no spare."""
-    assert len(sigverify.decode_keys()) in (0, len(sigverify.PUBLIC_KEYS))
+def test_the_shipped_keys_are_all_placeholders_or_two_distinct_real_keys():
+    """Fail closed while unfinished, and never half-finished: a lone or repeated key would leave no spare."""
+    keys = sigverify.decode_keys()
+    assert not keys or (len(keys) == len(set(keys)) == len(sigverify.PUBLIC_KEYS) == 2)
+
+
+@pytest.mark.parametrize(
+    "point",
+    [
+        bytes([1]) + bytes(31),  # the identity (0, 1)
+        bytes([0xEC]) + bytes([0xFF] * 30) + bytes([0x7F]),  # y = p - 1: (0, -1), order 2
+        bytes(32),  # y = 0: order 4
+    ],
+    ids=["identity", "order-2", "order-4"],
+)
+def test_small_order_keys_are_not_keys_and_accept_no_forgery(point):
+    assert sigverify.decode_keys((b64(point),)) == []
+    forged = point + bytes(32)  # R = the same point, S = 0
+    assert not verify(point, b"anything", forged)
+    with pytest.raises(SignatureError, match="no release signing key"):
+        verify_manifest(b"anything", b64(forged), keys=(b64(point),))
 
 
 def test_either_embedded_key_can_sign_and_a_third_cannot():
@@ -105,6 +123,21 @@ def test_malformed_signature_files_are_named(body, message):
     keys = (b64(sign_sums.public_key(b"\1" * 32)),)
     with pytest.raises(SignatureError, match=message):
         verify_manifest(b"m", body, keys=keys)
+
+
+def test_signing_refuses_a_manifest_that_does_not_match_the_files_beside_it(tmp_path):
+    (tmp_path / "a.bin").write_bytes(b"one")
+    sums = tmp_path / "SHA256SUMS"
+    sums.write_text(f"{hashlib.sha256(b'one').hexdigest()}  a.bin\n", encoding="utf-8")
+    assert sign_sums.files_match_manifest(sums) == []
+    (tmp_path / "a.bin").write_bytes(b"swapped")
+    assert "a.bin does not match its hash" in sign_sums.files_match_manifest(sums)
+    (tmp_path / "a.bin").write_bytes(b"one")
+    (tmp_path / "extra.bin").write_bytes(b"x")
+    assert "extra.bin is here but not listed" in sign_sums.files_match_manifest(sums)
+    (tmp_path / "extra.bin").unlink()
+    sums.write_text(sums.read_text() + f"{'0' * 64}  gone.bin\n", encoding="utf-8")
+    assert "gone.bin is listed but not in" in sign_sums.files_match_manifest(sums)[0]
 
 
 # --- the updater: signature first, binary last ---------------------------------------------

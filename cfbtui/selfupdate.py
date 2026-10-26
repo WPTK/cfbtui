@@ -399,12 +399,19 @@ class Updater:
             _check_url(httpx.URL(asset.url))
             if asset.size > limit:
                 raise UpdateError(f"{label} is too large")
-            resp = self.client.get(asset.url, headers={"User-Agent": USER_AGENT}, follow_redirects=True)
-            for hop in (*resp.history, resp):
-                _check_url(hop.url)
-            if resp.status_code != 200 or len(resp.content) > limit:
-                raise UpdateError(f"could not read {label}: HTTP {resp.status_code}")
-            return resp.content
+            with self.client.stream(
+                "GET", asset.url, headers={"User-Agent": USER_AGENT}, follow_redirects=True
+            ) as resp:
+                for hop in (*resp.history, resp):
+                    _check_url(hop.url)
+                if resp.status_code != 200:
+                    raise UpdateError(f"could not read {label}: HTTP {resp.status_code}")
+                body = bytearray()
+                for chunk in resp.iter_bytes():
+                    body += chunk
+                    if len(body) > limit:  # stop reading; a hostile server cannot make us buffer more
+                        raise UpdateError(f"could not read {label}: it is larger than {limit} bytes")
+            return bytes(body)
         except (httpx.HTTPError, httpx.InvalidURL, RuntimeError) as exc:
             raise UpdateError(f"could not read {label}: {exc}") from None
 

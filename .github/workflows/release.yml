@@ -18,8 +18,9 @@ name: Release
 #   cfbtui-macos-x86_64         macos-15-intel (GitHub's last Intel image; it goes away in fall 2027, see
 #                               https://github.blog/changelog/2025-09-19-github-actions-macos-13-runner-image-is-closing-down/)
 #
-# Every job installs from uv.lock (`uv sync --locked`), so a release is built from exactly the dependencies
-# that were reviewed, not from whatever the version ranges in pyproject.toml resolve to that day.
+# Every job installs the dependencies from uv.lock (`uv sync --locked`, hashes recorded), not from whatever the
+# version ranges in pyproject.toml resolve to that day. Not locked: the uv version (pinned, installed with pip) and
+# the setuptools build backend, which is fetched at install time.
 # Every action is pinned to a full commit SHA; the comment after it is the version.
 
 on:
@@ -69,7 +70,7 @@ jobs:
           python -c "
           from cfbtui.sigverify import PUBLIC_KEYS, decode_keys
           good = len(decode_keys())
-          assert good == len(PUBLIC_KEYS) == 2, f'cfbtui/sigverify.py has {good} usable release keys; it needs both the signing key and the spare (docs/release-signing.md)'
+          assert good == len(set(decode_keys())) == len(PUBLIC_KEYS) == 2, f'cfbtui/sigverify.py has {good} usable release keys; it needs two distinct ones, the signing key and the spare (docs/release-signing.md)'
           "
 
       - name: Extract this version's changelog section
@@ -292,9 +293,12 @@ jobs:
             echo "(details and key handling: \`docs/release-signing.md\`):"
             echo
             echo '```sh'
-            echo "gh release download $TAG -R $GH_REPO -p SHA256SUMS -D sign --clobber"
-            echo "python scripts/sign_sums.py sign /path/to/offline/signing.key sign/SHA256SUMS"
-            echo "gh release upload $TAG sign/SHA256SUMS.sig -R $GH_REPO"
+            echo 'dir="$(mktemp -d)"   # an empty folder outside any checkout'
+            echo "gh release download $TAG -R $GH_REPO -D \"\$dir\""
+            echo "for f in \"\$dir\"/cfbtui-*; do gh attestation verify \"\$f\" -R $GH_REPO \\"
+            echo "  --signer-workflow $GH_REPO/.github/workflows/release.yml --source-ref refs/tags/$TAG || exit 1; done"
+            echo "python scripts/sign_sums.py sign /path/to/offline/signing.key \"\$dir/SHA256SUMS\"   # also re-hashes every file"
+            echo "gh release upload $TAG \"\$dir/SHA256SUMS.sig\" -R $GH_REPO"
             echo "gh release edit $TAG -R $GH_REPO --draft=false"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
