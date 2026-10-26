@@ -10,7 +10,7 @@ themselves (checksum-verified swap on quit); pip/pipx/uv installs only get an up
 ## Status and non-goals
 
 - The project is in an audit to reach a settled state. No new features unless the owner accepts one at a meeting
-  gate. (A News tab is being scoped in a later meeting; it is not decided, so do not build it.)
+  gate. The owner is Bill Kane (repo under WPTK); if you cannot tell what the audit has decided, ask rather than guess. (A News tab is being scoped in a later meeting; it is not decided, so do not build it.)
 - ESPN's API is unofficial and can change without notice; parsing must stay tolerant and tests use saved payloads.
 - Python 3.13+ only (`requires-python = ">=3.13"`).
 
@@ -35,7 +35,7 @@ elsewhere.
 
 ```powershell
 python -m venv .venv
-.venv\Scripts\python -m pip install -e .[dev]
+.venv\Scripts\python -m pip install -e .[dev]                  # macOS/zsh: quote it, ".[dev]"
 .venv\Scripts\python -m cfbtui                      # run (add --config PATH or --no-config)
 .venv\Scripts\python -m ruff check .                # lint, as CI
 .venv\Scripts\python -m vulture cfbtui scripts --min-confidence 80
@@ -51,15 +51,17 @@ the version bumped, never in a commit): `python scripts/updater_e2e.py OLD NEW O
 ## PR flow
 
 - One branch per change, PR to `main`; merge on green CI on the exact head, base merged in, never force-pushed.
-- Review is capped per the global CLAUDE.md (one review, one fix push, at most one delta review).
+- Review cap: one review pass, one fix push, at most one delta review; a third round goes to the owner.
 - Keep prose/docs PRs separate from workflow (`.github/`) PRs.
-- `ci.yml` has `paths-ignore` for `**.md`, `docs/**` and `LICENSE`, so docs-only PRs run no CI by design.
+- `ci.yml` has `paths-ignore` for `**.md`, `docs/**` and `LICENSE`, so docs-only PRs run no CI by design and merge
+  after review alone (no checks to wait for).
 - CI runs ruff, vulture, pytest and `--version` on Windows, Linux and macOS.
 
 ## Changelog and versions
 
 - Every behaviour change gets a `CHANGELOG.md` entry in the existing style (a "Simulation Log", one event per bullet,
-  newest first). Docs-only changes such as this file get none.
+  newest first). Add it as a new top `## X.Y.Z (date)` section when the version is bumped for release (there is no
+  "Unreleased" header); never under an already-released version. Docs-only changes such as this file get none.
 - The version lives in `cfbtui/__init__.py`. Change it only with `python -m cfbtui.version bump {major|minor|patch}
   --write`; versions are FibVer.
 - `release.yml` runs on a `v*` tag, which must match that version and have a `## X.Y.Z (date)` section in the
@@ -75,7 +77,8 @@ GitHub issues for real defects. The audit program's state lives in the coordinat
 
 - `tests/fixtures/**/*.json` are `-text` in `.gitattributes`: never let line-ending normalisation touch them.
 - `.pyi-build/` is the PyInstaller work dir (gitignored).
-- The Windows exe is currently unsigned (`docs/signing.md`); the SHA256SUMS file guards against corruption only.
+- The Windows exe's signing state is in `docs/signing.md` (unsigned at 1.5.0); without a signature SHA256SUMS guards
+  only against corruption.
 - PyInstaller does not cross-compile; Linux binaries are built in a Debian 11 container for glibc 2.31.
 - `CFBTUI_RELEASES_URL` is honoured only for host `127.0.0.1`; it exists for the updater e2e test.
-- `.ps1` files are CRLF, everything else LF (`.gitattributes`).
+- `.ps1` files are CRLF, everything else LF except the `-text` fixtures (`.gitattributes`).
