@@ -2,6 +2,15 @@
 
 Release notes for cfbtui, kept the way a fortress overseer keeps a journal. Newest first. Versions follow FibVer. Versions before 1.2.0 were never tagged or released, and FibVer skips numbers by design, so there is no 1.4.0.
 
+## 1.5.1 (2026-10-26)
+
+- The overseer went back over the ledgers with a red pen. Nothing new on the board; four faults and a locksmith's note.
+- When ESPN rearranges its scoreboard so that no game can be read, the board now says so with an error instead of showing an empty list stamped "fresh".
+- A corrupt reply or a redirect loop from ESPN used to surface as a raw message from the courier's rulebook. It now shows a plain network error.
+- While the scoreboard is failing, the overseer no longer sends a runner out for the rankings as well.
+- On short terminals (under 20 rows) the ticker is capped at 40% of the height, so the game cards keep their rows instead of being squeezed out.
+- The updater now stops reading SHA256SUMS once it passes the size limit, so a hostile server cannot make it buffer an endless manifest. Release builds are made from a locked set of dependencies and carry GitHub build attestations. They are still unsigned.
+
 ## 1.5.0 (2026-10-18)
 
 - The first real Saturday came back with a list, and the overseer worked through all of it.
