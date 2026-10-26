@@ -101,6 +101,12 @@ def selftest() -> int:
         async def summary(self, event_id: str) -> Summary:
             raise NotImplementedError  # the selftest never opens a game
 
+        async def news(self, limit: int = 30) -> tuple:
+            return ()
+
+        async def story(self, url: str) -> str:
+            raise NotImplementedError  # the selftest never opens a story
+
     async def run() -> None:
         app = CfbApp(client=EmptyBoard(), config=Config())
         async with app.run_test(size=(100, 30)) as pilot:
