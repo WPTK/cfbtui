@@ -157,7 +157,7 @@ class EspnClient:
             week=week, date=date, group=group, limit=limit, season_type=season_type
         )
         board = parse_scoreboard(raw)
-        # A quiet day is `"events": []` (verified live for an offseason date). Events that all fail to parse, or an `events` key that vanished
+        # A quiet day is `"events": []`. Events that all fail to parse, or an `events` key that vanished
         # from an otherwise populated payload, mean ESPN changed its format.
         events = raw.get("events")
         dropped = bool(events) and isinstance(events, list) and not board.games
