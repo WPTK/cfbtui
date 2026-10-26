@@ -33,7 +33,7 @@ matched against each team's abbreviation as games arrive.
     abbreviations = ["TEX"]
 
     [alerts]
-    enabled = true       # pulse a card on a score or a lead change
+    enabled = true       # pulse a card on Red Zone, Upset Watch, Overtime or Final
 
     [updates]
     check = true         # look for a newer release at startup
