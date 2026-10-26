@@ -26,6 +26,9 @@ python3 -m venv .venv
 .venv\Scripts\python -m pytest
 ```
 
+Coverage (no threshold is enforced): `.venv\Scripts\python -m pytest --cov=cfbtui --cov-branch`. CI runs the suite in
+parallel with `-n auto --dist worksteal`; add `-n auto` locally for the same speed-up.
+
 Tests run against saved payloads in `tests/fixtures/` and a fake client; none touch the network. CI runs them
 on Windows, Linux and macOS, so a change that works here but leans on a Windows path or encoding will show up
 there.
