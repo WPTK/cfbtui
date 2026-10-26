@@ -87,9 +87,8 @@ pipx install ./cfbtui-1.5.0-py3-none-any.whl
 `sha256sum -c --ignore-missing SHA256SUMS` on Linux, `shasum -a 256 -c --ignore-missing SHA256SUMS` on macOS, or
 `(Get-FileHash .\cfbtui-windows-x86_64.exe).Hash` in PowerShell and compare it with the line in the file.
 
-`SHA256SUMS` also carries a signature, `SHA256SUMS.sig` (Ed25519, made with a key kept offline by the maintainer).
-The built-in updater checks it before installing anything; to check it yourself from a checkout, run
-`python scripts/sign_sums.py verify SHA256SUMS SHA256SUMS.sig`. The binaries, tarball and wheel also carry GitHub
+The built-in updater checks its download against the `SHA256SUMS` of the same release. That guards against a
+corrupted download, not against a compromised GitHub account. The binaries, tarball and wheel also carry GitHub
 build attestations, which you can check with the GitHub CLI:
 
 ```
@@ -201,13 +200,12 @@ auto = true        # download new versions on their own (standalone binaries onl
 With `check = true` cfbtui looks for a newer release at startup. What happens next depends on how you installed it:
 
 - **Standalone binary, `auto = true`:** a new minor or patch version is downloaded in the background, checked
-  against the release's `SHA256SUMS` (whose Ed25519 signature is verified first, against keys built into
-  cfbtui) and test-run. The status bar then shows `update X.Y.Z ready` and a message
+  against the release's `SHA256SUMS` (this catches corruption, not a compromised GitHub account) and test-run. The status bar then shows `update X.Y.Z ready` and a message
   says it takes over when you quit. Nothing changes while you are using cfbtui; the new file replaces the old one
   as you quit, and the next start runs it. To switch right away, open Settings (`S`) and choose **Restart now**.
   The update is installed only if cfbtui exits normally and auto-update is still on when you quit (turn it off
   in Settings and the downloaded file is deleted instead); after a crash or error exit it is discarded.
-- **A new major version, `auto = false`, `--no-config`, or no download (or no signed `SHA256SUMS`) for your platform:**
+- **A new major version, `auto = false`, `--no-config`, or no download for your platform:**
   you just get a message with a link to the release.
 - **pip, pipx and uv installs:** you get a message with the upgrade command (`pipx upgrade cfbtui`,
   `uv tool upgrade cfbtui` or `python -m pip install -U cfbtui`). cfbtui never changes those installs itself.

@@ -57,20 +57,16 @@ Debian 11 container (glibc 2.31) so they run on distributions back to 2020.
 
 The self-updater swaps the running binary, which unit tests only simulate. The `Updater end-to-end` workflow
 (`.github/workflows/updater-e2e.yml`) runs by hand (`workflow_dispatch`) and, as a gate, from `release.yml` on the
-tagged commit: no draft release is created unless it passes. It builds the real binary on Windows, Linux and macOS
+tagged commit: nothing is published unless it passes. It builds the real binary on Windows, Linux and macOS
 at the current version and at the next patch version, serves the newer one from a throwaway server on `127.0.0.1`
-inside the job with a `SHA256SUMS` signed by a throwaway key, and checks that the older one installs it, that a
-wrong checksum, a manifest changed after signing, a manifest signed by an untrusted key and a release with no
-`SHA256SUMS.sig` each change nothing, and that "Restart now" lands in the new version. The throwaway key is made in
-the job and written into the scratch checkout's `cfbtui/sigverify.py` only (`updater_e2e.py embed-key`); the real
-keys are never involved. The checks live in `scripts/updater_e2e.py`; to run them locally, in a scratch copy of the
-checkout (the version bump and the embedded key must never reach a commit), embed the key, build the two binaries
-and pass them in:
+inside the job with a `SHA256SUMS`, and checks that the older one installs it, that a wrong checksum changes
+nothing, and that "Restart now" lands in the new version. The checks live in `scripts/updater_e2e.py`; to run them
+locally, in a scratch copy of the checkout (the version bump must never reach a commit), build the two binaries and
+pass them in:
 
 ```sh
-python scripts/updater_e2e.py embed-key KEYFILE          # KEYFILE outside the checkout
 # build OLD_BINARY, bump the patch version, build NEW_BINARY (see the workflow)
-python scripts/updater_e2e.py OLD_BINARY NEW_BINARY OLD_VERSION NEW_VERSION SCRATCH_DIR KEYFILE
+python scripts/updater_e2e.py OLD_BINARY NEW_BINARY OLD_VERSION NEW_VERSION SCRATCH_DIR
 ```
 
 Two things exist only for this test:
@@ -130,9 +126,9 @@ Commit `uv.lock` with the change. Lock updates need the same review as code: the
    `python -m cfbtui.version bump minor --write` (never edit `__version__` by hand).
 2. Commit and push to `main`.
 3. Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`. The release workflow checks the tag against the
-   version and the changelog (and that the release signing keys in `cfbtui/sigverify.py` are filled in), runs the
+   version and the changelog runs the
    tests on Windows, Linux and macOS and the updater end-to-end test, then builds in parallel, attests the build
-   provenance and creates a **draft** release carrying:
+   provenance and publishes a release carrying:
 
    | File | Built on |
    |---|---|
@@ -147,12 +143,10 @@ Commit `uv.lock` with the change. Lock updates need the same review as code: the
    plus that version's changelog section as the release notes. Every binary answers `--version`, `--help` and
    `--selftest` on its builder before it is uploaded, and the wheel is installed into a clean venv and run the
    same way. If any job fails, no release is created.
-4. Sign and publish by hand: sign `SHA256SUMS` with the offline key, upload `SHA256SUMS.sig`, publish the draft.
-   The exact commands are in the job summary and in [release-signing.md](release-signing.md). A release without
-   `SHA256SUMS.sig` is never installed by the updater, only announced.
-
 Release binaries are not byte-reproducible (two PyInstaller builds of one commit gave different hashes), so nobody
-can rebuild and compare; trust rests on the signature on `SHA256SUMS` and on the build attestations.
+can rebuild and compare; the build attestations (`gh attestation verify`) are the check. The updater verifies a
+download only against the `SHA256SUMS` of the same release, which guards against corruption, not against a
+compromised GitHub account (see [signing.md](signing.md)).
 
 Before announcing a release, run through [smoke-test.md](smoke-test.md) on a machine without Python.
 

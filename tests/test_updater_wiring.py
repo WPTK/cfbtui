@@ -25,14 +25,13 @@ from tests.test_app_smoke import FAST, SIZE, wait_for
 
 NAME = "cfbtui-linux-x86_64"
 SUMS = "SHA256SUMS"
-SIG = "SHA256SUMS.sig"
 LINK = "https://example.test/releases/latest"
 _major, _minor, _patch = (int(p) for p in __version__.split(".")[:3])
 PATCH = f"{_major}.{_minor}.{_patch + 1}"
 MAJOR = f"{_major + 1}.0.0"
 
 
-def info(version: str = PATCH, *, names: tuple[str, ...] = (NAME, "SHA256SUMS", "SHA256SUMS.sig")) -> UpdateInfo:
+def info(version: str = PATCH, *, names: tuple[str, ...] = (NAME, "SHA256SUMS")) -> UpdateInfo:
     return UpdateInfo(version, LINK, tuple(Asset(n, f"https://example.test/{n}", 10) for n in names))
 
 
@@ -78,16 +77,14 @@ async def settle(pilot, app: CfbApp, text: str) -> None:
 @pytest.mark.parametrize(
     ("kind", "auto", "no_config", "version", "names", "expected"),
     [
-        ("binary", True, False, PATCH, (NAME, SUMS, SIG), "download"),
-        ("binary", True, False, f"{_major}.{_minor + 1}.0", (NAME, SUMS, SIG), "download"),
+        ("binary", True, False, PATCH, (NAME, SUMS), "download"),
+        ("binary", True, False, f"{_major}.{_minor + 1}.0", (NAME, SUMS), "download"),
         ("binary", True, False, PATCH, (NAME,), "link"),  # no SHA256SUMS
-        ("binary", True, False, PATCH, (NAME, SUMS), "link"),  # SHA256SUMS but no signature on it
-        ("binary", True, False, PATCH, (NAME, SIG), "link"),
-        ("binary", False, False, PATCH, (NAME, SUMS, SIG), "link"),
-        ("binary", True, True, PATCH, (NAME, SUMS, SIG), "link"),
-        ("binary", True, False, MAJOR, (NAME, SUMS, SIG), "link"),
-        ("binary", True, False, PATCH, ("cfbtui-other", SUMS, SIG), "link"),
-        ("binary", True, False, "not-a-version", (NAME, SUMS, SIG), "link"),
+        ("binary", False, False, PATCH, (NAME, SUMS), "link"),
+        ("binary", True, True, PATCH, (NAME, SUMS), "link"),
+        ("binary", True, False, MAJOR, (NAME, SUMS), "link"),
+        ("binary", True, False, PATCH, ("cfbtui-other", SUMS), "link"),
+        ("binary", True, False, "not-a-version", (NAME, SUMS), "link"),
         ("pip", True, False, PATCH, (NAME,), "message"),
         ("pipx", False, True, MAJOR, (), "message"),
         ("uv", True, False, PATCH, (), "message"),
@@ -329,9 +326,9 @@ def test_no_update_check_hands_the_app_no_updater(main_env):
     assert StubApp.kwargs["updater"] is None and StubApp.kwargs["update_check"] is None
 
 
-def test_updater_stage_needs_the_asset_the_sums_file_and_its_signature(tmp_path):
+def test_updater_stage_needs_the_asset_and_the_sums_file(tmp_path):
     updater = Updater("binary", NAME, tmp_path / NAME, __version__)
-    for names in ((NAME,), (SUMS,), (NAME, SUMS), (NAME, SIG), (SUMS, SIG)):
+    for names in ((NAME,), ("SHA256SUMS",)):
         with pytest.raises(UpdateError, match="has no"):
             updater.stage(info(names=names))
 
@@ -399,9 +396,9 @@ def sums_asset(url="https://example.test/SHA256SUMS", size=10) -> Asset:
     return Asset("SHA256SUMS", url, size)
 
 
-def test_fetch_reads_a_good_file(tmp_path):
+def test_sums_text_reads_a_good_file(tmp_path):
     updater = real_updater(tmp_path, lambda r: httpx.Response(200, content=b"abc"))
-    assert updater._fetch(sums_asset(), "SHA256SUMS", 1 << 20) == b"abc"
+    assert updater._sums_text(sums_asset()) == "abc"
 
 
 @pytest.mark.parametrize(
@@ -412,20 +409,21 @@ def test_fetch_reads_a_good_file(tmp_path):
         (lambda r: httpx.Response(200, content=b"x" * (2 << 20)), sums_asset(size=2 << 20), "too large"),
         (lambda r: httpx.Response(200, content=b"x" * (2 << 20)), sums_asset(), "larger than"),
         (lambda r: httpx.Response(404), sums_asset(), "HTTP 404"),
+        (lambda r: httpx.Response(200, content=b"\xff\xfe"), sums_asset(), "could not read"),
         (lambda r: httpx.Response(200), sums_asset("http://example.test/SHA256SUMS"), "refusing"),
     ],
-    ids=["redirect-to-http", "oversize-listed", "oversize-sent", "non-200", "http-url"],
+    ids=["redirect-to-http", "oversize-listed", "oversize-sent", "non-200", "not-utf8", "http-url"],
 )
-def test_fetch_refuses_bad_downloads(tmp_path, handler, asset, message):
+def test_sums_text_refuses_bad_downloads(tmp_path, handler, asset, message):
     with pytest.raises(UpdateError, match=message):
-        real_updater(tmp_path, handler)._fetch(asset, "SHA256SUMS", 1 << 20)
+        real_updater(tmp_path, handler)._sums_text(asset)
 
 
-def test_fetch_after_close_is_an_update_error_not_a_crash(tmp_path):
+def test_sums_text_after_close_is_an_update_error_not_a_crash(tmp_path):
     updater = real_updater(tmp_path, lambda r: httpx.Response(200, content=b"abc"))
     updater.close()
     with pytest.raises(UpdateError):
-        updater._fetch(sums_asset(), "SHA256SUMS", 1 << 20)
+        updater._sums_text(sums_asset())
 
 
 def test_stage_after_close_does_nothing(tmp_path):

@@ -3,9 +3,14 @@
 **Decision (October 2026): the Windows exe stays unsigned.** Revisit when a user reports that the SmartScreen
 warning stops them, or when a free or cheap route below becomes a clear fit.
 
-This is about the Windows publisher name and SmartScreen only. It is separate from update safety: the self-updater
-trusts a release because `SHA256SUMS` carries an offline Ed25519 signature, not because the exe is Authenticode
-signed. See [release-signing.md](release-signing.md).
+## What protects an update
+
+The self-updater checks a download against the `SHA256SUMS` published with the same release. That protects against
+a corrupted or truncated download. It does not protect against a compromised GitHub account: whoever can publish a
+release can publish matching sums. Two things limit the damage: releases are immutable (a setting on the repository),
+so a published release cannot be changed later, and every binary carries a build attestation anyone can check by hand
+with `gh attestation verify cfbtui-linux-x86_64 -R WPTK/cfbtui`. An offline signing key was considered and rejected
+as too much ceremony for this app; the attestation check stays manual.
 
 ## Why it matters
 
@@ -37,5 +42,5 @@ this note shows what went) if a certificate arrives. A cloud signing service wou
 
 ## Checking a downloaded exe
 
-Unsigned means `Get-AuthenticodeSignature` reports `NotSigned`. To check the download, use `SHA256SUMS` and its
-signature as the README describes, or `gh attestation verify`.
+Unsigned means `Get-AuthenticodeSignature` reports `NotSigned`. To check the download, use `SHA256SUMS` as the
+README describes, or `gh attestation verify`.

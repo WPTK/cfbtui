@@ -2,12 +2,12 @@ name: Release
 
 # Pushing a tag like v1.3.0 tests the code on Windows, Linux and macOS, runs the updater end-to-end test, builds one
 # standalone binary per platform, builds the source tarball and wheel for people who would rather install with pip,
-# attests the build provenance of all of them, and creates a DRAFT GitHub release carrying all of it, a SHA256SUMS
+# attests the build provenance of all of them, and publishes one public GitHub release carrying all of it, a SHA256SUMS
 # file and that version's CHANGELOG section. The tag must be on main and must match the version in cfbtui/__init__.py.
 #
-# The workflow stops at the draft on purpose: the owner signs SHA256SUMS offline (SHA256SUMS.sig), uploads the
-# signature and publishes by hand, because the updater refuses any release whose manifest is not signed by a key that
-# lives outside GitHub. See docs/release-signing.md. The job summary of the last job lists the steps.
+# Trust: the self-updater checks a download against the SHA256SUMS of the same release, which protects against
+# corruption, not against a compromised GitHub account (docs/signing.md). Anyone can check a binary by hand with
+# `gh attestation verify`.
 #
 # Binaries:
 #   cfbtui-windows-x86_64.exe   windows-latest (unsigned; see docs/signing.md)
@@ -63,15 +63,6 @@ jobs:
           version="$(python -c 'import cfbtui; print(cfbtui.__version__)')"
           if [ "v$version" != "$TAG" ]; then echo "Tag $TAG does not match cfbtui.__version__ v$version"; exit 1; fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
-
-      # A build with placeholder keys would trust no manifest, so its self-updater could never update anyone.
-      - name: Release signing keys are filled in
-        run: |
-          python -c "
-          from cfbtui.sigverify import PUBLIC_KEYS, decode_keys
-          good = len(decode_keys())
-          assert good == len(set(decode_keys())) == len(PUBLIC_KEYS) == 2, f'cfbtui/sigverify.py has {good} usable release keys; it needs two distinct ones, the signing key and the spare (docs/release-signing.md)'
-          "
 
       - name: Extract this version's changelog section
         env:
@@ -237,13 +228,13 @@ jobs:
           name: dist-python
           path: release
       # Provenance (SLSA build attestation) for the five binaries, the tarball and the wheel. The glob skips SHA256SUMS,
-      # which does not exist yet and is covered by the offline signature instead.
+      # which does not exist yet.
       - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-path: release/cfbtui-*
 
   release:
-    name: Create the draft release
+    name: Publish the release
     needs: [check, test, updater-e2e, sdist, binary, attest]
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -273,32 +264,14 @@ jobs:
           sha256sum * > SHA256SUMS
           cat SHA256SUMS
 
-      - name: Create the draft release
+      - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           if gh release view "$TAG" > /dev/null 2>&1; then
             echo "A release for $TAG already exists. Delete it and re-run if it should be rebuilt."; exit 1
           fi
+          # Draft first, upload, then publish, so nobody sees a release without its files.
           gh release create "$TAG" --draft --title "cfbtui $TAG" --notes-file notes/release-notes.md
           gh release upload "$TAG" release/* || { echo "upload failed; the draft release is left in place"; exit 1; }
-          # No --draft=false: the owner signs SHA256SUMS and publishes by hand.
-
-      - name: What to do next
-        run: |
-          {
-            echo "## $TAG is a draft: sign it, then publish"
-            echo
-            echo "The updater refuses a release without \`SHA256SUMS.sig\`, so nothing reaches users until you do this"
-            echo "(details and key handling: \`docs/release-signing.md\`):"
-            echo
-            echo '```sh'
-            echo 'dir="$(mktemp -d)"   # an empty folder outside any checkout'
-            echo "gh release download $TAG -R $GH_REPO -D \"\$dir\""
-            echo "for f in \"\$dir\"/cfbtui-*; do gh attestation verify \"\$f\" -R $GH_REPO \\"
-            echo "  --signer-workflow $GH_REPO/.github/workflows/release.yml --source-ref refs/tags/$TAG || exit 1; done"
-            echo "python scripts/sign_sums.py sign /path/to/offline/signing.key \"\$dir/SHA256SUMS\"   # also re-hashes every file"
-            echo "gh release upload $TAG \"\$dir/SHA256SUMS.sig\" -R $GH_REPO"
-            echo "gh release edit $TAG -R $GH_REPO --draft=false"
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+          gh release edit "$TAG" --draft=false

@@ -1,13 +1,11 @@
 name: Updater end-to-end
 
 # Run by hand (Actions > Updater end-to-end > Run workflow), and by release.yml on every tag as a gate: a release is
-# not created unless this passes on the tagged commit. Builds the real PyInstaller binary at the current version (X)
-# and at the next patch version (X+1, bumped in the job's checkout only and never committed), with a throwaway
-# signing key trusted in that scratch checkout only. It serves X+1 and a signed SHA256SUMS from a throwaway server on
-# 127.0.0.1 inside the job, and checks that the X binary updates itself: install on exit, a second run, a wrong
-# checksum, a forged or wrongly signed manifest and a missing signature that each change nothing, and "Restart now".
-# It never reads or writes a real release and never touches the real signing keys; see scripts/updater_e2e.py and
-# docs/development.md.
+# not published unless this passes on the tagged commit. Builds the real PyInstaller binary at the current version (X)
+# and at the next patch version (X+1, bumped in the job's checkout only and never committed), serves X+1 and a
+# SHA256SUMS from a throwaway server on 127.0.0.1 inside the job, and checks that the X binary updates itself:
+# install on exit, a second run, a wrong checksum that changes nothing, and "Restart now".
+# It never reads or writes a real release; see scripts/updater_e2e.py and docs/development.md.
 
 on:
   workflow_dispatch:
@@ -43,9 +41,6 @@ jobs:
           python -m pip install "uv==$UV_VERSION"
           uv sync --locked --extra dev --extra binary
 
-      - name: Trust a throwaway signing key in this checkout (not committed)
-        run: uv run --no-sync python scripts/updater_e2e.py embed-key "$RUNNER_TEMP/e2e-signing.key"
-
       - name: Build the binary at the current version (X)
         run: |
           OLD="$(uv run --no-sync python -c 'import cfbtui; print(cfbtui.__version__)')"
@@ -67,4 +62,4 @@ jobs:
         run: |
           EXT=""
           [ "$RUNNER_OS" = "Windows" ] && EXT=".exe"
-          uv run --no-sync python scripts/updater_e2e.py "$RUNNER_TEMP/old/cfbtui$EXT" "$RUNNER_TEMP/new/cfbtui$EXT" "$OLD" "$NEW" "$RUNNER_TEMP/e2e" "$RUNNER_TEMP/e2e-signing.key"
+          uv run --no-sync python scripts/updater_e2e.py "$RUNNER_TEMP/old/cfbtui$EXT" "$RUNNER_TEMP/new/cfbtui$EXT" "$OLD" "$NEW" "$RUNNER_TEMP/e2e"
