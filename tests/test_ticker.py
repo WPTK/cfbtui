@@ -101,7 +101,7 @@ async def test_widget_appends_in_order_caps_and_redraws_on_glyph_change():
         td, half = events_for("touchdown")[0], events_for("halftime")[0]
         ticker.add_events([td, half])
         await pilot.pause()
-        assert ticker.entry_count == 2
+        assert len(ticker.lines) == 2
         assert len(ticker.lines) >= 2
         first = ticker.lines[0].text.plain
         assert "TD TEX" in first
@@ -110,4 +110,4 @@ async def test_widget_appends_in_order_caps_and_redraws_on_glyph_change():
         assert "★" in ticker.lines[0].text.plain
         ticker.add_events([half] * (CAP + 25))
         await pilot.pause()
-        assert ticker.entry_count == CAP
+        assert len(ticker.lines) == CAP

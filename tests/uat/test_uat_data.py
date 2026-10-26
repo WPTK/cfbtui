@@ -1545,11 +1545,11 @@ class TestUpsetRule:
 
     def test_poll_choice_and_reset(self):
         polls = parse_rankings({"rankings": [{"type": "usa", "ranks": [{"current": 2, "team": {"id": "20"}}]}]})
-        assert UpsetRule(polls).ranking is None
-        assert UpsetRule(polls, poll="usa").ranking is not None
+        assert UpsetRule(polls)._ranking is None
+        assert UpsetRule(polls, poll="usa")._ranking is not None
         r = UpsetRule(polls, poll="usa")
         r.set_rankings(None)
-        assert r.ranking is None
+        assert r._ranking is None
 
     def test_poll_rank_zero_sentinel_unranked(self):
         polls = parse_rankings({"rankings": [{"type": "ap", "ranks": [{"current": 0, "team": {"id": "20"}}]}]})

@@ -513,7 +513,7 @@ async def test_a_week_switch_shows_only_the_new_boards_games_and_clears_stale_on
         await switched(pilot, app, 12)
         new = set(gids(app))
         assert new and not (old & new), "week 6 shows week 6's games only"
-        assert app.query_one(Ticker).entry_count == 0
+        assert len(app.query_one(Ticker).lines) == 0
 
 
 async def test_t_goes_back_to_this_week_and_a_second_t_only_says_so():
@@ -805,7 +805,7 @@ async def test_g_repaints_cards_the_ticker_and_an_open_detail():
     client.summary = UatClient().summary
     app = make_app(client, intervals=PollIntervals(live=0.3, idle=0.3, backoff_max=1), glyph_set="ascii")
     async with app.run_test(size=SIZE) as pilot:
-        await wait_for(pilot, lambda: app.query_one(Ticker).entry_count >= 1)
+        await wait_for(pilot, lambda: len(app.query_one(Ticker).lines) >= 1)
         ticker = app.query_one(Ticker)
         ascii_line = text_of(ticker.lines[0].text) if ticker.lines else ""
         await pilot.press("g")
@@ -1257,14 +1257,14 @@ async def test_a_touchdown_lands_in_the_ticker_flashes_the_card_and_survives_g()
     client = FakeClient(before, after)
     app = make_app(client, intervals=PollIntervals(live=0.3, idle=0.3, backoff_max=1))
     async with app.run_test(size=SIZE) as pilot:
-        await wait_for(pilot, lambda: app.query_one(Ticker).entry_count >= 1)
+        await wait_for(pilot, lambda: len(app.query_one(Ticker).lines) >= 1)
         await wait_for(pilot, lambda: "TD" in ticker_text(app), timeout=5)
-        assert "KICKOFF" in ticker_text(app) or app.query_one(Ticker).entry_count >= 1
+        assert "KICKOFF" in ticker_text(app) or len(app.query_one(Ticker).lines) >= 1
         assert app.query_one(GameCard).has_class("flash")
-        count = app.query_one(Ticker).entry_count
+        count = len(app.query_one(Ticker).lines)
         await pilot.press("g")
         await pilot.pause()
-        assert app.query_one(Ticker).entry_count == count and "TD" in ticker_text(app)
+        assert len(app.query_one(Ticker).lines) == count and "TD" in ticker_text(app)
 
 
 async def test_starred_team_events_are_marked_in_the_ticker():
@@ -1290,12 +1290,12 @@ async def test_switching_week_clears_the_ticker_and_the_new_board_is_quiet():
         await wait_for(pilot, lambda: len(app.query(GameCard)) == 1)
         app.query_one(Ticker).clear_log()
         app.query_one(Ticker).add_events([__import__("cfbtui.state.events", fromlist=["GameStarted"]).GameStarted(before.games[0])])
-        assert app.query_one(Ticker).entry_count == 1
+        assert len(app.query_one(Ticker).lines) == 1
         for key in ["left_square_bracket", "f", "t"]:
             await pilot.press(key)
             await wait_for(pilot, lambda: len(app.query(GameCard)) == 1)
             await pilot.pause(0.2)
-            assert app.query_one(Ticker).entry_count == 0, f"{key} leaves an empty ticker; live games announce nothing"
+            assert len(app.query_one(Ticker).lines) == 0, f"{key} leaves an empty ticker; live games announce nothing"
             app.query_one(Ticker).add_events([__import__("cfbtui.state.events", fromlist=["GameStarted"]).GameStarted(before.games[0])])
 
 

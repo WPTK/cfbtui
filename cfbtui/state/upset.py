@@ -61,10 +61,6 @@ class UpsetRule:
                 self._ranking = r
                 return
 
-    @property
-    def ranking(self) -> Ranking | None:
-        return self._ranking
-
     def rank_of(self, competitor: Competitor) -> int | None:
         """``curatedRank`` when present, else the chosen poll, else unranked."""
         if competitor.rank is not None:

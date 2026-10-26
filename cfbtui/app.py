@@ -153,9 +153,8 @@ class CfbApp(App[None]):
             intervals=intervals if intervals is not None else self.config.poll,
             week=week if week is not None else view.week,
             group=group if group is not None else view.group_id,
-            on_result=lambda result: self.post_message(PollUpdated(result)),
+            on_result=self._queue_result,
         )
-        self.last_result: PollResult | None = None
         self.favorites: frozenset[str] = favorite_ids(self.config)
         self._quiet_first_poll = False
         self._pulses = PulseGate()
@@ -201,6 +200,9 @@ class CfbApp(App[None]):
 
     # --- poll results ----------------------------------------------------------
 
+    def _queue_result(self, result: PollResult) -> None:
+        self.post_message(PollUpdated(result))
+
     def on_poll_updated(self, message: PollUpdated) -> None:
         # the screen may be torn down while a last poll lands
         with contextlib.suppress(NoMatches):
@@ -209,7 +211,6 @@ class CfbApp(App[None]):
     def _show_result(self, result: PollResult) -> None:
         if result.generation != self.scheduler.generation:
             return  # queued before the user switched week or group
-        self.last_result = result
         grid = self.query_one(ScoreGrid)
         quiet = self._quiet_first_poll and result.ok
         if quiet:
@@ -506,7 +507,10 @@ class CfbApp(App[None]):
         if info is None:
             return
         updater = self.updater
-        action = "link" if updater is None else decide(
+        if updater is None:
+            self.notify(update_message(info), title="Update available", timeout=20)
+            return
+        action = decide(
             updater.kind, auto=self.config.updates.auto, no_config=self.config_path is None,
             current=__version__, info=info, asset=updater.asset_name,
         )
