@@ -1,7 +1,7 @@
 name: ESPN canary
 
 # Weekly check that ESPN's live payloads still parse. Catches silent format drift
-# before users do. About 4 requests per run.
+# before users do. About 6 requests per run.
 
 on:
   schedule:
@@ -31,7 +31,8 @@ jobs:
           import sys
 
           from cfbtui.espn import client as espn
-          from cfbtui.espn.parse import parse_rankings, parse_scoreboard, parse_summary
+          from cfbtui.espn.parse import parse_news, parse_rankings, parse_scoreboard, parse_summary
+          from cfbtui.ui.story import render_story
 
           failures: list[str] = []
 
@@ -43,6 +44,25 @@ jobs:
 
           async def main() -> None:
               async with espn.EspnClient() as c:
+                  # News does not depend on the season, so it runs before the offseason early return below.
+                  raw_news = await c.news_raw()
+                  articles = raw_news.get("articles")
+                  check(isinstance(articles, list), "news has no `articles` list")
+                  if isinstance(articles, list) and articles:
+                      items = parse_news(raw_news)
+                      check(
+                          len(items) >= max(1, len(articles) // 2),
+                          f"news: parsed {len(items)} of {len(articles)} articles",
+                      )
+                      check(any(i.teams for i in items), "news: no article carries a team tag")
+                      readable = next((i for i in items if i.readable), None)
+                      if readable is None:
+                          check(False, "news: no article has a readable story link")
+                      else:
+                          body = await c.story(readable.story_url)
+                          check(bool(render_story(body).plain), f"news story {readable.id} rendered no text")
+                      print(f"news: {len(items)}/{len(articles)} articles parsed")
+
                   final_id = None
                   seen_events = 0
                   for name, group in (("FBS", espn.GROUP_FBS), ("FCS", espn.GROUP_FCS)):
