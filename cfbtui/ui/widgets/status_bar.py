@@ -32,10 +32,11 @@ class StatusView:
     errors: int = 0  # games whose latest diff raised
     view_note: str = ""  # the active filter, conference and layout, if not the defaults
     update_ready: str = ""  # the version downloaded and waiting to be installed when cfbtui quits
+    news_unread: int = 0  # news stories not yet opened
 
 
 # Drop order when the line is too wide: the highest number goes first, health (0) never.
-P_HEALTH, P_UPDATE, P_FAILING, P_WEEK, P_LIVE, P_NOTE, P_NEXT, P_VERSION, P_GLYPHS, P_CLOCK = range(10)
+P_HEALTH, P_UPDATE, P_FAILING, P_WEEK, P_LIVE, P_NEWS, P_NOTE, P_NEXT, P_VERSION, P_GLYPHS, P_CLOCK = range(11)
 
 
 def fit_segments(parts: list[tuple[int, str]], sep: str, width: int | None) -> str:
@@ -73,6 +74,8 @@ def format_status(view: StatusView, glyphs: Glyphs, now: datetime | None = None,
         parts.append((P_NOTE, view.view_note))
     if view.total:
         parts.append((P_LIVE, f"{view.live} live of {view.total}"))
+    if view.news_unread:
+        parts.append((P_NEWS, f"{view.news_unread} unread news"))
     if f.state is FreshnessState.ERROR and f.failures > 1:
         parts.append((P_FAILING, f"{f.failures} failed polls"))
     if view.errors:

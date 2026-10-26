@@ -1,0 +1,11 @@
+{
+ "resultsCount": 1,
+ "headlines": [
+  {
+   "id": 9002,
+   "type": "Story",
+   "headline": "Sample story about one team",
+   "story": "<p><photo1></p>\n<p>Alpha opened the <strong>sample</strong> game with a <em>long</em> drive, per <a data-clubhouse-guid=\"x\" href=\"http://www.espn.com/college-football/team/_/id/1/alpha\">Alpha</a> sources.<br>Second line after a break.</p>\n<hr>\n<p>Beta &amp; Alpha meet again.<img src=\"https://a.espncdn.com/x.jpg\" alt=\"x\"></p>\n<alsosee></p>\n<p><video1></p>\n<p>Final paragraph.</p>"
+  }
+ ]
+}

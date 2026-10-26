@@ -9,11 +9,11 @@ Keys: ``?`` lists every key (the footer shows only the core five), ``q`` quit,
 ``r`` refresh now, ``g`` cycle the glyph set, ``[`` and ``]`` previous and next
 week, ``t`` this week, ``f`` toggle FBS and FCS, arrow keys move between cards,
 ``1`` and ``2`` star or unstar the focused card's away and home team, ``Enter``
-opens the focused game's detail screen, ``R`` the AP and Coaches polls (``Esc``
-returns from either), ``c`` copies the focused game as
+opens the focused game's detail screen, ``R`` the AP and Coaches polls, ``N`` the news (``Esc``
+returns from any), ``c`` copies the focused game as
 Discord Markdown and ``C`` copies every visible game.
 
-**Screens.** Detail and rankings are pushed over the grid. Polling keeps
+**Screens.** Detail, rankings and news are pushed over the grid. Polling keeps
 running underneath, and while one is open the grid's own keys are switched off
 (:meth:`CfbApp.check_action`), so a week cannot change under it.
 
@@ -50,6 +50,7 @@ from cfbtui.config import Config, favorite_ids, save_config
 from cfbtui.espn.client import GROUP_FBS, GROUP_FCS, EspnClient
 from cfbtui.espn.models import Game, Ranking
 from cfbtui.espn.periods import MAX_WEEK, MIN_WEEK, week_label
+from cfbtui.news import NewsFeed, NewsSource
 from cfbtui.poll import PollIntervals, PollResult, PollScheduler, ScoreboardSource
 from cfbtui.selfupdate import Staged, UpdateError, Updater
 from cfbtui.state.events import Scored
@@ -61,6 +62,7 @@ from cfbtui.ui.pulse import PulseGate, pulse_kind
 from cfbtui.ui.screens.conferences import ConferenceScreen
 from cfbtui.ui.screens.detail import DetailScreen, SummarySource
 from cfbtui.ui.screens.help import HelpScreen, help_rows
+from cfbtui.ui.screens.news import NewsScreen, team_conferences
 from cfbtui.ui.screens.rankings import RankingsScreen
 from cfbtui.ui.screens.settings import SettingsScreen
 from cfbtui.ui.widgets.score_grid import ScoreGrid
@@ -71,8 +73,8 @@ from cfbtui.update import UpdateInfo, decide, pip_message, update_message
 GROUP_NAMES = {GROUP_FBS: "FBS", GROUP_FCS: "FCS"}
 
 
-class EspnSource(ScoreboardSource, SummarySource, Protocol):
-    """What the app asks of its client: the poll loop's scoreboard and rankings, and the detail screen's summary."""
+class EspnSource(ScoreboardSource, SummarySource, NewsSource, Protocol):
+    """What the app asks of its client: the scoreboard and rankings, a game's summary, the news and its stories."""
 
 
 class PollUpdated(Message):
@@ -93,6 +95,7 @@ class CfbApp(App[None]):
         Binding("enter", "detail", "Detail"),
         Binding("l", "cycle_filter", "Filter"),
         Binding("R", "rankings", "Rankings"),
+        Binding("N", "news", "News", show=False),
         Binding("r", "refresh", "Refresh", show=False),
         Binding("g", "cycle_glyphs", "Glyphs", show=False),
         Binding("left_square_bracket", "week(-1)", "Prev week", show=False),
@@ -111,7 +114,7 @@ class CfbApp(App[None]):
     # Actions that belong to the grid; they are off while a detail or rankings screen is on top.
     GRID_ACTIONS = frozenset(
         {"help", "refresh", "week", "this_week", "toggle_group", "favorite", "detail", "rankings", "copy_game",
-         "copy_board", "toggle_layout", "cycle_filter", "conference", "settings"}
+         "copy_board", "toggle_layout", "cycle_filter", "conference", "settings", "news"}
     )
 
     def __init__(
@@ -155,6 +158,7 @@ class CfbApp(App[None]):
             group=group if group is not None else view.group_id,
             on_result=self._queue_result,
         )
+        self.news = NewsFeed(self.client, self.scheduler, on_change=self._news_changed)
         self.favorites: frozenset[str] = favorite_ids(self.config)
         self._quiet_first_poll = False
         self._pulses = PulseGate()
@@ -186,6 +190,7 @@ class CfbApp(App[None]):
         for warning in self.config_warnings:
             self.notify(warning, title="Config", severity="warning", timeout=10)
         self.run_worker(self.scheduler.run(), name="poll", group="poll", exclusive=True)
+        self.run_worker(self.news.run(), name="news", group="news", exclusive=True)
         if self.update_check is not None:
             self.run_worker(self._look_for_update(), name="update", group="update", exit_on_error=False)
         self.set_interval(1.0, self._tick)
@@ -193,6 +198,7 @@ class CfbApp(App[None]):
 
     async def on_unmount(self) -> None:
         self.scheduler.stop()
+        self.news.stop()
         if self.updater is not None:
             self.updater.close(keep=self.staged)  # a download still running stops here
         if self._owns_client and isinstance(self.client, EspnClient):
@@ -233,7 +239,8 @@ class CfbApp(App[None]):
         self._tick()
 
     def _tick(self) -> None:
-        self.scheduler.observe_presence()
+        if self.scheduler.observe_presence():
+            self.news.refresh()
         # the screen may be torn down
         with contextlib.suppress(NoMatches):
             self._update_status()
@@ -256,6 +263,7 @@ class CfbApp(App[None]):
             errors=len(self.store.last_errors),
             view_note=describe(self.filter, self.conference, self.layout),
             update_ready=self.staged_version,
+            news_unread=self.news.unread_count,
         )
         self.query_one(StatusBar).show(view, self.glyphs)
         self.query_one(ScoreGrid).set_data_old(freshness.data_old)
@@ -397,6 +405,15 @@ class CfbApp(App[None]):
                 on_cfp=self._remember_cfp,
             )
         )
+
+    def action_news(self) -> None:
+        self.push_screen(NewsScreen(self.news, self.glyphs, lambda: team_conferences(self.store.games)))
+
+    def _news_changed(self) -> None:
+        with contextlib.suppress(NoMatches):  # the screen may be torn down
+            if isinstance(self.screen, NewsScreen):
+                self.screen.refresh_list()
+            self._update_status()
 
     def action_settings(self) -> None:
         values = {

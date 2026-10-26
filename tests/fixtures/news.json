@@ -1,0 +1,624 @@
+{
+ "articles": [
+  {
+   "id": 9001,
+   "nowId": "1-9001",
+   "type": "Preview",
+   "headline": "Sample preview: Alpha at Beta",
+   "description": "A sample description of a two-team preview.",
+   "lastModified": "2026-10-25T19:44:48Z",
+   "published": "2026-10-26T15:00:00Z",
+   "categories": [
+    {
+     "id": 9571,
+     "type": "league",
+     "description": "NCAA Football",
+     "leagueId": 23
+    },
+    {
+     "id": 1135,
+     "type": "team",
+     "description": "UCF Knights",
+     "teamId": 2116,
+     "team": {
+      "id": 2116,
+      "description": "UCF Knights",
+      "abbreviation": "UCF",
+      "shortDisplayName": "UCF"
+     }
+    },
+    {
+     "id": 2116,
+     "type": "team",
+     "description": "University of Central Florida",
+     "teamId": 2116,
+     "team": {
+      "id": 2116,
+      "description": "University of Central Florida",
+      "abbreviation": "UCF",
+      "shortDisplayName": "UCF"
+     }
+    },
+    {
+     "id": 1075,
+     "type": "team",
+     "description": "Baylor Bears",
+     "teamId": 239,
+     "team": {
+      "id": 239,
+      "description": "Baylor Bears",
+      "abbreviation": "BAY",
+      "shortDisplayName": "Baylor"
+     }
+    },
+    {
+     "id": 239,
+     "type": "team",
+     "description": "Baylor University",
+     "teamId": 239,
+     "team": {
+      "id": 239,
+      "description": "Baylor University",
+      "abbreviation": "Baylor",
+      "shortDisplayName": "Baylor"
+     }
+    }
+   ],
+   "links": {
+    "web": {
+     "href": "https://www.espn.com/college-football/story/_/id/9001/sample-story"
+    },
+    "api": {
+     "self": {
+      "href": "https://content.core.api.espn.com/v1/sports/news/9001"
+     }
+    }
+   },
+   "premium": false
+  },
+  {
+   "id": 9002,
+   "nowId": "1-9002",
+   "type": "HeadlineNews",
+   "headline": "Sample story about one team",
+   "description": "A sample description of a one-team story.",
+   "lastModified": "2026-10-26T18:17:09Z",
+   "published": "2026-10-26T12:00:00Z",
+   "categories": [
+    {
+     "id": 9571,
+     "type": "league",
+     "description": "NCAA Football",
+     "leagueId": 23
+    },
+    {
+     "id": 1099,
+     "type": "team",
+     "description": "Ole Miss Rebels",
+     "teamId": 145,
+     "team": {
+      "id": 145,
+      "description": "Ole Miss Rebels",
+      "abbreviation": "MISS",
+      "shortDisplayName": "Ole Miss"
+     }
+    },
+    {
+     "id": 145,
+     "type": "team",
+     "description": "University of Mississippi",
+     "teamId": 145,
+     "team": {
+      "id": 145,
+      "description": "University of Mississippi",
+      "abbreviation": "Ole Miss",
+      "shortDisplayName": "Ole Miss"
+     }
+    }
+   ],
+   "byline": "Alex Scarborough",
+   "links": {
+    "web": {
+     "href": "https://www.espn.com/college-football/story/_/id/9002/sample-story"
+    },
+    "api": {
+     "self": {
+      "href": "https://content.core.api.espn.com/v1/sports/news/9002"
+     }
+    }
+   },
+   "premium": false
+  },
+  {
+   "id": 9003,
+   "nowId": "1-9003",
+   "type": "Story",
+   "headline": "Sample roundup of many teams",
+   "description": "A sample roundup that names many teams.",
+   "lastModified": "2026-10-26T11:43:49Z",
+   "published": "2026-10-26T11:00:00Z",
+   "categories": [
+    {
+     "id": 9571,
+     "type": "league",
+     "description": "NCAA Football",
+     "leagueId": 23
+    },
+    {
+     "id": 1119,
+     "type": "team",
+     "description": "Miami Hurricanes",
+     "teamId": 2390,
+     "team": {
+      "id": 2390,
+      "description": "Miami Hurricanes",
+      "abbreviation": "MIA",
+      "shortDisplayName": "Miami"
+     }
+    },
+    {
+     "id": 2390,
+     "type": "team",
+     "description": "University of Miami",
+     "teamId": 2390,
+     "team": {
+      "id": 2390,
+      "description": "University of Miami",
+      "abbreviation": "Miami",
+      "shortDisplayName": "Miami"
+     }
+    },
+    {
+     "id": 1078,
+     "type": "team",
+     "description": "Texas Tech Red Raiders",
+     "teamId": 2641,
+     "team": {
+      "id": 2641,
+      "description": "Texas Tech Red Raiders",
+      "abbreviation": "TTU",
+      "shortDisplayName": "Texas Tech"
+     }
+    },
+    {
+     "id": 2641,
+     "type": "team",
+     "description": "Texas Tech University",
+     "teamId": 2641,
+     "team": {
+      "id": 2641,
+      "description": "Texas Tech University",
+      "abbreviation": "Texas Tech",
+      "shortDisplayName": "Texas Tech"
+     }
+    },
+    {
+     "id": 1157,
+     "type": "team",
+     "description": "BYU Cougars",
+     "teamId": 252,
+     "team": {
+      "id": 252,
+      "description": "BYU Cougars",
+      "abbreviation": "BYU",
+      "shortDisplayName": "BYU"
+     }
+    },
+    {
+     "id": 252,
+     "type": "team",
+     "description": "Brigham Young University",
+     "teamId": 252,
+     "team": {
+      "id": 252,
+      "description": "Brigham Young University",
+      "abbreviation": "BYU",
+      "shortDisplayName": "BYU"
+     }
+    },
+    {
+     "id": 1098,
+     "type": "team",
+     "description": "LSU Tigers",
+     "teamId": 99,
+     "team": {
+      "id": 99,
+      "description": "LSU Tigers",
+      "abbreviation": "LSU",
+      "shortDisplayName": "LSU"
+     }
+    },
+    {
+     "id": 99,
+     "type": "team",
+     "description": "Louisiana State University",
+     "teamId": 99,
+     "team": {
+      "id": 99,
+      "description": "Louisiana State University",
+      "abbreviation": "LSU",
+      "shortDisplayName": "LSU"
+     }
+    },
+    {
+     "id": 1106,
+     "type": "team",
+     "description": "UCLA Bruins",
+     "teamId": 26,
+     "team": {
+      "id": 26,
+      "description": "UCLA Bruins",
+      "abbreviation": "UCLA",
+      "shortDisplayName": "UCLA"
+     }
+    },
+    {
+     "id": 26,
+     "type": "team",
+     "description": "University of California at Los Angeles",
+     "teamId": 26,
+     "team": {
+      "id": 26,
+      "description": "University of California at Los Angeles",
+      "abbreviation": "UCLA",
+      "shortDisplayName": "UCLA"
+     }
+    },
+    {
+     "id": 1086,
+     "type": "team",
+     "description": "Wisconsin Badgers",
+     "teamId": 275,
+     "team": {
+      "id": 275,
+      "description": "Wisconsin Badgers",
+      "abbreviation": "WIS",
+      "shortDisplayName": "Wisconsin"
+     }
+    },
+    {
+     "id": 275,
+     "type": "team",
+     "description": "University of Wisconsin",
+     "teamId": 275,
+     "team": {
+      "id": 275,
+      "description": "University of Wisconsin",
+      "abbreviation": "Wisconsin",
+      "shortDisplayName": "Wisconsin"
+     }
+    },
+    {
+     "id": 1107,
+     "type": "team",
+     "description": "USC Trojans",
+     "teamId": 30,
+     "team": {
+      "id": 30,
+      "description": "USC Trojans",
+      "abbreviation": "USC",
+      "shortDisplayName": "USC"
+     }
+    },
+    {
+     "id": 30,
+     "type": "team",
+     "description": "University of Southern California",
+     "teamId": 30,
+     "team": {
+      "id": 30,
+      "description": "University of Southern California",
+      "abbreviation": "USC",
+      "shortDisplayName": "USC"
+     }
+    }
+   ],
+   "byline": "ESPN",
+   "links": {
+    "web": {
+     "href": "https://www.espn.com/college-football/story/_/id/9003/sample-story"
+    },
+    "api": {
+     "self": {
+      "href": "https://content.core.api.espn.com/v1/sports/news/9003"
+     }
+    }
+   },
+   "premium": false
+  },
+  {
+   "id": 9004,
+   "nowId": "1-9004",
+   "type": "HeadlineNews",
+   "headline": "Sample premium story",
+   "description": "Premium sample description.",
+   "lastModified": "2026-10-26T18:17:09Z",
+   "published": "2026-10-26T10:00:00Z",
+   "categories": [
+    {
+     "id": 9571,
+     "type": "league",
+     "description": "NCAA Football",
+     "leagueId": 23
+    },
+    {
+     "id": 1099,
+     "type": "team",
+     "description": "Ole Miss Rebels",
+     "teamId": 145,
+     "team": {
+      "id": 145,
+      "description": "Ole Miss Rebels",
+      "abbreviation": "MISS",
+      "shortDisplayName": "Ole Miss"
+     }
+    },
+    {
+     "id": 145,
+     "type": "team",
+     "description": "University of Mississippi",
+     "teamId": 145,
+     "team": {
+      "id": 145,
+      "description": "University of Mississippi",
+      "abbreviation": "Ole Miss",
+      "shortDisplayName": "Ole Miss"
+     }
+    }
+   ],
+   "byline": "Alex Scarborough",
+   "links": {
+    "web": {
+     "href": "https://www.espn.com/college-football/story/_/id/9004/sample-story"
+    },
+    "api": {
+     "self": {
+      "href": "https://content.core.api.espn.com/v1/sports/news/9004"
+     }
+    }
+   },
+   "premium": true
+  },
+  {
+   "id": 9005,
+   "nowId": "1-9005",
+   "type": "Media",
+   "headline": "Sample video clip",
+   "description": "A sample clip description.",
+   "lastModified": "2026-10-26T17:29:01Z",
+   "published": "2026-10-26T16:00:00Z",
+   "categories": [
+    {
+     "id": 9571,
+     "type": "league",
+     "description": "NCAA Football",
+     "leagueId": 23
+    }
+   ],
+   "links": {
+    "web": {
+     "href": "https://www.espn.com/college-football/story/_/id/9005/sample-story"
+    },
+    "api": {
+     "self": {
+      "href": "https://content.core.api.espn.com/v1/video/clips/9005"
+     }
+    }
+   },
+   "premium": false
+  },
+  {
+   "id": 9006,
+   "nowId": "1-9006",
+   "type": "HeadlineNews",
+   "headline": "Sample story with no team tag",
+   "description": "No team tags here.",
+   "lastModified": "2026-10-26T18:17:09Z",
+   "published": "2026-10-25T09:00:00Z",
+   "categories": [
+    {
+     "id": 9571,
+     "type": "league",
+     "description": "NCAA Football",
+     "leagueId": 23
+    }
+   ],
+   "byline": "Alex Scarborough",
+   "links": {
+    "web": {
+     "href": "https://www.espn.com/college-football/story/_/id/9006/sample-story"
+    },
+    "api": {
+     "self": {
+      "href": "https://content.core.api.espn.com/v1/sports/news/9006"
+     }
+    }
+   },
+   "premium": false
+  },
+  {
+   "id": 9008,
+   "nowId": "1-9008",
+   "type": "Story",
+   "headline": "Sample story naming six teams",
+   "description": "A sample story with six teams.",
+   "lastModified": "2026-10-26T16:22:24Z",
+   "published": "2026-10-26T13:00:00Z",
+   "categories": [
+    {
+     "id": 9571,
+     "type": "league",
+     "description": "NCAA Football",
+     "leagueId": 23
+    },
+    {
+     "id": 1077,
+     "type": "team",
+     "description": "Texas Longhorns",
+     "teamId": 251,
+     "team": {
+      "id": 251,
+      "description": "Texas Longhorns",
+      "abbreviation": "TEX",
+      "shortDisplayName": "Texas"
+     }
+    },
+    {
+     "id": 251,
+     "type": "team",
+     "description": "University of Texas",
+     "teamId": 251,
+     "team": {
+      "id": 251,
+      "description": "University of Texas",
+      "abbreviation": "Texas",
+      "shortDisplayName": "Texas"
+     }
+    },
+    {
+     "id": 1080,
+     "type": "team",
+     "description": "Indiana Hoosiers",
+     "teamId": 84,
+     "team": {
+      "id": 84,
+      "description": "Indiana Hoosiers",
+      "abbreviation": "IU",
+      "shortDisplayName": "Indiana"
+     }
+    },
+    {
+     "id": 84,
+     "type": "team",
+     "description": "Indiana University",
+     "teamId": 84,
+     "team": {
+      "id": 84,
+      "description": "Indiana University",
+      "abbreviation": "Indiana",
+      "shortDisplayName": "Indiana"
+     }
+    },
+    {
+     "id": 1119,
+     "type": "team",
+     "description": "Miami Hurricanes",
+     "teamId": 2390,
+     "team": {
+      "id": 2390,
+      "description": "Miami Hurricanes",
+      "abbreviation": "MIA",
+      "shortDisplayName": "Miami"
+     }
+    },
+    {
+     "id": 2390,
+     "type": "team",
+     "description": "University of Miami",
+     "teamId": 2390,
+     "team": {
+      "id": 2390,
+      "description": "University of Miami",
+      "abbreviation": "Miami",
+      "shortDisplayName": "Miami"
+     }
+    },
+    {
+     "id": 1098,
+     "type": "team",
+     "description": "LSU Tigers",
+     "teamId": 99,
+     "team": {
+      "id": 99,
+      "description": "LSU Tigers",
+      "abbreviation": "LSU",
+      "shortDisplayName": "LSU"
+     }
+    },
+    {
+     "id": 99,
+     "type": "team",
+     "description": "Louisiana State University",
+     "teamId": 99,
+     "team": {
+      "id": 99,
+      "description": "Louisiana State University",
+      "abbreviation": "LSU",
+      "shortDisplayName": "LSU"
+     }
+    },
+    {
+     "id": 1156,
+     "type": "team",
+     "description": "New Mexico Lobos",
+     "teamId": 167,
+     "team": {
+      "id": 167,
+      "description": "New Mexico Lobos",
+      "abbreviation": "UNM",
+      "shortDisplayName": "New Mexico"
+     }
+    },
+    {
+     "id": 167,
+     "type": "team",
+     "description": "University of New Mexico",
+     "teamId": 167,
+     "team": {
+      "id": 167,
+      "description": "University of New Mexico",
+      "abbreviation": "New Mexico",
+      "shortDisplayName": "New Mexico"
+     }
+    },
+    {
+     "id": 1078,
+     "type": "team",
+     "description": "Texas Tech Red Raiders",
+     "teamId": 2641,
+     "team": {
+      "id": 2641,
+      "description": "Texas Tech Red Raiders",
+      "abbreviation": "TTU",
+      "shortDisplayName": "Texas Tech"
+     }
+    },
+    {
+     "id": 2641,
+     "type": "team",
+     "description": "Texas Tech University",
+     "teamId": 2641,
+     "team": {
+      "id": 2641,
+      "description": "Texas Tech University",
+      "abbreviation": "Texas Tech",
+      "shortDisplayName": "Texas Tech"
+     }
+    }
+   ],
+   "byline": "Bill Connelly",
+   "links": {
+    "web": {
+     "href": "https://www.espn.com/college-football/story/_/id/9008/sample-story"
+    },
+    "api": {
+     "self": {
+      "href": "https://content.core.api.espn.com/v1/sports/news/9008"
+     }
+    }
+   },
+   "premium": false
+  },
+  {
+   "id": 9007,
+   "description": "no headline"
+  },
+  {
+   "headline": "no id"
+  },
+  "junk",
+  null
+ ],
+ "header": "Sample",
+ "link": {}
+}

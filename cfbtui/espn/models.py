@@ -321,3 +321,36 @@ class Summary:
     home_linescores: tuple[int, ...] = ()
     recap_headline: str | None = None
     recap_description: str | None = None
+
+
+# ------------------------------------------------------------------------ news
+
+
+@dataclass(frozen=True, slots=True)
+class NewsTeam:
+    id: str
+    name: str
+
+
+@dataclass(frozen=True, slots=True)
+class NewsItem:
+    """One entry of ESPN's news feed. ``kind`` is ESPN's ``type`` (Story, Preview, HeadlineNews, Media)."""
+
+    id: str
+    kind: str
+    headline: str
+    description: str
+    published: datetime
+    premium: bool = False
+    web_url: str | None = None
+    story_url: str | None = None  # the story API link; only fetched when the user opens the story
+    teams: tuple[NewsTeam, ...] = ()
+
+    @property
+    def is_video(self) -> bool:
+        return self.kind.lower() == "media"
+
+    @property
+    def readable(self) -> bool:
+        """True when ESPN's story API serves a body for it: not premium, not a video clip, and linked."""
+        return not self.premium and not self.is_video and self.story_url is not None
