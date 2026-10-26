@@ -1,0 +1,124 @@
+name: ESPN canary
+
+# Weekly check that ESPN's live payloads still parse. Catches silent format drift
+# before users do. About 4 requests per run.
+
+on:
+  schedule:
+    - cron: "17 13 * * 1" # Mondays 13:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  canary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+      - run: python -m pip install -e .
+
+      - name: Fetch live ESPN data and check invariants
+        run: |
+          python - <<'PY'
+          import asyncio
+          import os
+          import sys
+
+          from cfbtui.espn import client as espn
+          from cfbtui.espn.parse import parse_rankings, parse_scoreboard, parse_summary
+
+          failures: list[str] = []
+
+
+          def check(ok: bool, message: str) -> None:
+              if not ok:
+                  failures.append(message)
+
+
+          async def main() -> None:
+              async with espn.EspnClient() as c:
+                  final_id = None
+                  seen_events = 0
+                  for name, group in (("FBS", espn.GROUP_FBS), ("FCS", espn.GROUP_FCS)):
+                      raw = await c.scoreboard_raw(group=group)
+                      events = raw.get("events")
+                      check(isinstance(events, list), f"{name} scoreboard has no `events` list")
+                      if not isinstance(events, list) or not events:
+                          print(f"{name}: no events, skipping its checks")
+                          continue
+                      seen_events += len(events)
+                      board = parse_scoreboard(raw)
+                      check(
+                          len(board.games) == len(events),
+                          f"{name} scoreboard: parsed {len(board.games)} of {len(events)} events",
+                      )
+                      for g in board.games:
+                          check(
+                              bool(g.home.team.id or g.home.team.abbreviation)
+                              or bool(g.away.team.id or g.away.team.abbreviation),
+                              f"{name} game {g.id} has both teams empty",
+                          )
+                      if name == "FBS" and final_id is None:
+                          final_id = next(
+                              (
+                                  str(e["id"])
+                                  for e in events
+                                  if e.get("status", {}).get("type", {}).get("state") == "post"
+                              ),
+                              None,
+                          )
+                      print(f"{name}: {len(board.games)}/{len(events)} events parsed")
+
+                  if not seen_events:
+                      print("ESPN returned no events (offseason); skipping the remaining checks")
+                      return
+
+                  raw_rankings = await c.rankings_raw()
+                  raw_polls = raw_rankings.get("rankings")
+                  polls = parse_rankings(raw_rankings)
+                  if raw_polls:
+                      check(len(polls) >= 1, f"rankings: {len(raw_polls)} raw polls, none parsed")
+                  print(f"rankings: {len(polls)} polls")
+
+                  if final_id is None:
+                      print("no final game on the FBS board; skipping the summary check")
+                  else:
+                      summary = parse_summary(await c.summary_raw(final_id))
+                      check(bool(summary.scoring_plays), f"summary {final_id} (final game) has no scoring plays")
+                      print(f"summary {final_id}: {len(summary.scoring_plays)} scoring plays")
+
+
+          try:
+              asyncio.run(main())
+          except espn.EspnError as exc:
+              failures.append(f"{type(exc).__name__}: {exc}")
+
+          if failures:
+              with open(os.path.join(os.environ["RUNNER_TEMP"], "canary-failures.txt"), "w") as fh:
+                  fh.write("\n".join(f"- {f}" for f in failures) + "\n")
+              print("\n".join(failures), file=sys.stderr)
+              sys.exit(1)
+          PY
+
+      - name: Open or update the drift issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          details="$RUNNER_TEMP/canary-failures.txt"
+          [ -f "$details" ] || echo "- the canary step failed before it could record details" > "$details"
+          body="$(printf 'Failing assertions:\n\n%s\nRun: %s\n' "$(cat "$details")" "$RUN_URL")"
+          gh label create espn-drift --color D93F0B --description "ESPN payload drift" 2>/dev/null || true
+          number="$(gh issue list --label espn-drift --state open --json number --jq '.[0].number // empty')"
+          if [ -n "$number" ]; then
+            gh issue comment "$number" --body "$body"
+          else
+            gh issue create --label espn-drift --title "ESPN canary failed" --body "$body"
+          fi
