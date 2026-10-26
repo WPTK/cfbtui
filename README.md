@@ -29,6 +29,7 @@ A college football scoreboard for your terminal. Live scores, rankings and scori
 - A ticker of scores, kickoffs and upsets as they happen.
 - Game detail with every scoring play and win probability.
 - AP and Coaches polls, switching to the CFP ranking once the committee releases it.
+- ESPN's college football news: headlines tagged with teams and conferences, an unread count, and stories you can read in the app.
 - Starred favorites pinned at the top, saved between runs.
 - Filters for Top 25, live games and favorites, plus a conference picker.
 - Cards or a one-line-per-game list.
@@ -132,6 +133,7 @@ it again for the next part.
 | arrow keys | Move between games |
 | `Enter` | Open the game: every scoring play and win probability |
 | `R` | Rankings. In there, `c` copies the polls for Discord, one per press |
+| `N` | News. `Enter` reads the story, `o` opens the original in your browser, `r` refreshes |
 | `[` `]` | Previous / next week. After week 15 come **Bowls** and the **Playoff** |
 | `t` | Back to this week |
 | `f` | Switch between FBS and FCS |
@@ -236,9 +238,17 @@ bottom bar shows the active filter. Press `l` until it says all games, and `t` t
 Scores come from ESPN's public scoreboard service, which is unofficial and undocumented and can change or
 disappear without warning. cfbtui is an independent project, not affiliated with ESPN or the NCAA.
 
-At startup it also asks GitHub whether a newer release exists. That is the only other request it makes, and
-it sends no personal information. Turn it off with `--no-update-check` or `check = false` in the settings
-file.
+**News.** The news list is ESPN's public college football news feed, fetched every 10 minutes while you are at
+the computer and not at all once you have stepped away. A story's text is fetched only when you open that story:
+one request, kept in memory for the session (the last 20), never written to disk. The text is ESPN's, shown
+with its source named and a key to open the original. ESPN's content is governed by Disney's terms of use
+(<https://disneytermsofuse.com/english/>), which grant a personal, noncommercial licence and restrict automated
+access and copying. Fetching a story when you ask for it keeps cfbtui close to a client showing what the service
+sends, but it does not remove that risk. Reading stories in cfbtui is your choice, and you accept that when you
+use it. This is not legal advice.
+
+At startup it also asks GitHub whether a newer release exists. That sends no personal information. Turn it off
+with `--no-update-check` or `check = false` in the settings file.
 
 ## Development
 

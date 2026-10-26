@@ -6,6 +6,7 @@ import asyncio
 import datetime
 from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Any
+from urllib.parse import urlsplit
 
 import httpx
 
@@ -13,11 +14,14 @@ from cfbtui import __version__
 from cfbtui.espn.periods import espn_request
 
 if TYPE_CHECKING:
-    from cfbtui.espn.models import Ranking, Scoreboard, Summary
+    from cfbtui.espn.models import NewsItem, Ranking, Scoreboard, Summary
 
 BASE_URL = "https://site.api.espn.com/apis/site/v2/sports/football/college-football"
 GROUP_FBS = 80
 GROUP_FCS = 81
+NEWS_LIMIT = 30
+STORY_HOST = "content.core.api.espn.com"
+STORY_PATH = "/v1/sports/news/"
 
 USER_AGENT = f"cfbtui/{__version__} (+https://github.com/WPTK/cfbtui)"
 
@@ -48,7 +52,7 @@ _NOT_RETRIED = (httpx.DecodingError, httpx.TooManyRedirects)
 
 
 class EspnClient:
-    """Thin retrying wrapper over httpx for the three endpoints cfbtui uses."""
+    """Thin retrying wrapper over httpx for the endpoints cfbtui uses."""
 
     def __init__(
         self,
@@ -80,7 +84,9 @@ class EspnClient:
             await self._client.aclose()
 
     async def _get_json(self, path: str, params: dict[str, Any] | None = None) -> dict:
-        url = f"{self._base_url}{path}"
+        return await self._get_url(f"{self._base_url}{path}", params)
+
+    async def _get_url(self, url: str, params: dict[str, Any] | None = None) -> dict:
         last_error: EspnError | None = None
         for attempt in range(self._retries + 1):
             if attempt:
@@ -142,6 +148,16 @@ class EspnClient:
     async def summary_raw(self, event_id: str) -> dict:
         return await self._get_json("/summary", {"event": event_id})
 
+    async def news_raw(self, limit: int = NEWS_LIMIT) -> dict:
+        return await self._get_json("/news", {"limit": limit})
+
+    async def story_raw(self, url: str) -> dict:
+        """One story's payload. ``url`` is a feed item's story API link; any other host or path is refused."""
+        parts = urlsplit(url)
+        if parts.scheme != "https" or parts.hostname != STORY_HOST or not parts.path.startswith(STORY_PATH):
+            raise EspnError(f"Not a story link: {url}")
+        return await self._get_url(f"https://{STORY_HOST}{parts.path}")
+
     async def scoreboard(
         self,
         *,
@@ -174,3 +190,17 @@ class EspnClient:
         from cfbtui.espn.parse import parse_summary
 
         return parse_summary(await self.summary_raw(event_id))
+
+    async def news(self, limit: int = NEWS_LIMIT) -> tuple[NewsItem, ...]:
+        from cfbtui.espn.parse import parse_news
+
+        raw = await self.news_raw(limit)
+        if not isinstance(raw.get("articles"), list):
+            raise EspnSchemaError("ESPN changed its news format; no `articles` list")
+        return parse_news(raw)
+
+    async def story(self, url: str) -> str:
+        """The HTML body of a story, or ``""`` when ESPN serves none."""
+        from cfbtui.espn.parse import parse_story
+
+        return parse_story(await self.story_raw(url))

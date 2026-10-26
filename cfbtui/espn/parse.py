@@ -18,6 +18,8 @@ from cfbtui.espn.models import (
     GameState,
     HomeAway,
     LastPlay,
+    NewsItem,
+    NewsTeam,
     Odds,
     RankEntry,
     Ranking,
@@ -533,3 +535,55 @@ def parse_summary(payload: dict) -> Summary:
         recap_headline=_opt_str(_get(payload, "article", "headline")),
         recap_description=_opt_str(_get(payload, "article", "description")),
     )
+
+
+# ------------------------------------------------------------------------ news
+
+
+def _news_teams(categories: Any) -> tuple[NewsTeam, ...]:
+    """The distinct teams in a story's categories. ESPN lists each team twice; the first entry names it."""
+    seen: dict[str, NewsTeam] = {}
+    for cat in _dicts(categories):
+        if cat.get("type") != "team":
+            continue
+        team_id = _opt_str(cat.get("teamId"))
+        if team_id is None or team_id in seen:
+            continue
+        team = _get(cat, "team", default={})
+        team = team if isinstance(team, dict) else {}
+        name = _str(team.get("shortDisplayName")) or _str(team.get("abbreviation")) or _str(cat.get("description"))
+        seen[team_id] = NewsTeam(team_id, name or team_id)
+    return tuple(seen.values())
+
+
+def parse_news_item(raw: dict) -> NewsItem | None:
+    """Build a :class:`NewsItem`; ``None`` when there is no id or headline."""
+    if not isinstance(raw, dict):
+        return None
+    item_id = _opt_str(raw.get("id"))
+    headline = _str(raw.get("headline")).strip()
+    if item_id is None or not headline:
+        return None
+    return NewsItem(
+        id=item_id,
+        kind=_str(raw.get("type")) or "Story",
+        headline=headline,
+        description=_str(raw.get("description")).strip(),
+        published=parse_date(_opt_str(raw.get("published"))),
+        premium=raw.get("premium") is True,
+        web_url=_opt_str(_get(raw, "links", "web", "href")),
+        story_url=_opt_str(_get(raw, "links", "api", "self", "href")),
+        teams=_news_teams(raw.get("categories")),
+    )
+
+
+def parse_news(payload: dict) -> tuple[NewsItem, ...]:
+    """Every article in a news payload that has an id and a headline."""
+    if not isinstance(payload, dict):
+        return ()
+    return tuple(i for i in map(parse_news_item, _dicts(payload.get("articles"))) if i is not None)
+
+
+def parse_story(payload: dict) -> str:
+    """The HTML body of a story payload (``headlines[0].story``); empty when it has none."""
+    return _str(_get(payload, "headlines", 0, "story")).strip()

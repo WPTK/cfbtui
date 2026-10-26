@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from cfbtui.espn.client import EspnNetworkError
-from cfbtui.espn.models import Game, Ranking, Scoreboard, Summary
+from cfbtui.espn.models import Game, NewsItem, Ranking, Scoreboard, Summary
 from cfbtui.espn.parse import parse_rankings, parse_scoreboard
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -41,6 +41,10 @@ class FakeClient:
         self._rankings = rankings
         self.scoreboard_calls = 0
         self.rankings_calls = 0
+        self.news_calls = 0
+        self.news_items: tuple[NewsItem, ...] | Exception = ()
+        self.story_calls: list[str] = []
+        self.stories: dict[str, str] = {}
         self.kwargs: list[dict] = []
 
     def push(self, *items: Scoreboard | Exception) -> None:
@@ -62,6 +66,16 @@ class FakeClient:
         if isinstance(self._rankings, Exception):
             raise self._rankings
         return self._rankings
+
+    async def news(self, limit: int = 30) -> tuple[NewsItem, ...]:
+        self.news_calls += 1
+        if isinstance(self.news_items, Exception):
+            raise self.news_items
+        return self.news_items
+
+    async def story(self, url: str) -> str:
+        self.story_calls.append(url)
+        return self.stories.get(url, "<p>Body.</p>")
 
     async def summary(self, event_id: str) -> Summary:
         raise EspnNetworkError("FakeClient has no summaries")
