@@ -861,7 +861,6 @@ class TestRankingsSummary:
         assert poll.ranks[0].rank is None and poll.ranks[0].previous is None
         assert poll.ranks[1].rank == 5
         assert poll.rank_of("2") == 5 and poll.rank_of("1") is None and poll.rank_of("zz") is None
-        assert poll.entry_for("1") is not None
 
     def test_ranking_date_junk(self):
         d = {"rankings": [{"date": "garbage", "ranks": []}, {"date": None}, {"date": 5}]}
@@ -1545,11 +1544,11 @@ class TestUpsetRule:
 
     def test_poll_choice_and_reset(self):
         polls = parse_rankings({"rankings": [{"type": "usa", "ranks": [{"current": 2, "team": {"id": "20"}}]}]})
-        assert UpsetRule(polls).ranking is None
-        assert UpsetRule(polls, poll="usa").ranking is not None
+        assert UpsetRule(polls)._ranking is None
+        assert UpsetRule(polls, poll="usa")._ranking is not None
         r = UpsetRule(polls, poll="usa")
         r.set_rankings(None)
-        assert r.ranking is None
+        assert r._ranking is None
 
     def test_poll_rank_zero_sentinel_unranked(self):
         polls = parse_rankings({"rankings": [{"type": "ap", "ranks": [{"current": 0, "team": {"id": "20"}}]}]})

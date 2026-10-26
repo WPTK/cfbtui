@@ -11,7 +11,7 @@ from cfbtui.app import CfbApp
 from cfbtui.config import Config, FavoritesConfig, ViewConfig, load_config, save_config
 from cfbtui.espn.client import GROUP_FBS, GROUP_FCS
 from cfbtui.espn.models import Ranking, Scoreboard
-from cfbtui.poll import PollIntervals
+from cfbtui.poll import Freshness, FreshnessState, PollIntervals, PollResult
 from cfbtui.ui.labels import kickoff_text
 from cfbtui.ui.widgets.game_card import GameCard
 from cfbtui.ui.widgets.score_grid import ScoreGrid, next_index, sort_key
@@ -95,12 +95,12 @@ async def test_a_switch_clears_the_ticker_and_the_first_board_is_quiet():
     async with app.run_test(size=SIZE) as pilot:
         ticker = app.query_one(Ticker)
         ticker.add_events([_started(live)])
-        assert ticker.entry_count == 1
+        assert len(ticker.lines) == 1
         await wait_for(pilot, lambda: len(app.query(GameCard)) > 0)
         await pilot.press("left_square_bracket")
         await settle(pilot, app, len(live.games))
         await pilot.pause(0.2)
-        assert ticker.entry_count == 0, "cleared by the switch, and the new live game announced nothing"
+        assert len(ticker.lines) == 0, "cleared by the switch, and the new live game announced nothing"
 
 
 def _started(board: Scoreboard):
@@ -131,11 +131,11 @@ async def test_a_result_queued_for_the_old_week_is_ignored():
     app = CfbApp(client=WeekClient(boards), intervals=FAST, glyph_set="ascii")
     async with app.run_test(size=SIZE) as pilot:
         await settle(pilot, app, len(week7.games))
-        stale = app.last_result
         await pilot.press("left_square_bracket")
         await settle(pilot, app, len(live.games))
         from cfbtui.app import PollUpdated
 
+        stale = PollResult(Freshness(FreshnessState.FRESH), week7, generation=app.scheduler.generation - 1)
         app.post_message(PollUpdated(stale))  # generation is older than the scheduler's
         await pilot.pause(0.1)
         assert ids(app) == [g.id for g in live.games]

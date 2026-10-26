@@ -38,7 +38,7 @@ async def test_pregame_week_boots_with_kickoff_times_and_an_empty_ticker():
         assert len(app.query(GameCard)) == len(load_board("scoreboard_week7_pregame.json").games)
         first = app.query(GameCard).first()
         assert first.model is not None and "ET" in first.model.status
-        assert app.query_one(Ticker).entry_count == 0
+        assert len(app.query_one(Ticker).lines) == 0
         status = app.query_one(StatusBar)
         assert "updated" in status.text and "Week 7" in status.text
         assert status.has_class("fresh")
@@ -48,7 +48,7 @@ async def test_a_touchdown_flashes_the_card_and_lands_in_the_ticker():
     client = FakeClient(board("touchdown_before"), board("touchdown_after"))
     app = CfbApp(client=client, intervals=FAST, glyph_set="ascii")
     async with app.run_test(size=SIZE) as pilot:
-        await wait_for(pilot, lambda: app.query_one(Ticker).entry_count >= 2)
+        await wait_for(pilot, lambda: len(app.query_one(Ticker).lines) >= 2)
         ticker = app.query_one(Ticker)
         text = " ".join(line.text.plain for line in ticker.lines)
         assert "KICKOFF" in text, "first sight of a live game announces it"

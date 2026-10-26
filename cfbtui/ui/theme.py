@@ -1,6 +1,8 @@
 """Color helpers: ESPN team hex colors to Textual-friendly values."""
 from __future__ import annotations
 
+from typing import Any
+
 from rich.style import Style
 from textual.color import Color
 
@@ -28,7 +30,7 @@ def hex_color(value: str | None, fallback: str = FALLBACK) -> str:
     return f"#{v.lower()}"
 
 
-def team_style(background: str | None, **attrs: bool) -> Style:
+def team_style(background: str | None, **attrs: Any) -> Style:
     """The one team look used everywhere: readable text on the team's color."""
     bg = hex_color(background)
     return Style(color=foreground_for(bg), bgcolor=bg, **attrs)

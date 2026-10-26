@@ -98,7 +98,6 @@ class PollResult:
     """One poll attempt. ``scoreboard`` is ``None`` when the attempt failed."""
 
     freshness: Freshness
-    polled_at: datetime
     scoreboard: Scoreboard | None = None
     events: tuple[Event, ...] = ()
     error: Exception | None = None
@@ -230,6 +229,9 @@ class PollScheduler:
         """Fetch, apply to the store, schedule the next poll, report. Never raises on a bad fetch."""
         self.polling = True
         generation = self._generation
+        board: Scoreboard | None
+        events: tuple[Event, ...]
+        error: Exception | None
         try:
             await self._maybe_fetch_rankings()
             try:
@@ -272,7 +274,7 @@ class PollScheduler:
         self.away = not self.present()
         self._normal = self.normal_delay()
         self._next_at = self._clock() + (self.next_delay() if counted else 0.0)
-        result = PollResult(self.freshness(), self._now(), board, events, error, generation)
+        result = PollResult(self.freshness(), board, events, error, generation)
         if counted and self.on_result is not None:
             self.on_result(result)
         return result

@@ -130,8 +130,7 @@ async def test_app_renders_live_cards():
         while not len(app.query(GameCard)) and loop.time() < deadline:
             await pilot.pause(0.1)
         cards = list(app.query(GameCard))
-        assert cards, f"no cards rendered; last result: {app.last_result}"
-        assert app.last_result is not None and app.last_result.ok
+        assert cards, "no cards rendered"
         shown = {c.game.id for c in cards}
         assert shown == {g.id for g in app.store.games}
         for card in cards:
@@ -145,7 +144,6 @@ async def test_app_renders_live_cards():
         assert app.scheduler.group == GROUP_FCS and len(app.query(GameCard)) > 0
         await pilot.press("t")
         deadline = loop.time() + 25
-        while loop.time() < deadline and not (app.scheduler.week is None and app.last_result and app.last_result.ok
-                                              and len(app.query(GameCard))):
+        while loop.time() < deadline and not (app.scheduler.week is None and len(app.query(GameCard))):
             await pilot.pause(0.1)
         assert app.scheduler.week is None and len(app.query(GameCard)) > 0

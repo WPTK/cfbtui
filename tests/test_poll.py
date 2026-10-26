@@ -80,7 +80,7 @@ async def test_rankings_load_once_and_reach_the_rule():
     await sched.poll_once()
     await sched.poll_once()
     assert client.rankings_calls == 1
-    assert sched.store.rule.ranking is not None
+    assert sched.store.rule._ranking is not None
 
 
 async def test_rankings_failure_is_quiet_and_retried_later():

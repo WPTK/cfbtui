@@ -21,6 +21,7 @@ from rich.console import Group, RenderableType
 from rich.style import Style
 from rich.table import Table
 from rich.text import Text
+from textual.timer import Timer
 from textual.widgets import Static
 
 from cfbtui.espn.models import Competitor, Game
@@ -266,8 +267,8 @@ class GameCard(Static):
         self.verdict = verdict
         self.data_old = False
         self._flash_team: str | None = None
-        self._flash_timer = None
-        self._pulse_timer = None
+        self._flash_timer: Timer | None = None
+        self._pulse_timer: Timer | None = None
         self._pulse_kind: str | None = None
         self._pulse_steps = 0
         self.model: CardModel | None = None

@@ -220,10 +220,6 @@ class Ticker(VerticalScroll):
                 line.remove()
         self.mount_all([line for line in new if line not in excess])
 
-    @property
-    def entry_count(self) -> int:
-        return len(self._lines)
-
     def clear_log(self) -> None:
         """Forget every line, for a week or group switch."""
         for line in self._lines:
