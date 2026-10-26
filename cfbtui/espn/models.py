@@ -334,7 +334,7 @@ class NewsTeam:
 
 @dataclass(frozen=True, slots=True)
 class NewsItem:
-    """One entry of ESPN's news feed. ``kind`` is ESPN's ``type`` (Story, Preview, HeadlineNews, Media)."""
+    """One entry of ESPN's news feed. ``kind`` is ESPN's ``type`` (Story, Preview, HeadlineNews)."""
 
     id: str
     kind: str
@@ -347,10 +347,6 @@ class NewsItem:
     teams: tuple[NewsTeam, ...] = ()
 
     @property
-    def is_video(self) -> bool:
-        return self.kind.lower() == "media"
-
-    @property
     def readable(self) -> bool:
-        """True when ESPN's story API serves a body for it: not premium, not a video clip, and linked."""
-        return not self.premium and not self.is_video and self.story_url is not None
+        """True when ESPN's story API serves a body for it: not premium, and linked."""
+        return not self.premium and self.story_url is not None

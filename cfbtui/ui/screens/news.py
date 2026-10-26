@@ -18,7 +18,7 @@ from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import VerticalScroll
 from textual.screen import Screen
-from textual.widgets import Footer, OptionList, Static
+from textual.widgets import Footer, Markdown, OptionList, Static
 from textual.widgets.option_list import Option
 
 from cfbtui.espn.models import Game, NewsItem
@@ -26,10 +26,10 @@ from cfbtui.news import NewsFeed
 from cfbtui.poll import Freshness, FreshnessState, format_age
 from cfbtui.ui.filters import conference_name
 from cfbtui.ui.glyphs import Glyphs
-from cfbtui.ui.story import render_story
+from cfbtui.ui.story import markdown_parser, render_story
 
 MAX_CHIP_TEAMS = 6  # a story naming more teams is a roundup and gets no chips
-KINDS = {"media": "video", "preview": "preview", "story": "story", "headlinenews": "story"}
+KINDS = {"preview": "preview", "story": "story", "headlinenews": "story"}
 
 
 def team_conferences(games: Iterable[Game]) -> dict[str, str]:
@@ -223,8 +223,9 @@ class StoryScreen(Screen[None]):
     DEFAULT_CSS = """
     StoryScreen { layout: vertical; }
     StoryScreen > VerticalScroll { height: 1fr; padding: 1 2; }
-    StoryScreen #story-title { text-style: bold; margin-bottom: 1; }
+    StoryScreen #story-title { text-style: bold; color: $accent; border-bottom: heavy $primary; margin-bottom: 1; }
     StoryScreen #story-body { height: auto; }
+    StoryScreen #story-text { margin: 0; padding: 0; }
     StoryScreen #story-footer { height: auto; padding: 0 2; color: $text-muted; }
     """
 
@@ -247,6 +248,7 @@ class StoryScreen(Screen[None]):
         with VerticalScroll():
             yield Static(Text(self.item.headline), id="story-title")
             yield Static("", id="story-body")
+            yield Markdown(id="story-text", parser_factory=markdown_parser, open_links=False)
         yield Static(self._footer(), id="story-footer")
         yield Footer()
 
@@ -259,7 +261,7 @@ class StoryScreen(Screen[None]):
     def on_mount(self) -> None:
         body = self.query_one("#story-body", Static)
         if not self.item.readable:
-            why = "a video clip" if self.item.is_video else "a premium story" if self.item.premium else "this story"
+            why = "a premium story" if self.item.premium else "this story"
             body.update(self._summary(f"ESPN serves no text for {why}."))
             self.loaded = True
             return
@@ -282,7 +284,11 @@ class StoryScreen(Screen[None]):
             body.update(self._summary(f"{self.glyphs.error} Could not load the story ({detail})."))
         else:
             story = render_story(html)
-            body.update(story if story.plain else self._summary("ESPN served no text for this story."))
+            if story.plain:
+                body.display = False
+                await self.query_one("#story-text", Markdown).update(story.markdown)
+            else:
+                body.update(self._summary("ESPN served no text for this story."))
         self.loaded = True
 
     def action_open_original(self) -> None:

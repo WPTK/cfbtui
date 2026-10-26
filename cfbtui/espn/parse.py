@@ -589,12 +589,12 @@ def parse_news_item(raw: dict) -> NewsItem | None:
 
 
 def parse_news(payload: dict) -> tuple[NewsItem, ...]:
-    """Every article in a news payload that has an id and a headline."""
+    """Every article in a news payload that has an id and a headline, except video clips (``type`` Media)."""
     if not isinstance(payload, dict):
         return ()
     items: dict[str, NewsItem] = {}
     for item in map(parse_news_item, _dicts(payload.get("articles"))):
-        if item is not None:
+        if item is not None and item.kind.lower() != "media":
             items.setdefault(item.id, item)  # one per id, the first listed wins
     return tuple(items.values())
 
