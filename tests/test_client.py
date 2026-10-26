@@ -15,6 +15,7 @@ from cfbtui.espn.client import (
     EspnError,
     EspnHttpError,
     EspnNetworkError,
+    EspnSchemaError,
 )
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -195,3 +196,102 @@ async def test_iso_date_string_is_rejected(mock, sleeper):
     async with make(sleeper) as client:
         with pytest.raises(ValueError):
             await client.scoreboard_raw(date="2026-10-17")
+
+
+# --- schema drift ---------------------------------------------------------------------
+
+
+def week7_payload() -> dict:
+    return json.loads((FIXTURES / "scoreboard_week7_pregame.json").read_text("utf-8"))
+
+
+def rename_key(obj, old: str, new: str) -> None:
+    if isinstance(obj, dict):
+        if old in obj:
+            obj[new] = obj.pop(old)
+        for value in obj.values():
+            rename_key(value, old, new)
+    elif isinstance(obj, list):
+        for value in obj:
+            rename_key(value, old, new)
+
+
+async def test_renamed_home_away_is_a_schema_error(mock, sleeper):
+    payload = week7_payload()
+    rename_key(payload, "homeAway", "side")
+    route = mock.get("/scoreboard").respond(json=payload)
+    async with make(sleeper) as client:
+        with pytest.raises(EspnSchemaError, match="scoreboard format"):
+            await client.scoreboard(week=7)
+    assert route.call_count == 1
+
+
+async def test_renamed_events_is_a_schema_error(mock, sleeper):
+    payload = week7_payload()
+    payload["games"] = payload.pop("events")
+    mock.get("/scoreboard").respond(json=payload)
+    async with make(sleeper) as client:
+        with pytest.raises(EspnSchemaError):
+            await client.scoreboard(week=7)
+
+
+async def test_empty_events_is_a_quiet_day_not_an_error(mock, sleeper):
+    mock.get("/scoreboard").respond(json={"events": []})
+    async with make(sleeper) as client:
+        assert (await client.scoreboard(week=7)).games == ()
+
+
+async def test_partial_drop_stays_silent(mock, sleeper):
+    payload = week7_payload()
+    total = len(payload["events"])
+    payload["events"][0]["competitions"][0]["competitors"] = []
+    mock.get("/scoreboard").respond(json=payload)
+    async with make(sleeper) as client:
+        board = await client.scoreboard(week=7)
+    assert 0 < len(board.games) < total
+
+
+# --- failure shapes -------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("status", [408, 429])
+async def test_408_and_429_are_retried(mock, sleeper, status):
+    route = mock.get("/rankings").respond(status)
+    async with make(sleeper) as client:
+        with pytest.raises(EspnHttpError) as info:
+            await client.rankings_raw()
+    assert info.value.status_code == status
+    assert route.call_count == 4
+    assert sleeper.delays == [0.5, 1.0, 2.0]
+
+
+@pytest.mark.parametrize(
+    "body", [b"", b'{"rankings": [', b"[1, 2, 3]", b"null"], ids=["empty", "truncated", "array", "null"]
+)
+async def test_bad_body_is_one_attempt_espn_error(mock, sleeper, body):
+    route = mock.get("/rankings").respond(200, content=body)
+    async with make(sleeper) as client:
+        with pytest.raises(EspnError):
+            await client.rankings_raw()
+    assert route.call_count == 1
+    assert sleeper.delays == []
+
+
+async def test_garbage_gzip_body_is_a_network_error_and_not_retried(mock, sleeper):
+    route = mock.get("/rankings").mock(side_effect=httpx.DecodingError("Error -3 while decompressing data"))
+    async with make(sleeper) as client:
+        with pytest.raises(EspnNetworkError) as info:
+            await client.rankings_raw()
+    assert isinstance(info.value.__cause__, httpx.DecodingError)
+    assert route.call_count == 1
+    assert sleeper.delays == []
+
+
+async def test_redirect_loop_is_a_network_error_and_not_retried(mock, sleeper):
+    route = mock.get("/rankings").mock(side_effect=httpx.TooManyRedirects("loop"))
+    async with make(sleeper) as client:
+        with pytest.raises(EspnNetworkError) as info:
+            await client.rankings_raw()
+    assert isinstance(info.value.__cause__, httpx.TooManyRedirects)
+    assert route.call_count == 1
+    assert sleeper.delays == []

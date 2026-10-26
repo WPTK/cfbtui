@@ -15,7 +15,7 @@ import respx
 
 from cfbtui.app import CfbApp
 from cfbtui.config import Config, parse_config
-from cfbtui.espn.client import EspnHttpError, EspnNetworkError
+from cfbtui.espn.client import EspnHttpError, EspnNetworkError, EspnSchemaError
 from cfbtui.espn.models import GameState, Scoreboard, Status
 from cfbtui.poll import RANKINGS_RETRY, FreshnessState, PollIntervals, PollScheduler
 from cfbtui.state.store import GameStore
@@ -285,6 +285,30 @@ async def test_rankings_failure_retries_on_schedule_without_hurting_scoreboard()
     await sched.poll_once()
     await sched.poll_once()
     assert client.rankings_calls == before + 2, "stops asking once rankings load"
+
+
+async def test_rankings_wait_while_the_scoreboard_is_failing():
+    client = FakeClient(EspnNetworkError("down"), rankings=EspnNetworkError("rank down"))
+    sched, clock, _results, _ = make(client)
+    for _ in range(3):
+        r, _ = await cycle(sched, clock)
+        assert not r.ok
+    assert client.rankings_calls == 1, "only the first poll asks; a failing scoreboard stops further calls"
+    client._rankings = load_rankings()
+    client.push(board("touchdown_before"))
+    clock.advance(RANKINGS_RETRY)
+    assert (await sched.poll_once()).ok
+    await sched.poll_once()
+    assert client.rankings_calls == 2, "rankings retry once the scoreboard recovers"
+
+
+async def test_schema_error_shows_the_error_state():
+    err = EspnSchemaError("ESPN changed its scoreboard format; no games could be read")
+    sched, _clock, _results, _ = make(FakeClient(board("touchdown_before"), err))
+    assert (await sched.poll_once()).ok
+    r = await sched.poll_once()
+    assert not r.ok and r.error is err
+    assert r.freshness.failures == 1 and "format" in r.freshness.error
 
 
 async def test_rankings_raising_a_weird_exception_does_not_break_polling():
