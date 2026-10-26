@@ -12,7 +12,7 @@ import pytest
 from cfbtui.app import CfbApp
 from cfbtui.espn.client import GROUP_FBS, GROUP_FCS, EspnClient, EspnError
 from cfbtui.espn.models import GameState, Scoreboard
-from cfbtui.poll import PollIntervals
+from cfbtui.poll import FreshnessState, PollIntervals
 from cfbtui.ui.widgets.game_card import GameCard
 
 pytestmark = pytest.mark.skipif(os.environ.get("CFBTUI_LIVE") != "1", reason="set CFBTUI_LIVE=1 to hit real ESPN")
@@ -131,6 +131,7 @@ async def test_app_renders_live_cards():
             await pilot.pause(0.1)
         cards = list(app.query(GameCard))
         assert cards, "no cards rendered"
+        assert app.scheduler.freshness().state is FreshnessState.FRESH
         shown = {c.game.id for c in cards}
         assert shown == {g.id for g in app.store.games}
         for card in cards:
@@ -144,6 +145,7 @@ async def test_app_renders_live_cards():
         assert app.scheduler.group == GROUP_FCS and len(app.query(GameCard)) > 0
         await pilot.press("t")
         deadline = loop.time() + 25
-        while loop.time() < deadline and not (app.scheduler.week is None and len(app.query(GameCard))):
+        while loop.time() < deadline and not (app.scheduler.week is None and len(app.query(GameCard))
+                                              and app.scheduler.freshness().state is FreshnessState.FRESH):
             await pilot.pause(0.1)
         assert app.scheduler.week is None and len(app.query(GameCard)) > 0
