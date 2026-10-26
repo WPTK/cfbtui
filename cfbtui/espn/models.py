@@ -244,7 +244,6 @@ class Ranking:
         return None
 
 
-
 @dataclass(frozen=True, slots=True)
 class ScoringPlay:
     id: str

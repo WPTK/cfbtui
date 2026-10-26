@@ -102,7 +102,6 @@ async def test_widget_appends_in_order_caps_and_redraws_on_glyph_change():
         ticker.add_events([td, half])
         await pilot.pause()
         assert len(ticker.lines) == 2
-        assert len(ticker.lines) >= 2
         first = ticker.lines[0].text.plain
         assert "TD TEX" in first
         ticker.set_glyphs(g.get("unicode"))
