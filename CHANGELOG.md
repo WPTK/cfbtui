@@ -2,9 +2,12 @@
 
 Release notes for cfbtui, kept the way a fortress overseer keeps a journal. Newest first. Versions follow FibVer. Versions before 1.2.0 were never tagged or released, and FibVer skips numbers by design, so there is no 1.4.0.
 
-## 1.5.1 (2026-10-26)
+## 1.8.0 (2026-10-26)
 
-- The overseer went back over the ledgers with a red pen. Nothing new on the board; four faults and a locksmith's note.
+- The overseer hired a town crier, then went back over the ledgers with a red pen: one new room, four faults mended and a locksmith's note.
+- A News screen on `N`: ESPN's college football headlines, newest first, each tagged with its teams and conferences. A story you have not opened carries a NEW marker, and the status bar counts the unread ones.
+- Press Enter on a headline to read the story in the app. Its text comes from ESPN's story service, one request when you open it; the last 20 stories are kept in memory and nothing is saved to disk. `o` opens the original in your browser. Premium stories and videos show their description only, with a key to the original.
+- The news refreshes every 10 minutes while you are at the computer and sends nothing once you step away (on Windows; elsewhere cfbtui cannot tell, so it assumes you are there).
 - When ESPN rearranges its scoreboard so that no game can be read, the board now says so with an error instead of showing an empty list stamped "fresh".
 - A corrupt reply or a redirect loop from ESPN used to surface as a raw message from the courier's rulebook. It now shows a plain network error.
 - While the scoreboard is failing, the overseer no longer sends a runner out for the rankings as well.
