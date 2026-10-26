@@ -37,6 +37,8 @@ dev = [
     "ruff>=0.8",
     "vulture>=2.14",
 ]
+# Installed only when building a standalone binary, so every binary carries its own zone files (see release.yml).
+binary = ["tzdata>=2024.1"]
 
 [project.scripts]
 cfbtui = "cfbtui.__main__:main"

@@ -1,16 +1,21 @@
 name: Updater end-to-end
 
-# Run by hand (Actions > Updater end-to-end > Run workflow). Builds the real PyInstaller binary at the current
-# version (X) and at the next patch version (X+1, bumped in the job's checkout only and never committed), serves
-# X+1 and a SHA256SUMS from a throwaway server on 127.0.0.1 inside the job, and checks that the X binary
-# updates itself: install on exit, a second run, a wrong checksum that changes nothing, and "Restart now".
+# Run by hand (Actions > Updater end-to-end > Run workflow), and by release.yml on every tag as a gate: a release is
+# not published unless this passes on the tagged commit. Builds the real PyInstaller binary at the current version (X)
+# and at the next patch version (X+1, bumped in the job's checkout only and never committed), serves X+1 and a
+# SHA256SUMS from a throwaway server on 127.0.0.1 inside the job, and checks that the X binary updates itself:
+# install on exit, a second run, a wrong checksum that changes nothing, and "Restart now".
 # It never reads or writes a real release; see scripts/updater_e2e.py and docs/development.md.
 
 on:
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
+
+env:
+  UV_VERSION: "0.13.0"
 
 jobs:
   updater:
@@ -25,33 +30,36 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.13"
-      - run: python -m pip install -e ".[dev]" tzdata
+      - name: Install (locked)
+        run: |
+          python -m pip install "uv==$UV_VERSION"
+          uv sync --locked --extra dev --extra binary
 
       - name: Build the binary at the current version (X)
         run: |
-          OLD="$(python -c 'import cfbtui; print(cfbtui.__version__)')"
+          OLD="$(uv run --no-sync python -c 'import cfbtui; print(cfbtui.__version__)')"
           echo "OLD=$OLD" >> "$GITHUB_ENV"
-          python scripts/version_info.py
-          python -m PyInstaller --noconfirm --clean --workpath "$RUNNER_TEMP/build-old" --distpath "$RUNNER_TEMP/old" cfbtui.spec
+          uv run --no-sync python scripts/version_info.py
+          uv run --no-sync python -m PyInstaller --noconfirm --clean --workpath "$RUNNER_TEMP/build-old" --distpath "$RUNNER_TEMP/old" cfbtui.spec
           ls "$RUNNER_TEMP/old"
 
       - name: Build the binary at the next patch version (X+1, not committed)
         run: |
-          python -m cfbtui.version bump patch --write
-          NEW="$(python -c 'import cfbtui; print(cfbtui.__version__)')"
+          uv run --no-sync python -m cfbtui.version bump patch --write
+          NEW="$(uv run --no-sync python -c 'import cfbtui; print(cfbtui.__version__)')"
           echo "NEW=$NEW" >> "$GITHUB_ENV"
-          python scripts/version_info.py
-          python -m PyInstaller --noconfirm --clean --workpath "$RUNNER_TEMP/build-new" --distpath "$RUNNER_TEMP/new" cfbtui.spec
+          uv run --no-sync python scripts/version_info.py
+          uv run --no-sync python -m PyInstaller --noconfirm --clean --workpath "$RUNNER_TEMP/build-new" --distpath "$RUNNER_TEMP/new" cfbtui.spec
           ls "$RUNNER_TEMP/new"
 
       - name: Run the updater against the local server
         run: |
           EXT=""
           [ "$RUNNER_OS" = "Windows" ] && EXT=".exe"
-          python scripts/updater_e2e.py "$RUNNER_TEMP/old/cfbtui$EXT" "$RUNNER_TEMP/new/cfbtui$EXT" "$OLD" "$NEW" "$RUNNER_TEMP/e2e"
+          uv run --no-sync python scripts/updater_e2e.py "$RUNNER_TEMP/old/cfbtui$EXT" "$RUNNER_TEMP/new/cfbtui$EXT" "$OLD" "$NEW" "$RUNNER_TEMP/e2e"

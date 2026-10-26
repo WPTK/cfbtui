@@ -1,53 +1,46 @@
-# Signing cfbtui.exe
+# Code signing cfbtui.exe
 
-## Why
+**Decision (October 2026): the Windows exe stays unsigned.** Revisit when a user reports that the SmartScreen
+warning stops them, or when a free or cheap route below becomes a clear fit.
 
-An unsigned exe downloaded from the internet triggers the Windows SmartScreen "Windows protected your PC" warning. Signing the exe with a code signing certificate attaches a verified publisher name, which is the first step toward that warning going away.
+## What protects an update
 
-Signing alone does not clear it instantly. SmartScreen also judges reputation, and reputation builds as many people download and run the signed file. Expect warnings to continue for a while after the first signed release.
+The self-updater checks a download against the `SHA256SUMS` published with the same release. That protects against
+a corrupted or truncated download. It does not protect against a compromised GitHub account: whoever can publish a
+release can publish matching sums. Two things limit the damage: releases are immutable (a setting on the repository),
+so a published release cannot be changed later, and every binary carries a build attestation anyone can check by hand
+with `gh attestation verify cfbtui-linux-x86_64 -R WPTK/cfbtui`. An offline signing key was considered and rejected
+as too much ceremony for this app; the attestation check stays manual.
 
-## Options (check current pricing and requirements for each)
+## Why it matters
 
-- **Azure Artifact Signing (formerly Trusted Signing).** Microsoft's cloud service. No hardware token, works from CI. Requires an Azure account and identity validation, and eligibility depends on your country and whether you are an individual or an organization. It signs through its own tool and not a .pfx file, so see the note at the end.
-- **Standard (OV) certificate from a certificate authority.** Cheaper than EV. Current CA rules generally require the private key to live on a hardware token or in a cloud HSM, so a plain downloadable .pfx may not be offered. Ask the CA before buying whether you can get a .pfx or a CI-friendly signing method.
-- **EV certificate.** Gives instant SmartScreen reputation but costs more and ships on a hardware token, which does not work in GitHub Actions runners.
-- **Nothing.** Users click "More info" then "Run anyway". The `SHA256SUMS` file on each release lets careful users verify the download.
+An unsigned exe downloaded from the internet triggers the Windows SmartScreen "Windows protected your PC" warning
+(**More info**, then **Run anyway**). A signed exe shows a verified publisher, but signing does not clear the warning
+at once: SmartScreen also judges reputation, which builds as many people download and run the file. Self-updates
+download through the app itself, not a browser, so only the first manual download should meet the warning
+(not tested).
 
-## Add the secrets (once you have a .pfx)
+## Options (prices and rules as of October 2026)
 
-1. Encode the certificate and copy it to the clipboard (PowerShell, in the folder holding the file):
+| Option | Yearly cost | SmartScreen effect | Fit |
+|---|---|---|---|
+| Azure Artifact Signing (was Trusted Signing) | about $120 ($9.99 a month) | Reputation builds over time; warnings continue at first | Individuals qualify in the USA and Canada only. No hardware token; works from Actions. Identity validation takes a few business days |
+| OV certificate (DigiCert, Sectigo) | $150 to $300 | Same | Since June 2023 the private key must be on a hardware token or cloud HSM, so a plain `.pfx` in a secret is not offered. Needs the CA's cloud-signing add-on (price not checked) |
+| EV certificate | $400 and up | Same as OV since 2024; the instant bypass is gone | Not worth it |
+| SignPath Foundation (free for open source) | $0 | OV level; reputation still builds | Needs defined author, reviewer and approver roles, MFA, an approval click on every release, a published signing policy page, and a reputation check a new project may fail. The publisher shown is SignPath Foundation |
+| Stay unsigned | $0 | Strong SmartScreen block | Today. The README documents the click-through and how to check a download |
 
-   ```powershell
-   [Convert]::ToBase64String([IO.File]::ReadAllBytes("cert.pfx")) | Set-Clipboard
-   ```
+Sources: [Microsoft: code signing options](https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/code-signing-options),
+[SignPath terms](https://signpath.org/terms).
 
-2. In GitHub: repo WPTK/cfbtui, Settings, Secrets and variables, Actions, New repository secret.
-3. Create `SIGN_CERT_BASE64` and paste the clipboard.
-4. Create `SIGN_CERT_PASSWORD` with the .pfx password.
+## What was removed
 
-Until both exist, the build prints "Not signing: SIGN_CERT_BASE64 is not set." and carries on as before. The next tagged release signs the exe automatically, and the `SHA256SUMS` entry is computed from the signed file.
+The repository used to carry a `.pfx`-based signing path (`scripts/sign_exe.ps1`, a "Sign the exe" step in
+`release.yml`, a `-SkipSign` switch in `scripts/build_exe.ps1`). It never ran: no certificate was ever configured.
+It is deleted so there is no dormant code path to maintain; restore it from git history (the commit that added
+this note shows what went) if a certificate arrives. A cloud signing service would need a different step anyway.
 
-## Test locally
+## Checking a downloaded exe
 
-Needs the Windows SDK (for signtool.exe). From the repo root:
-
-```powershell
-$env:SIGN_CERT_BASE64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes("C:\path\cert.pfx"))
-$env:SIGN_CERT_PASSWORD = "the password"
-powershell -File scripts\build_exe.ps1
-Remove-Item Env:SIGN_CERT_BASE64, Env:SIGN_CERT_PASSWORD
-```
-
-The script signs, runs `signtool verify /pa`, and deletes its temp copy of the .pfx.
-
-## Check a downloaded exe
-
-```powershell
-Get-AuthenticodeSignature .\cfbtui.exe | Select-Object Status, SignerCertificate
-```
-
-`Status` should be `Valid`. `NotSigned` means no signature. The release workflow also prints this after each build.
-
-## If the service does not use a .pfx
-
-Azure Artifact Signing and some CA cloud services sign through their own tool or action. The block marked "Code signing" in `scripts/build_exe.ps1` is the only thing to change: replace the signtool call, keep it before the SHA-256 line, and update the secrets in `.github/workflows/release.yml` to match.
+Unsigned means `Get-AuthenticodeSignature` reports `NotSigned`. To check the download, use `SHA256SUMS` as the
+README describes, or `gh attestation verify`.

@@ -22,7 +22,7 @@ themselves (checksum-verified swap on quit); pip/pipx/uv installs only get an up
 - `cfbtui/app.py` the Textual app; `__main__.py` CLI; `config.py` TOML config; `poll.py` poll scheduler and freshness.
 - `cfbtui/update.py` release check; `cfbtui/selfupdate.py` download, verify and swap the binary.
 - `cfbtui/version.py` FibVer bump tool; `cfbtui.spec` PyInstaller spec.
-- `scripts/` build, hash, sign and screenshot scripts; `updater_e2e.py`; `spot_check.py`.
+- `scripts/` build, hash and screenshot scripts; `updater_e2e.py`; `spot_check.py`.
 - `tests/` pytest suite (no network); `tests/uat/` user-journey tests (`test_uat_live.py` needs `CFBTUI_LIVE=1`).
 - `tests/fixtures/` saved ESPN payloads (`pairs/` holds hand-edited before/after pairs).
 - `docs/` development, signing and smoke-test guides, README images.
@@ -41,7 +41,7 @@ python -m venv .venv
 .venv\Scripts\python -m vulture cfbtui scripts --min-confidence 80
 .venv\Scripts\python -m pytest                      # tests
 .venv\Scripts\python -m cfbtui --version
-scripts\build_exe.ps1 -SkipSign                     # builds dist\cfbtui.exe
+scripts\build_exe.ps1                               # builds dist\cfbtui.exe
 dist\cfbtui.exe --selftest
 ```
 
@@ -77,8 +77,8 @@ GitHub issues for real defects. The audit program's state lives in the coordinat
 
 - `tests/fixtures/**/*.json` are `-text` in `.gitattributes`: never let line-ending normalisation touch them.
 - `.pyi-build/` is the PyInstaller work dir (gitignored).
-- The Windows exe's signing state is in `docs/signing.md` (unsigned at 1.5.0); without a signature SHA256SUMS guards
-  only against corruption.
+- The Windows exe is deliberately unsigned (`docs/signing.md`). SHA256SUMS guards only against
+  corruption, not a compromised GitHub account.
 - PyInstaller does not cross-compile; Linux binaries are built in a Debian 11 container for glibc 2.31.
 - `CFBTUI_RELEASES_URL` is honoured only for host `127.0.0.1`; it exists for the updater e2e test.
 - `.ps1` files are CRLF, everything else LF except the `-text` fixtures (`.gitattributes`).

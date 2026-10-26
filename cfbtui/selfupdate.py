@@ -382,12 +382,19 @@ class Updater:
             _check_url(httpx.URL(sums_asset.url))
             if sums_asset.size > SUMS_MAX:
                 raise UpdateError("SHA256SUMS is too large")
-            resp = self.client.get(sums_asset.url, headers={"User-Agent": USER_AGENT}, follow_redirects=True)
-            for hop in (*resp.history, resp):
-                _check_url(hop.url)
-            if resp.status_code != 200 or len(resp.content) > SUMS_MAX:
-                raise UpdateError(f"could not read SHA256SUMS: HTTP {resp.status_code}")
-            return resp.content.decode("utf-8")
+            with self.client.stream(
+                "GET", sums_asset.url, headers={"User-Agent": USER_AGENT}, follow_redirects=True
+            ) as resp:
+                for hop in (*resp.history, resp):
+                    _check_url(hop.url)
+                if resp.status_code != 200:
+                    raise UpdateError(f"could not read SHA256SUMS: HTTP {resp.status_code}")
+                body = bytearray()
+                for chunk in resp.iter_bytes():
+                    body += chunk
+                    if len(body) > SUMS_MAX:  # stop reading; a hostile server cannot make us buffer more
+                        raise UpdateError("could not read SHA256SUMS: it is larger than the limit")
+            return bytes(body).decode("utf-8")
         except (httpx.HTTPError, httpx.InvalidURL, UnicodeDecodeError, RuntimeError) as exc:
             raise UpdateError(f"could not read SHA256SUMS: {exc}") from None
 
