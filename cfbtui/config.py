@@ -187,7 +187,7 @@ def parse_config(data: dict) -> tuple[Config, list[str]]:
 
     section = _section(data, "favorites", warnings)
     ids = _strings(section["team_ids"], "favorites.team_ids", warnings) if "team_ids" in section else ()
-    abbrs = ()
+    abbrs: tuple[str, ...] = ()
     if "abbreviations" in section:
         abbrs = _strings(section["abbreviations"], "favorites.abbreviations", warnings)
     favorites = FavoritesConfig(tuple(dict.fromkeys(ids)), tuple(dict.fromkeys(a.upper() for a in abbrs)))

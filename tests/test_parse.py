@@ -369,7 +369,6 @@ def test_rankings_fixture(rankings):
     assert first.color == "#ba0c2f"
     assert ap.rank_of("61") == 1
     assert ap.rank_of("nope") is None
-    assert ap.entry_for("nope") is None
 
 
 def test_rankings_others_are_unranked(rankings):
@@ -378,8 +377,6 @@ def test_rankings_others_are_unranked(rankings):
     assert all(e.rank is None for e in ap.others)
     assert all(e.trend for e in ap.others)
     assert all(e.rank is None for e in ap.dropped_out)
-    other = ap.others[0]
-    assert ap.entry_for(other.team_id) == other
 
 
 def test_rankings_junk():

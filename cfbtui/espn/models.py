@@ -243,11 +243,6 @@ class Ranking:
                 return entry.rank
         return None
 
-    def entry_for(self, team_id: str) -> RankEntry | None:
-        for entry in (*self.ranks, *self.others, *self.dropped_out):
-            if entry.team_id == team_id:
-                return entry
-        return None
 
 
 @dataclass(frozen=True, slots=True)

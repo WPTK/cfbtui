@@ -135,7 +135,7 @@ async def test_a_result_queued_for_the_old_week_is_ignored():
         await settle(pilot, app, len(live.games))
         from cfbtui.app import PollUpdated
 
-        stale = PollResult(Freshness(FreshnessState.FRESH), datetime.now(UTC), week7, generation=app.scheduler.generation - 1)
+        stale = PollResult(Freshness(FreshnessState.FRESH), week7, generation=app.scheduler.generation - 1)
         app.post_message(PollUpdated(stale))  # generation is older than the scheduler's
         await pilot.pause(0.1)
         assert ids(app) == [g.id for g in live.games]

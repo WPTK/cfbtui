@@ -861,7 +861,6 @@ class TestRankingsSummary:
         assert poll.ranks[0].rank is None and poll.ranks[0].previous is None
         assert poll.ranks[1].rank == 5
         assert poll.rank_of("2") == 5 and poll.rank_of("1") is None and poll.rank_of("zz") is None
-        assert poll.entry_for("1") is not None
 
     def test_ranking_date_junk(self):
         d = {"rankings": [{"date": "garbage", "ranks": []}, {"date": None}, {"date": 5}]}
