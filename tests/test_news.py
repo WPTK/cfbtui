@@ -9,7 +9,7 @@ from types import SimpleNamespace
 import httpx
 import pytest
 import respx
-from textual.widgets import OptionList, Static
+from textual.widgets import Markdown, OptionList, Static
 
 from cfbtui.app import CfbApp
 from cfbtui.espn.client import BASE_URL, EspnClient, EspnError, EspnHttpError, EspnNetworkError, EspnSchemaError
@@ -20,7 +20,7 @@ from cfbtui.poll import FreshnessState, PollScheduler
 from cfbtui.ui.filters import conference_name
 from cfbtui.ui.glyphs import ASCII
 from cfbtui.ui.screens.news import NewsScreen, StoryScreen, age_label, chips, health_line, team_conferences
-from cfbtui.ui.story import RULE, render_story
+from cfbtui.ui.story import MAX_CHARS, markdown_parser, render_story
 from cfbtui.ui.widgets.status_bar import StatusBar
 from tests.fakes import FIXTURES, FakeClient, FakeClock, load_board
 from tests.test_app_smoke import FAST, SIZE, wait_for
@@ -60,7 +60,7 @@ def item(item_id: str, *teams: str, published: datetime | None = None) -> NewsIt
 
 
 def test_parse_news_skips_articles_without_an_id_or_headline_and_junk():
-    assert [i.id for i in ITEMS] == ["9001", "9002", "9003", "9004", "9005", "9006", "9008"]
+    assert [i.id for i in ITEMS] == ["9001", "9002", "9003", "9004", "9006", "9008"]
 
 
 def test_each_team_is_listed_once_though_espn_lists_it_twice():
@@ -71,11 +71,10 @@ def test_each_team_is_listed_once_though_espn_lists_it_twice():
 
 
 def test_kind_premium_and_links_come_through():
-    story, premium, video = BY_ID["9002"], BY_ID["9004"], BY_ID["9005"]
+    story, premium = BY_ID["9002"], BY_ID["9004"]
     assert story.kind == "HeadlineNews" and not story.premium and story.readable
     assert story.story_url == NEWS_URL and story.web_url.startswith("https://www.espn.com/")
     assert premium.premium and not premium.readable
-    assert video.is_video and not video.readable
     assert story.published == datetime(2026, 10, 26, 12, 0, tzinfo=UTC)
 
 
@@ -215,18 +214,30 @@ def test_age_label():
 # --- story rendering -----------------------------------------------------------------
 
 
-def test_story_html_becomes_text_with_paragraphs_breaks_rule_and_styles():
-    text = render_story(parse_story(STORY))
-    assert text.plain == (
-        "Alpha opened the sample game with a long drive, per Alpha sources.\n"
-        "Second line after a break.\n\n"
-        f"{RULE}\n\n"
-        "Beta & Alpha meet again.\n\n"
-        "Final paragraph."
+def test_story_html_becomes_markdown_with_paragraphs_breaks_rule_and_emphasis():
+    assert render_story(parse_story(STORY)).markdown == (
+        "Alpha opened the **sample** game with a *long* drive, per Alpha sources.\\\n"
+        "Second line after a break.\n\n---\n\nBeta \\& Alpha meet again.\n\nFinal paragraph."
     )
-    styles = {text.plain[s.start : s.end]: str(s.style) for s in text.spans}
-    assert styles["sample"] == "bold" and styles["long"] == "italic"
-    assert styles[RULE] == "dim"
+
+
+def test_headings_lists_and_quotes_keep_their_shape():
+    html = "<h2>Notes</h2><ul><li>one</li><li>two</li></ul><blockquote><p>said <b>so</b></p></blockquote><p>end</p>"
+    assert render_story(html).markdown == "## Notes\n\n- one\n- two\n\n> said **so**\n\nend"
+
+
+def test_text_that_markdown_would_read_as_syntax_is_escaped_and_links_keep_only_their_text():
+    html = "<p># not a heading *x* _y_ [a](http://e.x) &lt;b&gt;h&lt;/b&gt; `c`</p><p>- no<br>1. no</p><p><a href='http://e.x'>link</a></p>"
+    md = render_story(html).markdown
+    out = markdown_parser().render(md)
+    for tag in ("<h1", "<em>", "<strong>", "<ul>", "<ol>", "<a ", "<b>", "<code>"):
+        assert tag not in out
+    assert md.endswith("link") and "http://e.x'" not in md
+
+
+def test_pathological_input_is_capped():
+    assert len(render_story("<p>" + "word *" * MAX_CHARS + "</p>").markdown) <= MAX_CHARS
+    assert render_story("<b>" * 50_000 + "x").markdown.count("x") == 1
 
 
 def test_images_and_media_placeholders_leave_nothing_and_links_keep_their_text():
@@ -239,7 +250,7 @@ def test_images_and_media_placeholders_leave_nothing_and_links_keep_their_text()
 def test_scripts_are_dropped_and_odd_input_never_raises():
     assert render_story("<script>alert(1)</script><p>ok</p>").plain == "ok"
     assert render_story("").plain == "" and render_story("<p> </p><br>").plain == ""
-    assert render_story("<p>unclosed <strong>bold").plain == "unclosed bold"
+    assert render_story("<p>unclosed <strong>bold").plain == "unclosed **bold**"
     assert render_story("</p></strong>text").plain == "text"
 
 
@@ -251,7 +262,7 @@ async def test_a_poll_lists_newest_first_and_every_story_is_unread_until_opened(
     client.news_items = ITEMS
     feed, _, _ = make_feed(client)
     await feed.poll_once()
-    assert [i.id for i in feed.items][:3] == ["9005", "9001", "9008"]
+    assert [i.id for i in feed.items][:3] == ["9001", "9008", "9002"]
     assert feed.unread_count == len(ITEMS)
     feed.mark_read(BY_ID["9001"])
     feed.mark_read(BY_ID["9001"])
@@ -440,7 +451,7 @@ async def test_n_opens_the_list_newest_first_with_unread_markers_and_chips():
         lst = screen.query_one(OptionList)
         assert lst.option_count == len(ITEMS)
         prompts = [str(lst.get_option_at_index(n).prompt) for n in range(lst.option_count)]
-        assert prompts[0].startswith("NEW ") and "Sample video clip" in prompts[0] and "video" in prompts[0]
+        assert prompts[0].startswith("NEW ") and not any("video" in p.lower() for p in prompts)
         assert any("Sample preview: Alpha at Beta" in p and "[UCF]" in p for p in prompts)
         roundup = next(p for p in prompts if "many teams" in p)
         assert "[" not in roundup
@@ -467,16 +478,13 @@ async def test_enter_reads_the_story_in_the_app_with_attribution_and_marks_it_re
         assert app.screen.query_one(OptionList).get_option_at_index(lst.highlighted).prompt.plain.startswith("    ")
 
 
-async def test_a_premium_story_and_a_video_show_the_description_and_fetch_nothing():
+async def test_a_premium_story_shows_the_description_and_fetch_nothing():
     client = news_client()
     app = CfbApp(client=client, intervals=FAST, glyph_set="ascii")
     async with app.run_test(size=SIZE) as pilot:
         screen = await open_news(pilot, app)
         lst = screen.query_one(OptionList)
-        for story_id, description, note in (
-            ("9004", "Premium sample description.", "premium story"),
-            ("9005", "A sample clip description.", "video clip"),
-        ):
+        for story_id, description, note in (("9004", "Premium sample description.", "premium story"),):
             lst.highlighted = next(n for n in range(lst.option_count) if lst.get_option_at_index(n).id == story_id)
             await pilot.press("enter")
             await wait_for(pilot, lambda: isinstance(app.screen, StoryScreen) and app.screen.loaded)
@@ -485,6 +493,26 @@ async def test_a_premium_story_and_a_video_show_the_description_and_fetch_nothin
             await pilot.press("escape")
             await wait_for(pilot, lambda: isinstance(app.screen, NewsScreen))
         assert client.story_calls == []
+
+
+async def test_a_link_in_a_story_does_nothing_and_the_story_is_fetched_once():
+    opened: list[str] = []
+    html = "<p>See www.espn.com/x and https://evil.example/ and [m](https://evil.example/)</p>"
+    client = news_client(**{NEWS_URL: html})
+    app = CfbApp(client=client, intervals=FAST, glyph_set="ascii")
+    async with app.run_test(size=SIZE) as pilot:
+        screen = await open_news(pilot, app)
+        screen.opener = opened.append
+        lst = screen.query_one(OptionList)
+        lst.highlighted = next(n for n in range(lst.option_count) if lst.get_option_at_index(n).id == "9002")
+        await pilot.press("enter")
+        await wait_for(pilot, lambda: isinstance(app.screen, StoryScreen) and app.screen.loaded)
+        md = app.screen.query_one(Markdown)
+        assert md._open_links is False
+        assert "https://evil.example/" in screen_text(app) and "[m](https://evil.example/)" in screen_text(app)
+        await pilot.click("MarkdownParagraph", offset=(5, 0))
+        assert opened == [] and isinstance(app.screen, StoryScreen)
+        assert client.story_calls == [NEWS_URL]
 
 
 async def test_a_failed_story_load_says_so_and_keeps_the_open_action():
@@ -555,6 +583,13 @@ async def test_the_news_screen_keeps_the_last_list_and_says_so_when_the_feed_fai
 
 
 # --- review fixes: hostile or odd payloads, sinks ------------------------------------
+
+
+def test_video_clips_never_reach_the_list_or_the_unread_count():
+    clip = {"id": 1, "headline": "Clip", "type": "Media"}
+    assert parse_news({"articles": [clip]}) == ()
+    assert "9005" not in BY_ID and all(i.kind.lower() != "media" for i in ITEMS)
+    assert any(a.get("type") == "Media" for a in NEWS["articles"])  # the fixture still carries one
 
 
 def test_a_repeated_id_keeps_the_first_article():
