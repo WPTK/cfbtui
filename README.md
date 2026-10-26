@@ -239,7 +239,8 @@ Scores come from ESPN's public scoreboard service, which is unofficial and undoc
 disappear without warning. cfbtui is an independent project, not affiliated with ESPN or the NCAA.
 
 **News.** The news list is ESPN's public college football news feed, fetched every 10 minutes while you are at
-the computer and not at all once you have stepped away. A story's text is fetched only when you open that story:
+the computer and not at all once you have stepped away (on Windows; elsewhere cfbtui cannot tell, so it
+assumes you are there). A story's text is fetched only when you open that story:
 one request, kept in memory for the session (the last 20), never written to disk. The text is ESPN's, shown
 with its source named and a key to open the original. ESPN's content is governed by Disney's terms of use
 (<https://disneytermsofuse.com/english/>), which grant a personal, noncommercial licence and restrict automated

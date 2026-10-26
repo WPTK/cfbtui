@@ -5,6 +5,7 @@ wrongly typed key; absent data becomes a default. No I/O happens here.
 """
 from __future__ import annotations
 
+import re
 from datetime import UTC, datetime
 from typing import Any
 
@@ -68,6 +69,14 @@ def _str(value: Any, default: str = "") -> str:
     if value is None or isinstance(value, (dict, list)):
         return default
     return value if isinstance(value, str) else str(value)
+
+
+_CONTROLS = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f]")
+
+
+def clean_text(text: str) -> str:
+    """``text`` without the control characters a terminal would act on (ESC, C1); newline and tab stay."""
+    return _CONTROLS.sub("", text)
 
 
 def _opt_str(value: Any) -> str | None:
@@ -551,7 +560,9 @@ def _news_teams(categories: Any) -> tuple[NewsTeam, ...]:
             continue
         team = _get(cat, "team", default={})
         team = team if isinstance(team, dict) else {}
-        name = _str(team.get("shortDisplayName")) or _str(team.get("abbreviation")) or _str(cat.get("description"))
+        name = clean_text(
+            _str(team.get("shortDisplayName")) or _str(team.get("abbreviation")) or _str(cat.get("description"))
+        )
         seen[team_id] = NewsTeam(team_id, name or team_id)
     return tuple(seen.values())
 
@@ -561,14 +572,14 @@ def parse_news_item(raw: dict) -> NewsItem | None:
     if not isinstance(raw, dict):
         return None
     item_id = _opt_str(raw.get("id"))
-    headline = _str(raw.get("headline")).strip()
+    headline = clean_text(_str(raw.get("headline"))).strip()
     if item_id is None or not headline:
         return None
     return NewsItem(
         id=item_id,
         kind=_str(raw.get("type")) or "Story",
         headline=headline,
-        description=_str(raw.get("description")).strip(),
+        description=clean_text(_str(raw.get("description"))).strip(),
         published=parse_date(_opt_str(raw.get("published"))),
         premium=raw.get("premium") is True,
         web_url=_opt_str(_get(raw, "links", "web", "href")),
@@ -581,7 +592,11 @@ def parse_news(payload: dict) -> tuple[NewsItem, ...]:
     """Every article in a news payload that has an id and a headline."""
     if not isinstance(payload, dict):
         return ()
-    return tuple(i for i in map(parse_news_item, _dicts(payload.get("articles"))) if i is not None)
+    items: dict[str, NewsItem] = {}
+    for item in map(parse_news_item, _dicts(payload.get("articles"))):
+        if item is not None:
+            items.setdefault(item.id, item)  # one per id, the first listed wins
+    return tuple(items.values())
 
 
 def parse_story(payload: dict) -> str:

@@ -183,14 +183,19 @@ class PollScheduler:
                     delay = min(delay, until)  # wake for the kickoff, then go back to sleep
         return delay
 
-    def observe_presence(self) -> None:
-        """Once a second from the app. Someone coming back to the computer gets a poll right away."""
+    def observe_presence(self) -> bool:
+        """Once a second from the app. Someone coming back to the computer gets a poll right away.
+
+        Returns True on the second they come back, so the app can wake other pollers too.
+        """
         present = self.present()
         if present and self.away:
             self.away = False
             self.refresh()
-        elif not present:
+            return True
+        if not present:
             self.away = True
+        return False
 
     def next_delay(self) -> float:
         """Seconds to wait before the next poll, including error backoff."""

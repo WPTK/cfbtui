@@ -1,8 +1,8 @@
 """The news feed's state and poller. No Textual in it; the app runs :meth:`NewsFeed.run` in a worker.
 
 Polling is slow and stops when nobody is at the computer. Presence is the scoreboard scheduler's own answer
-(:meth:`~cfbtui.poll.PollScheduler.present`), asked once a second through :meth:`NewsFeed.observe_presence`:
-while away the loop parks and sends no request, and the first second back wakes it for one poll at once.
+(:meth:`~cfbtui.poll.PollScheduler.present`): while away the loop parks and sends no request, and the app calls
+:meth:`NewsFeed.refresh` the second the scheduler sees the user come back, for one poll at once.
 
 **Reading.** A story body is fetched only when the user opens that story, one request each, never by the poller.
 Bodies are kept in memory for the session (the last :data:`STORY_CACHE`), nothing is written to disk.
@@ -57,7 +57,6 @@ class NewsFeed:
         self._last_ok: float | None = None
         self._opened: set[str] = set()  # ids the user has opened; memory only
         self._stories: OrderedDict[str, str] = OrderedDict()
-        self._away = False
         self._wake = asyncio.Event()
         self._stopped = False
 
@@ -119,15 +118,6 @@ class NewsFeed:
         self.polls += 1
         self._changed()
 
-    def observe_presence(self) -> None:
-        """Once a second from the app. Coming back from away wakes the loop for a poll right now."""
-        present = self.scheduler.present()
-        if present and self._away:
-            self._away = False
-            self.refresh()
-        elif not present:
-            self._away = True
-
     async def run(self) -> None:
         """Poll while someone is here; park, with no requests, while they are away."""
         while not self._stopped:
@@ -136,8 +126,7 @@ class NewsFeed:
                 await self.poll_once()
                 delay: float | None = self.next_delay()
             else:
-                self._away = True
-                delay = None  # parked until observe_presence sees them come back
+                delay = None  # parked until the app calls refresh() on their return
             with contextlib.suppress(TimeoutError):
                 await asyncio.wait_for(self._wake.wait(), timeout=delay)
 
@@ -166,4 +155,5 @@ class NewsFeed:
 
     def _changed(self) -> None:
         if self.on_change is not None:
-            self.on_change()
+            with contextlib.suppress(Exception):  # a UI fault must not kill the poller
+                self.on_change()

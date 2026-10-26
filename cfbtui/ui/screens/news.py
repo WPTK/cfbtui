@@ -5,6 +5,9 @@ is away. A story's body is requested only when the user opens it. The footer lin
 """
 from __future__ import annotations
 
+import os
+import re
+import sys
 import webbrowser
 from collections.abc import Callable, Iterable
 from datetime import UTC, datetime
@@ -73,11 +76,19 @@ def health_line(f: Freshness, glyphs: Glyphs) -> str:
 
 
 def is_espn_link(url: str | None) -> bool:
-    if not url:
+    if not url or re.search(r"[\\@\s\x00-\x1f\x7f]", url):  # browsers read these differently from urlsplit
         return False
     parts = urlsplit(url)
     host = parts.hostname or ""
     return parts.scheme in ("http", "https") and (host == "espn.com" or host.endswith(".espn.com"))
+
+
+def default_opener(url: str) -> bool:
+    """Open ``url`` in the user's browser. False when there is none: a Linux session with no display would
+    otherwise start a text browser on the terminal the app is drawing on."""
+    if sys.platform.startswith("linux") and not (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")):
+        return False
+    return webbrowser.open(url)
 
 
 def open_original(screen: Screen, item: NewsItem, opener: Callable[[str], object]) -> None:
@@ -85,9 +96,12 @@ def open_original(screen: Screen, item: NewsItem, opener: Callable[[str], object
         screen.notify("No link to open for that story.", timeout=3)
         return
     try:
-        opener(item.web_url)
+        opened = opener(item.web_url)
     except Exception as exc:  # no browser to launch is the user's setup, not a crash
         screen.notify(f"Could not open the browser: {exc}", severity="error", timeout=5)
+        return
+    if opened is False:
+        screen.notify(f"No browser to open it in. The link: {item.web_url}", severity="warning", timeout=10)
         return
     screen.notify("Opened in your browser", timeout=2)
 
@@ -113,7 +127,7 @@ class NewsScreen(Screen[None]):
         glyphs: Glyphs,
         conferences: Callable[[], dict[str, str]],
         *,
-        opener: Callable[[str], object] = webbrowser.open,
+        opener: Callable[[str], object] = default_opener,
         now: Callable[[], datetime] = lambda: datetime.now(UTC),
     ) -> None:
         super().__init__()
@@ -132,6 +146,9 @@ class NewsScreen(Screen[None]):
     def on_mount(self) -> None:
         self.refresh_list()
         self.set_interval(1.0, self._show_health)
+
+    def on_screen_resume(self) -> None:
+        self.refresh_list()
 
     def refresh_list(self) -> None:
         """Repaint from the feed, keeping the highlighted story."""
@@ -200,7 +217,7 @@ class NewsScreen(Screen[None]):
 class StoryScreen(Screen[None]):
     BINDINGS = [
         Binding("escape", "close", "Back"),
-        Binding("o", "open_original", "Open original"),
+        Binding("o,O", "open_original", "Open original"),
     ]
 
     DEFAULT_CSS = """
@@ -208,7 +225,7 @@ class StoryScreen(Screen[None]):
     StoryScreen > VerticalScroll { height: 1fr; padding: 1 2; }
     StoryScreen #story-title { text-style: bold; margin-bottom: 1; }
     StoryScreen #story-body { height: auto; }
-    StoryScreen #story-footer { margin-top: 1; color: $text-muted; }
+    StoryScreen #story-footer { height: auto; padding: 0 2; color: $text-muted; }
     """
 
     def __init__(
@@ -217,7 +234,7 @@ class StoryScreen(Screen[None]):
         item: NewsItem,
         glyphs: Glyphs,
         *,
-        opener: Callable[[str], object] = webbrowser.open,
+        opener: Callable[[str], object] = default_opener,
     ) -> None:
         super().__init__()
         self.feed = feed
@@ -228,9 +245,9 @@ class StoryScreen(Screen[None]):
 
     def compose(self) -> ComposeResult:
         with VerticalScroll():
-            yield Static(self.item.headline, id="story-title")
+            yield Static(Text(self.item.headline), id="story-title")
             yield Static("", id="story-body")
-            yield Static(self._footer(), id="story-footer")
+        yield Static(self._footer(), id="story-footer")
         yield Footer()
 
     def _footer(self) -> Text:

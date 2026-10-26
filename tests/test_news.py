@@ -135,6 +135,8 @@ async def test_story_fetches_the_api_link_with_the_apps_user_agent():
         "https://evil.example/v1/sports/news/1",
         "http://content.core.api.espn.com/v1/sports/news/1",
         "https://content.core.api.espn.com/other/1",
+        "https://content.core.api.espn.com/v1/sports/news/",
+        "https://content.core.api.espn.com/v1/sports/news/../../x",
         "https://content.core.api.espn.com.evil.example/v1/sports/news/1",
         "",
     ],
@@ -317,12 +319,12 @@ async def test_the_poller_polls_while_present_and_sends_nothing_while_away():
     await settle()
     assert client.news_calls == 0  # started away: parked
     away.away = False
-    feed.observe_presence()
+    feed.refresh()
     await settle()
     first = client.news_calls
     assert first >= 2  # one at once on return, then on its interval
     away.away = True
-    feed.observe_presence()
+    feed.refresh()
     await settle()  # the timer may fire once more, but it sees nobody and parks
     parked = client.news_calls
     await settle(0.3)
@@ -340,13 +342,10 @@ async def test_coming_back_polls_once_at_once_without_waiting_out_the_interval()
     await settle()
     assert client.news_calls == 1
     presence.away = True
-    feed.observe_presence()
+    feed.refresh()
     await settle()
     presence.away = False
-    feed.observe_presence()
-    await settle()
-    assert client.news_calls == 2
-    feed.observe_presence()  # still here: no extra poll
+    feed.refresh()
     await settle()
     assert client.news_calls == 2
     feed.stop()
@@ -539,7 +538,7 @@ async def test_the_status_bar_counts_unread_stories_and_n_is_in_help():
         await wait_for(pilot, lambda: f"{len(ITEMS)} unread news" in app.query_one(StatusBar).text)
         await pilot.press("question_mark")
         await wait_for(pilot, lambda: "News" in screen_text(app))
-        assert "N" in screen_text(app)
+        assert any(line.strip().startswith("N ") and "News" in line for line in screen_text(app).splitlines())
 
 
 async def test_the_news_screen_keeps_the_last_list_and_says_so_when_the_feed_fails():
@@ -553,3 +552,88 @@ async def test_the_news_screen_keeps_the_last_list_and_says_so_when_the_feed_fai
         await pilot.pause(0.1)
         assert screen.query_one(OptionList).option_count == len(ITEMS)
         assert "ERROR showing news" in str(screen.query_one("#news-health", Static).content)
+
+
+# --- review fixes: hostile or odd payloads, sinks ------------------------------------
+
+
+def test_a_repeated_id_keeps_the_first_article():
+    first = {"id": 1, "headline": "First", "type": "Story"}
+    again = {"id": "1", "headline": "Again", "type": "Media"}
+    other = {"id": 2, "headline": "Other"}
+    assert [i.headline for i in parse_news({"articles": [first, other, again]})] == ["First", "Other"]
+
+
+def test_control_characters_are_stripped_from_payload_text():
+    raw = {"id": 1, "headline": "Hi\x1b]52;c;AAAA\x1b\\ there\x9b", "description": "a\x07b\nc", "categories": []}
+    (parsed,) = parse_news({"articles": [raw]})
+    assert "\x1b" not in parsed.headline and "\x9b" not in parsed.headline and "\x07" not in parsed.description
+    assert "\n" in parsed.description
+    assert "\x1b" not in render_story("<p>x\x1b]0;title\x07y</p>").plain
+
+
+@pytest.mark.parametrize(
+    "url",
+    [r"https://evil.example\@www.espn.com/x", "https://user@www.espn.com/x", "https://www.espn.com/a b",
+     "https://evil.example/", "javascript:alert(1)", "https://www.espn.com.evil.example/", "", None],
+)
+def test_links_a_browser_could_read_differently_are_refused(url):
+    from cfbtui.ui.screens.news import is_espn_link
+
+    assert not is_espn_link(url)
+
+
+def test_ordinary_espn_links_pass():
+    from cfbtui.ui.screens.news import is_espn_link
+
+    assert is_espn_link("https://www.espn.com/college-football/story/_/id/1/x")
+
+
+async def test_a_headline_that_looks_like_markup_is_shown_as_text_and_a_repeat_id_does_not_crash_the_list():
+    evil = NewsItem("1", "Story", "Read [/] [@click=app.quit]more[/]", "d", datetime(2026, 10, 26, tzinfo=UTC),
+                    web_url="https://www.espn.com/x", story_url=NEWS_URL)
+    client = FakeClient(load_board("pairs/final_after.json"))
+    client.news_items = (evil,)
+    app = CfbApp(client=client, intervals=FAST, glyph_set="ascii")
+    async with app.run_test(size=SIZE) as pilot:
+        screen = await open_news(pilot, app)
+        await pilot.press("enter")
+        await wait_for(pilot, lambda: isinstance(app.screen, StoryScreen) and app.screen.loaded)
+        assert "Read [/] [@click=app.quit]more[/]" in screen_text(app)
+        assert screen is not app.screen
+
+
+async def test_an_opener_that_finds_no_browser_says_so_and_shows_the_link():
+    app = CfbApp(client=news_client(), intervals=FAST, glyph_set="ascii")
+    async with app.run_test(size=SIZE) as pilot:
+        screen = await open_news(pilot, app)
+        screen.opener = lambda url: False
+        await pilot.press("o")
+        assert any("No browser" in n.message and "https://www.espn.com/" in n.message for n in app._notifications)
+
+
+async def test_the_list_repaints_when_you_come_back_from_a_story():
+    client = news_client()
+    app = CfbApp(client=client, intervals=FAST, glyph_set="ascii")
+    async with app.run_test(size=SIZE) as pilot:
+        await open_news(pilot, app)
+        await pilot.press("enter")
+        await wait_for(pilot, lambda: isinstance(app.screen, StoryScreen))
+        client.news_items = ITEMS[:2]
+        app.news.refresh()
+        await wait_for(pilot, lambda: len(app.news.items) == 2)
+        await pilot.press("escape")
+        await wait_for(pilot, lambda: isinstance(app.screen, NewsScreen))
+        assert app.screen.query_one(OptionList).option_count == 2
+
+
+async def test_a_failing_change_callback_does_not_kill_the_poller():
+    client = FakeClient()
+    client.news_items = ITEMS
+
+    def boom() -> None:
+        raise RuntimeError("ui fault")
+
+    feed, _, _ = make_feed(client, on_change=boom)
+    await feed.poll_once()
+    assert len(feed.items) == len(ITEMS)

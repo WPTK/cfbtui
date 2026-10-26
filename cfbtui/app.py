@@ -239,8 +239,8 @@ class CfbApp(App[None]):
         self._tick()
 
     def _tick(self) -> None:
-        self.scheduler.observe_presence()
-        self.news.observe_presence()
+        if self.scheduler.observe_presence():
+            self.news.refresh()
         # the screen may be torn down
         with contextlib.suppress(NoMatches):
             self._update_status()

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import datetime
+import re
 from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlsplit
@@ -21,7 +22,7 @@ GROUP_FBS = 80
 GROUP_FCS = 81
 NEWS_LIMIT = 30
 STORY_HOST = "content.core.api.espn.com"
-STORY_PATH = "/v1/sports/news/"
+STORY_PATH = r"/v1/sports/news/\d+"
 
 USER_AGENT = f"cfbtui/{__version__} (+https://github.com/WPTK/cfbtui)"
 
@@ -154,7 +155,7 @@ class EspnClient:
     async def story_raw(self, url: str) -> dict:
         """One story's payload. ``url`` is a feed item's story API link; any other host or path is refused."""
         parts = urlsplit(url)
-        if parts.scheme != "https" or parts.hostname != STORY_HOST or not parts.path.startswith(STORY_PATH):
+        if parts.scheme != "https" or parts.hostname != STORY_HOST or not re.fullmatch(STORY_PATH, parts.path):
             raise EspnError(f"Not a story link: {url}")
         return await self._get_url(f"https://{STORY_HOST}{parts.path}")
 

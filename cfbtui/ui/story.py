@@ -12,6 +12,8 @@ from html.parser import HTMLParser
 
 from rich.text import Text
 
+from cfbtui.espn.parse import clean_text
+
 RULE = "─" * 24
 _SKIP = frozenset({"script", "style"})
 _BOLD = frozenset({"strong", "b"})
@@ -63,7 +65,7 @@ class _Renderer(HTMLParser):
     def handle_data(self, data: str) -> None:
         if self._skip:
             return
-        text = re.sub(r"\s+", " ", data)
+        text = re.sub(r"\s+", " ", clean_text(data))
         if not self.out.plain or self._gap or self.out.plain.endswith("\n"):
             text = text.lstrip()
         if not text:
