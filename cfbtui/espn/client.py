@@ -36,7 +36,7 @@ class EspnHttpError(EspnError):
 
 
 class EspnNetworkError(EspnError):
-    """The request never produced a response (transport error or timeout)."""
+    """The request failed before a usable response arrived (transport error, timeout, corrupt body, redirect loop)."""
 
 
 class EspnSchemaError(EspnError):
@@ -157,7 +157,7 @@ class EspnClient:
             week=week, date=date, group=group, limit=limit, season_type=season_type
         )
         board = parse_scoreboard(raw)
-        # A quiet day is `"events": []`. Events that all fail to parse, or an `events` key that vanished
+        # A quiet day is `"events": []` (verified live for an offseason date). Events that all fail to parse, or an `events` key that vanished
         # from an otherwise populated payload, mean ESPN changed its format.
         events = raw.get("events")
         dropped = bool(events) and isinstance(events, list) and not board.games

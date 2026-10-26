@@ -278,7 +278,10 @@ class PollScheduler:
         return result
 
     async def _maybe_fetch_rankings(self) -> None:
-        """Rankings feed the upset rule's fallback. Failing here never hurts freshness."""
+        """Rankings feed the upset rule's fallback. Failing here never hurts freshness.
+
+        Skipped while the scoreboard is failing, so a hanging ESPN costs one call, not two.
+        """
         if self._rankings_loaded or self._failures or self._clock() < self._rankings_retry_at:
             return
         try:
