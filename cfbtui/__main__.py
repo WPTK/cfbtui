@@ -89,7 +89,7 @@ def selftest() -> int:
     from zoneinfo import ZoneInfo
 
     from cfbtui.app import CfbApp
-    from cfbtui.espn.models import Scoreboard
+    from cfbtui.espn.models import Scoreboard, Summary
 
     class EmptyBoard:
         async def scoreboard(self, *, week: int | None = None, group: int = 80) -> Scoreboard:
@@ -97,6 +97,9 @@ def selftest() -> int:
 
         async def rankings(self) -> tuple:
             return ()
+
+        async def summary(self, event_id: str) -> Summary:
+            raise NotImplementedError  # the selftest never opens a game
 
     async def run() -> None:
         app = CfbApp(client=EmptyBoard(), config=Config())
@@ -193,21 +196,20 @@ def main(argv: list[str] | None = None) -> int:
             print("cfbtui: --update-test needs a standalone binary", file=sys.stderr)
             return 2
         return update_test(mode, updater, sys.argv[1:] if argv is None else argv)
-    if update_check is None:
-        updater = None  # --no-update-check: no checking and no downloading
+    app_updater = None if update_check is None else updater  # --no-update-check: no checking and no downloading
     app = CfbApp(
         config=config,
         file_config=loaded.config,
         config_path=save_path,
         warnings=loaded.warnings,
         update_check=update_check,
-        updater=updater,
+        updater=app_updater,
     )
     app.run()
-    if app.staged is not None and updater is not None:
-        installed = install_update(updater, app.staged, app)
+    if app.staged is not None and app_updater is not None:
+        installed = install_update(app_updater, app.staged, app)
         if installed and app.restart_requested:
-            restart(updater.target, sys.argv[1:] if argv is None else argv)
+            restart(app_updater.target, sys.argv[1:] if argv is None else argv)
     return 0
 
 

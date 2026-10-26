@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from cfbtui.espn.client import EspnNetworkError
-from cfbtui.espn.models import Game, Ranking, Scoreboard
+from cfbtui.espn.models import Game, Ranking, Scoreboard, Summary
 from cfbtui.espn.parse import parse_rankings, parse_scoreboard
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -62,6 +62,9 @@ class FakeClient:
         if isinstance(self._rankings, Exception):
             raise self._rankings
         return self._rankings
+
+    async def summary(self, event_id: str) -> Summary:
+        raise EspnNetworkError("FakeClient has no summaries")
 
 
 class FakeClock:

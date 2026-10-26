@@ -49,7 +49,8 @@ def releases_url() -> str:
 
 def _assets(data: dict) -> tuple[Asset, ...]:
     out = []
-    for item in data.get("assets") if isinstance(data.get("assets"), list) else []:
+    assets = data.get("assets")
+    for item in assets if isinstance(assets, list) else []:
         if not isinstance(item, dict):
             continue
         name, url, size = item.get("name"), item.get("browser_download_url"), item.get("size")

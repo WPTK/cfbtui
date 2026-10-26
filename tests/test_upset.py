@@ -113,7 +113,7 @@ def test_post_but_not_completed_is_still_a_watch():
 
 def test_rankings_fallback_fills_missing_curated_rank(rankings):
     rule = UpsetRule(rankings)
-    assert rule.ranking is not None and rule.ranking.type == "ap"
+    assert rule._ranking is not None and rule._ranking.type == "ap"
     # UGA is team 61, AP #1 in the fixture; the scoreboard forgot to say so.
     game = make_game(home_rank=None, away_rank=None, home_score=20, away_score=17, home_id="999", away_id="61")
     verdict = rule.evaluate(game)
@@ -138,15 +138,15 @@ def test_rank_of_unknown_team_is_none(rankings):
 
 def test_other_poll_can_be_chosen(rankings):
     rule = UpsetRule(rankings, poll="usa")
-    assert rule.ranking is not None
-    assert rule.ranking.type == "usa"
+    assert rule._ranking is not None
+    assert rule._ranking.type == "usa"
     missing = UpsetRule(rankings, poll="nope")
-    assert missing.ranking is None
+    assert missing._ranking is None
 
 
 def test_set_rankings_none_forgets(rankings):
     rule = UpsetRule(rankings)
     rule.set_rankings(None)
-    assert rule.ranking is None
+    assert rule._ranking is None
     game = make_game(home_rank=None, away_rank=None, home_score=20, away_score=17, home_id="999", away_id="61")
     assert rule.evaluate(game) is None

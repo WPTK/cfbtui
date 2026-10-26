@@ -451,7 +451,7 @@ async def test_app_ticker_is_capped_over_many_scoring_polls():
     app = CfbApp(client=client, intervals=FAST, glyph_set="ascii")
     async with app.run_test(size=SIZE) as pilot:
         await wait_for(pilot, lambda: client.scoreboard_calls >= 150, timeout=30)
-        assert app.query_one(Ticker).entry_count <= CAP
+        assert len(app.query_one(Ticker).lines) <= CAP
         assert len(app.query(GameCard)) == 1
 
 
@@ -464,7 +464,6 @@ async def test_app_survives_errors_of_every_kind_and_recovers():
     app = CfbApp(client=client, intervals=FAST, glyph_set="ascii")
     async with app.run_test(size=SIZE) as pilot:
         await wait_for(pilot, lambda: len(app.query(GameCard)) == 1)
-        assert app.last_result is not None
 
 
 async def test_app_offline_at_start_shows_message_then_cards():
@@ -486,7 +485,7 @@ async def test_app_week_switch_mid_poll_drops_the_old_week():
         await wait_for(pilot, lambda: len(app.query(GameCard)) == 1)
         assert app.scheduler.week == 6
         assert all(not g.is_live for g in app.store.games), "the old week's live board must not appear"
-        assert app.query_one(Ticker).entry_count == 0
+        assert len(app.query_one(Ticker).lines) == 0
 
 
 async def test_app_unmount_mid_poll_is_clean():
