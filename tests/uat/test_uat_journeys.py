@@ -1143,6 +1143,7 @@ async def test_150_games_all_render_and_the_arrows_reach_both_ends():
         cards = [c.game_id for c in grid.cards]
         assert len(cards) == 150 and "50 live of 150" in status(app)
         await pilot.press("right")
+        assert 1 < grid.columns < 150
         rows = -(-150 // grid.columns)
         for _ in range(rows + 2):
             await pilot.press("down")
@@ -1152,7 +1153,7 @@ async def test_150_games_all_render_and_the_arrows_reach_both_ends():
         assert focused_id(app) == cards[-1]
         for _ in range(rows + 2):
             await pilot.press("up")
-        assert grid.cards.index(grid.focused_card) < grid.columns * 2 + 150 % grid.columns + 1
+        assert grid.cards.index(grid.focused_card) < grid.columns
         await pilot.press("v")
         await pilot.pause(0.3)
         assert len(app.query(GameCard)) == 150 and app.is_running
