@@ -2,6 +2,12 @@
 
 Release notes for cfbtui, kept the way a fortress overseer keeps a journal. Newest first. Versions follow FibVer. Versions before 1.2.0 were never tagged or released, and FibVer skips numbers by design, so there is no 1.4.0.
 
+## 1.13.0 (2026-10-26)
+
+- The town crier was told to stop reading out the picture-show listings, and to put some starch in his collar.
+- News no longer lists ESPN video clips.
+- Stories are now formatted as Markdown: headings, lists, quotes, bold and italic. Links show as plain text and cannot be clicked.
+
 ## 1.8.0 (2026-10-26)
 
 - The overseer hired a town crier, then went back over the ledgers with a red pen: one new room, four faults mended and a locksmith's note.
