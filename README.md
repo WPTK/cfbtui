@@ -82,6 +82,8 @@ lists every key. The rest of this page writes `cfbtui` for whichever file you do
 
 **Rankings.** `R` shows the AP and Coaches polls. Once the College Football Playoff committee releases its
 first ranking, only the CFP ranking shows through the end of the season. The FCS board shows the FCS Coaches poll.
+Each poll's header shows the week ESPN labels that poll with, which can differ from the week the scoreboard
+shows, for example while the next week's poll is already out.
 
 ![Rankings](docs/img/rankings.png)
 
@@ -99,7 +101,7 @@ block. Discord caps messages at 2,000 characters, so on a big Saturday `C` copie
 | `[` `]` | Previous / next week. After week 15 come **Bowls** and the **Playoff** |
 | `t` | Back to this week |
 | `f` | Switch between FBS and FCS |
-| `l` | Filter: all games, Top 25, live only, favorites |
+| `l` | Filter: all games, Top 25, live, favorites, upset watch, red zone, overtime, interesting |
 | `o` | Pick a conference |
 | `v` | Switch between cards and a one-line-per-game list |
 | `S` | Settings: alerts, auto-update, icon style and default layout, saved as you change them |
@@ -117,9 +119,9 @@ block. Discord caps messages at 2,000 characters, so on a big Saturday `C` copie
 These apply to that run only.
 
 ```
-cfbtui --week 9              start on week 9 (also: --week bowls, --week playoff)
+cfbtui --week 9              start on week 9 (1-17; 16 = Bowls, 17 = Playoff; also bowls/playoff)
 cfbtui --group fcs           start on the FCS board
-cfbtui --glyphs unicode      icon style: ascii, unicode, emoji, nerd
+cfbtui --glyphs unicode      icon style: ascii, unicode, emoji, nerd (icons only)
 cfbtui --layout list         one line per game
 cfbtui --config PATH         use this settings file instead of the default
 cfbtui --no-update-check     don't look for a newer version
@@ -134,9 +136,12 @@ text editor. Anything you leave out uses the default, and a bad value is ignored
 
 | System | Settings file |
 |---|---|
-| Windows | `%LOCALAPPDATA%\cfbtui\config.toml` |
+| Windows | `%USERPROFILE%\AppData\Local\cfbtui\config.toml` |
 | macOS | `~/Library/Application Support/cfbtui/config.toml` |
 | Linux | `~/.config/cfbtui/config.toml` (or under `$XDG_CONFIG_HOME`) |
+
+On Windows the folder comes from the system's local app-data lookup, so a redirected `LOCALAPPDATA` environment
+variable is not used. `--config PATH` overrides the whole path.
 
 ```toml
 [poll]
@@ -185,7 +190,8 @@ cfbtui fails to start after an update, rename that `.old` file back to the progr
 ## Troubleshooting
 
 **Icons show as empty boxes.** The default `nerd` icon style needs a [Nerd Font](https://www.nerdfonts.com/)
-set as your terminal's font. Press `g` to cycle to another style, or start with `--glyphs unicode`.
+set as your terminal's font. Press `g` to cycle to another style, or start with `--glyphs unicode`. The icon
+style changes the icons only; borders, bars and rules are drawn by Textual and look the same in every style.
 
 **"Could not reach ESPN."** cfbtui keeps retrying and backs off between attempts. Check your connection. If
 the rest of the internet works, ESPN's service may be down.

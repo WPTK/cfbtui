@@ -10,7 +10,7 @@ Record the date, the exe's SHA-256 and the result of each line.
 
 - [ ] Copy the exe into an empty folder as `cfbtui.exe`, for example `C:\Temp\cfbtui-test`. Run everything from there.
 - [ ] `(Get-FileHash cfbtui.exe -Algorithm SHA256).Hash` matches the `cfbtui-windows-x86_64.exe` line in the `SHA256SUMS` attached to the release.
-- [ ] Delete `%LOCALAPPDATA%\cfbtui` if it exists, so the run starts without a config file.
+- [ ] Delete `%USERPROFILE%\AppData\Local\cfbtui` if it exists, so the run starts without a config file.
 - [ ] `python --version` fails or you are on a profile without Python (proves the exe stands alone).
 
 ## Command line
@@ -34,7 +34,7 @@ Record the date, the exe's SHA-256 and the result of each line.
 
 ## Config
 
-- [ ] After the runs above, `%LOCALAPPDATA%\cfbtui\config.toml` does **not** exist.
+- [ ] After the runs above, `%USERPROFILE%\AppData\Local\cfbtui\config.toml` does **not** exist.
 - [ ] Focus a card, press `1` or `2` to star a team; the file now exists and lists it under `[favorites]`.
 - [ ] Restart; the starred team is at the top of the grid.
 - [ ] `.\cfbtui.exe --no-config` starts with no favorites and does not touch the file.

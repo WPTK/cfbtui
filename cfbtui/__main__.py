@@ -14,7 +14,7 @@ from pathlib import Path
 
 from cfbtui import __version__
 from cfbtui.config import GROUPS, LAYOUTS, Config, LoadResult, apply_overrides, default_path, load_config
-from cfbtui.espn.periods import LAST_REGULAR_WEEK, MAX_WEEK, MIN_WEEK, NAMED
+from cfbtui.espn.periods import LAST_REGULAR_WEEK, MAX_WEEK, MIN_WEEK, NAMED, WEEK_BOWLS, WEEK_PLAYOFF
 from cfbtui.ui.glyphs import GLYPH_SET_NAMES
 
 
@@ -26,7 +26,9 @@ def _week(text: str) -> int:
     except ValueError:
         raise argparse.ArgumentTypeError(f"{text!r} is not a week number, 'bowls' or 'playoff'") from None
     if not MIN_WEEK <= value <= MAX_WEEK:
-        raise argparse.ArgumentTypeError(f"week must be {MIN_WEEK} to {MAX_WEEK} (16 = bowls, 17 = playoff)")
+        raise argparse.ArgumentTypeError(
+            f"week must be {MIN_WEEK} to {MAX_WEEK} ({WEEK_BOWLS} = bowls, {WEEK_PLAYOFF} = playoff)"
+        )
     return value
 
 
@@ -40,7 +42,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--week",
         type=_week,
         metavar="N",
-        help=f"start on week N ({MIN_WEEK}-{LAST_REGULAR_WEEK}), 'bowls' or 'playoff' instead of the current week",
+        help=(
+            f"start on week N ({MIN_WEEK}-{LAST_REGULAR_WEEK}; {WEEK_BOWLS} = Bowls, {WEEK_PLAYOFF} = Playoff), "
+            "or 'bowls'/'playoff', instead of the current week"
+        ),
     )
     parser.add_argument("--group", type=str.lower, choices=sorted(GROUPS), help="FBS or FCS board")
     parser.add_argument(
@@ -48,10 +53,15 @@ def build_parser() -> argparse.ArgumentParser:
         type=str.lower,
         choices=GLYPH_SET_NAMES,
         metavar="NAME",
-        help=f"glyph set: {', '.join(GLYPH_SET_NAMES)}",
+        help=f"icon style: {', '.join(GLYPH_SET_NAMES)} (icons only; borders and bars do not change)",
     )
     parser.add_argument("--layout", type=str.lower, choices=LAYOUTS, help="card grid or one line per game")
-    parser.add_argument("--config", type=Path, metavar="PATH", help=f"config file (default: {default_path()})")
+    parser.add_argument(
+        "--config",
+        type=Path,
+        metavar="PATH",
+        help="config file (default: cfbtui/config.toml in the user config folder; see Configuration in README)",
+    )
     parser.add_argument("--no-config", action="store_true", help="ignore the config file and do not save to it")
     parser.add_argument("--selftest", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--update-test", choices=("apply", "restart"), help=argparse.SUPPRESS)
