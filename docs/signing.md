@@ -42,5 +42,5 @@ this note shows what went) if a certificate arrives. A cloud signing service wou
 
 ## Checking a downloaded exe
 
-Unsigned means `Get-AuthenticodeSignature` reports `NotSigned`. To check the download, use `SHA256SUMS` as the
-README describes, or `gh attestation verify`.
+Unsigned means `Get-AuthenticodeSignature` reports `NotSigned`. To check the download, follow
+[verify.md](verify.md) (`SHA256SUMS` or `gh attestation verify`).
