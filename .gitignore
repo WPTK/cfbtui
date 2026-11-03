@@ -3,8 +3,6 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 .venv/
-.pytest_cache/
-.ruff_cache/
 
 # Build output: PyInstaller (work dir is redirected to .pyi-build) and `python -m build`
 build/
@@ -16,4 +14,3 @@ dist/
 .idea/
 Thumbs.db
 .DS_Store
-.claude/
