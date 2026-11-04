@@ -53,7 +53,7 @@ def build_parser() -> argparse.ArgumentParser:
         type=str.lower,
         choices=GLYPH_SET_NAMES,
         metavar="NAME",
-        help=f"icon style: {', '.join(GLYPH_SET_NAMES)} (icons only; borders and bars do not change)",
+        help=f"icon style: {', '.join(GLYPH_SET_NAMES)} (icons, bars and sparklines; box-drawing borders stay the same)",
     )
     parser.add_argument("--layout", type=str.lower, choices=LAYOUTS, help="card grid or one line per game")
     parser.add_argument(

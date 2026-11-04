@@ -80,7 +80,7 @@ Settings come from three layers. Command-line flags override the settings file f
 |---|---|---|
 | `--week N` | current week | Start on week 1-15, `16` for the Bowls or `17` for the Playoff; `bowls` and `playoff` also work. |
 | `--group fbs\|fcs` | `fbs` | Start on the FBS or FCS board. |
-| `--glyphs NAME` | `nerd` | Icon style: `ascii`, `unicode`, `emoji` or `nerd`. Icons only; borders and bars do not change. |
+| `--glyphs NAME` | `nerd` | Icon style: `ascii`, `unicode`, `emoji` or `nerd`. Changes icons, bars and sparklines; box-drawing borders stay the same. |
 | `--layout grid\|list` | `grid` | Cards, or one line per game. |
 | `--config PATH` | platform default | Read and save this settings file. |
 | `--no-config` | off | Ignore the settings file and never write it. |
@@ -153,7 +153,7 @@ Each poll's header shows the week ESPN labels that poll with, which can differ f
 
 ## Troubleshooting
 
-- Icons show as empty boxes: set a Nerd Font as the terminal font, or press `g` to cycle to another icon style. The icon style changes the icons only; borders, bars and rules are drawn by Textual and look the same in every style.
+- Icons show as empty boxes: set a Nerd Font as the terminal font, or press `g` to cycle to another icon style. The icon style changes icons, bars and sparklines; box-drawing borders are drawn by Textual and look the same in every style.
 - "Could not reach ESPN": check your connection. If the rest of the internet works, ESPN's service may be down. cfbtui retries with growing waits.
 - No games listed: the week may have no games, or a filter or conference is hiding them. Press `l` until the bottom bar says all games, then `t`.
 - `c` reports no clipboard on Linux: install `xclip` or `wl-clipboard`.
