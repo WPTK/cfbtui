@@ -2,6 +2,10 @@
 
 Release notes for cfbtui, kept the way a fortress overseer keeps a journal. Newest first. Versions follow FibVer. Versions before 1.2.0 were never tagged or released, and FibVer skips numbers by design, so there is no 1.4.0.
 
+## 1.13.1 (2026-11-03)
+
+- The first Playoff Committee ranking arrived, and the ledger's trend column read "+25, +24, +23" down the page because ESPN stuffed the rank into the trend slot. A team with no earlier ranking now reads "new".
+
 ## 1.13.0 (2026-10-26)
 
 - The town crier was told to stop reading out the picture-show listings, and to put some starch in his collar.
