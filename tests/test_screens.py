@@ -15,6 +15,7 @@ from cfbtui.espn.client import EspnNetworkError
 from cfbtui.espn.models import GameState, Status
 from cfbtui.espn.parse import parse_summary
 from cfbtui.ui.glyphs import ASCII
+from cfbtui.ui.labels import trend_text
 from cfbtui.ui.screens.detail import (
     DetailScreen,
     build_detail,
@@ -606,3 +607,10 @@ def test_new_sections_fit_60_and_42_columns_and_vanish_without_data():
     bare = replace(summary, leaders=(), drives=(), game_info=None, odds=None, broadcasts=(), recap_headline=None)
     text = _plain(build_detail(game, bare, ASCII))
     assert not any(t in text for t in ("leaders", "Drives", "Info"))
+
+
+def test_first_release_shows_new_not_the_feed_trend():
+    # ESPN sends trend "+25" for #1 on a poll's first release, when there is no previous rank
+    assert trend_text(None, "+25") == "new"
+    assert trend_text(3, "+2") == "+2"
+    assert trend_text(3, "-") == ""

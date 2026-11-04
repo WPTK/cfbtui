@@ -74,6 +74,6 @@ def poll_title(poll: Ranking) -> str:
 
 
 def trend_text(previous: int | None, trend: str | None) -> str:
-    if trend and trend not in {"-", "0"}:
-        return trend
-    return "new" if previous is None else ""
+    if previous is None:
+        return "new"  # ESPN fills trend with the rank itself on a poll's first release
+    return trend if trend and trend not in {"-", "0"} else ""
