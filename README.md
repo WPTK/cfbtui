@@ -18,13 +18,29 @@ cfbtui is a terminal scoreboard for FBS and FCS college football. It reads ESPN'
 
 - A terminal with color and Unicode: Windows Terminal, iTerm2, Terminal.app or a current Linux terminal. The old Windows Command Prompt window does not qualify.
 - To run the standalone binary: Windows, macOS (Apple silicon or Intel), Linux x86_64 or Linux arm64 with glibc 2.31 or newer (Ubuntu 20.04, Debian 11, Fedora 32, RHEL 9).
-- To run from source or the wheel: Python 3.13 or newer.
+- To install from PyPI or run from source: Python 3.13 or newer.
 - For Discord copy on Linux: `xclip` (X11) or `wl-clipboard` (Wayland).
 - For the default icon style: a [Nerd Font](https://www.nerdfonts.com/) set as the terminal font. Without one, start with `--glyphs unicode`.
 
 ## Quickstart
 
-Standalone binary:
+From PyPI (recommended if you already have Python 3.13 or newer):
+
+1. Install it with [pipx](https://pipx.pypa.io/):
+
+   ```sh
+   pipx install cfbtui
+   ```
+
+2. Run it:
+
+   ```sh
+   cfbtui
+   ```
+
+To upgrade, run `pipx upgrade cfbtui`. To remove it, run `pipx uninstall cfbtui`.
+
+Standalone binary (no Python needed):
 
 1. Download the file for your system from the [latest release](https://github.com/WPTK/cfbtui/releases/latest): `cfbtui-windows-x86_64.exe`, `cfbtui-macos-arm64`, `cfbtui-macos-x86_64`, `cfbtui-linux-x86_64` or `cfbtui-linux-arm64`.
 2. On macOS and Linux, make it executable. On macOS, also remove the quarantine flag (the binary is not notarized):
@@ -44,7 +60,7 @@ Standalone binary:
    .\cfbtui-windows-x86_64.exe
    ```
 
-From source:
+From source, for the development version:
 
 1. Clone the repository and create a virtual environment:
 

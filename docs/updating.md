@@ -11,6 +11,8 @@ At startup cfbtui checks GitHub for a newer release when `check = true` (the def
 
 The `SHA256SUMS` check catches corruption. It does not protect against a compromised GitHub account (see [signing.md](signing.md)).
 
+To upgrade a PyPI install, run `pipx upgrade cfbtui` (or `uv tool upgrade cfbtui`, or `python -m pip install -U cfbtui`).
+
 ## When the new version is installed
 
 The new file replaces the old one when you quit, or right away if you choose **Restart now** in Settings (`S`). It is installed only if cfbtui exits normally and auto-update is still on. Turning auto-update off in Settings deletes the download. A crash discards it.
