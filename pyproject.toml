@@ -10,6 +10,15 @@ readme = "README.md"
 license = "MIT"
 requires-python = ">=3.13"
 authors = [{ name = "Bill Kane" }]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Games/Entertainment",
+]
 keywords = ["college football", "scoreboard", "tui", "terminal", "textual", "espn"]
 
 dependencies = [

@@ -1,0 +1,69 @@
+name: Publish
+
+# Run by hand from the Actions tab to upload a release to PyPI. Pick the ref to publish (a tag such as v1.13.1, or main).
+# The upload uses PyPI trusted publishing: the `pypi` GitHub environment is registered on PyPI as the trusted publisher
+# for this workflow file, so no token or password is stored anywhere. The build job refuses to continue unless the
+# wheel's version equals cfbtui.__version__ at that ref.
+#
+# Not run on a tag: release.yml publishes automatically on a new tag. This workflow is for a manual re-run or for
+# a version whose tag predates that job.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Tag or branch to publish
+        type: string
+        default: main
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: "3.13"
+
+jobs:
+  build:
+    name: Build and check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref }}
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: python -m pip install build twine
+      - run: python -m build --sdist --wheel --outdir dist .
+      - run: python -m twine check --strict dist/*
+      - name: The wheel and sdist carry the package version
+        run: |
+          expected="$(python -c 'import cfbtui; print(cfbtui.__version__)')"
+          shopt -s nullglob
+          wheels=(dist/*.whl); sdists=(dist/*.tar.gz)
+          [ "${#wheels[@]}" -eq 1 ] && [ "${#sdists[@]}" -eq 1 ] || { echo "expected one wheel and one sdist"; ls dist; exit 1; }
+          case "${wheels[0]}" in dist/cfbtui-"$expected"-*) ;; *) echo "wheel ${wheels[0]} is not version $expected"; exit 1;; esac
+          case "${sdists[0]}" in dist/cfbtui-"$expected".tar.gz) ;; *) echo "sdist ${sdists[0]} is not version $expected"; exit 1;; esac
+          echo "Publishing cfbtui $expected"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  publish:
+    name: Upload to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3

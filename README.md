@@ -4,7 +4,7 @@
 
 cfbtui is a terminal scoreboard for FBS and FCS college football. It reads ESPN's unofficial public JSON endpoints (no API key) and renders live scores, rankings, scoring plays and news in a [Textual](https://textual.textualize.io/) interface.
 
-![The scoreboard](docs/img/grid.png)
+![The scoreboard](https://raw.githubusercontent.com/WPTK/cfbtui/main/docs/img/grid.png)
 
 - Games for the week, live ones first. Scores refresh every 20 seconds while you are at the computer and every 2 minutes once you step away.
 - Live cards show the clock, down and distance, and who has the ball, and flash on a score.
@@ -68,7 +68,7 @@ From source:
 
 Expected result: the current week's games appear as cards within a few seconds. Press `?` for every key and `q` to quit. If you see "Could not reach ESPN", check your connection; cfbtui keeps retrying.
 
-To verify a download, see [docs/verify.md](docs/verify.md).
+To verify a download, see [docs/verify.md](https://github.com/WPTK/cfbtui/blob/main/docs/verify.md).
 
 ## Configuration
 
@@ -115,13 +115,13 @@ On Windows the folder comes from the system's local app-data lookup, so a redire
 | `[updates] check` | `true` | Look for a newer release at startup. |
 | `[updates] auto` | `true` | Download new minor and patch versions (standalone binaries only). |
 
-Update behavior is in [docs/updating.md](docs/updating.md).
+Update behavior is in [docs/updating.md](https://github.com/WPTK/cfbtui/blob/main/docs/updating.md).
 
 ## Usage and controls
 
 Arrow keys move between cards, `Enter` opens one and `?` lists every key.
 
-![Game detail](docs/img/detail.png)
+![Game detail](https://raw.githubusercontent.com/WPTK/cfbtui/main/docs/img/detail.png)
 
 | Key | Action |
 |---|---|
@@ -149,7 +149,7 @@ Once the College Football Playoff committee releases its first ranking, `R` show
 
 Each poll's header shows the week ESPN labels that poll with, which can differ from the week the scoreboard shows, for example while the next week's poll is already out.
 
-![Rankings](docs/img/rankings.png)
+![Rankings](https://raw.githubusercontent.com/WPTK/cfbtui/main/docs/img/rankings.png)
 
 ## Troubleshooting
 
@@ -168,4 +168,4 @@ At startup cfbtui requests the latest release from GitHub. The request reveals y
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](https://github.com/WPTK/cfbtui/blob/main/LICENSE).
