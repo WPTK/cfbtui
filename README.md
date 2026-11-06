@@ -94,9 +94,9 @@ Settings come from three layers. Command-line flags override the settings file f
 
 | Flag | Default | Description |
 |---|---|---|
-| `--week N` | current week | Start on week 1-15, or `bowls` or `playoff`. |
+| `--week N` | current week | Start on week 1-15, `16` for the Bowls or `17` for the Playoff; `bowls` and `playoff` also work. |
 | `--group fbs\|fcs` | `fbs` | Start on the FBS or FCS board. |
-| `--glyphs NAME` | `nerd` | Icon style: `ascii`, `unicode`, `emoji` or `nerd`. |
+| `--glyphs NAME` | `nerd` | Icon style: `ascii`, `unicode`, `emoji` or `nerd`. Changes icons, bars and sparklines; box-drawing borders stay the same. |
 | `--layout grid\|list` | `grid` | Cards, or one line per game. |
 | `--config PATH` | platform default | Read and save this settings file. |
 | `--no-config` | off | Ignore the settings file and never write it. |
@@ -109,9 +109,11 @@ cfbtui creates the file the first time you star a team or change a setting. Edit
 
 | System | Path |
 |---|---|
-| Windows | `%LOCALAPPDATA%\cfbtui\config.toml` |
+| Windows | `%USERPROFILE%\AppData\Local\cfbtui\config.toml` |
 | macOS | `~/Library/Application Support/cfbtui/config.toml` |
 | Linux | `~/.config/cfbtui/config.toml`, or under `$XDG_CONFIG_HOME` |
+
+On Windows the folder comes from the system's local app-data lookup, so a redirected `LOCALAPPDATA` environment variable is not used. `--config PATH` overrides the whole path.
 
 | Key | Default | Description |
 |---|---|---|
@@ -146,7 +148,7 @@ Arrow keys move between cards, `Enter` opens one and `?` lists every key.
 | `[` `]` | Previous or next week. After week 15 come Bowls and the Playoff. |
 | `t` | Back to this week. |
 | `f` | Switch between FBS and FCS. |
-| `l` | Filter: all games, Top 25, live only, favorites. |
+| `l` | Filter: all games, Top 25, live, favorites, Upset Watch, Red Zone, Overtime, Interesting. |
 | `o` | Pick a conference. |
 | `v` | Switch between cards and a list. |
 | `S` | Settings. Changes save as you make them. |
@@ -161,11 +163,13 @@ Arrow keys move between cards, `Enter` opens one and `?` lists every key.
 
 Once the College Football Playoff committee releases its first ranking, `R` shows only the CFP ranking for the rest of the season. The FCS board shows the FCS Coaches poll.
 
+Each poll's header shows the week ESPN labels that poll with, which can differ from the week the scoreboard shows, for example while the next week's poll is already out.
+
 ![Rankings](https://raw.githubusercontent.com/WPTK/cfbtui/main/docs/img/rankings.png)
 
 ## Troubleshooting
 
-- Icons show as empty boxes: set a Nerd Font as the terminal font, or press `g` to cycle to another icon style.
+- Icons show as empty boxes: set a Nerd Font as the terminal font, or press `g` to cycle to another icon style. The icon style changes icons, bars and sparklines; box-drawing borders are drawn by Textual and look the same in every style.
 - "Could not reach ESPN": check your connection. If the rest of the internet works, ESPN's service may be down. cfbtui retries with growing waits.
 - No games listed: the week may have no games, or a filter or conference is hiding them. Press `l` until the bottom bar says all games, then `t`.
 - `c` reports no clipboard on Linux: install `xclip` or `wl-clipboard`.
