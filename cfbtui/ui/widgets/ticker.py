@@ -184,7 +184,10 @@ class Ticker(VerticalScroll):
         border-top: solid $panel-lighten-2;
         padding: 0 1;
         scrollbar-size-vertical: 1;
+        border-title-color: $text;
     }
+    Ticker.-empty { height: 3; }
+    Ticker #ticker-empty { color: $text-muted; }
     """
 
     class LineSelected(Message):
@@ -202,7 +205,16 @@ class Ticker(VerticalScroll):
         self._lines: deque[TickerLine] = deque()
         self.border_title = "ticker"
 
+    def compose(self):
+        yield Static("No events yet. Scores, kickoffs and upsets show up here.", id="ticker-empty")
+
+    def _sync_empty(self) -> None:
+        empty = not self._lines
+        self.set_class(empty, "-empty")
+        self.query_one("#ticker-empty").display = empty
+
     def on_mount(self) -> None:
+        self._sync_empty()
         self.anchor()  # stay on the newest line until the user scrolls up
 
     @property
@@ -219,12 +231,14 @@ class Ticker(VerticalScroll):
             if line.is_attached:
                 line.remove()
         self.mount_all([line for line in new if line not in excess])
+        self._sync_empty()
 
     def clear_log(self) -> None:
         """Forget every line, for a week or group switch."""
         for line in self._lines:
             line.remove()
         self._lines.clear()
+        self._sync_empty()
 
     def set_glyphs(self, glyphs: Glyphs) -> None:
         """Redraw the whole log in another glyph set."""

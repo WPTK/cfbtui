@@ -88,6 +88,7 @@ class PollUpdated(Message):
 class CfbApp(App[None]):
     TITLE = "cfbtui"
     CSS_PATH = "ui/app.tcss"
+    ENABLE_COMMAND_PALETTE = False  # the stock palette lists no cfbtui commands
     # Only the first five show in the footer, so it fits 60 columns; `?` lists the rest.
     BINDINGS = [
         ("q", "quit", "Quit"),
@@ -235,7 +236,7 @@ class CfbApp(App[None]):
                         grid.pulse(event.game_id, kind)
             self._feed_detail()
         elif self.scheduler.scoreboard is None:
-            grid.set_message(f"{self.glyphs.error} Could not reach ESPN. Retrying. ({result.error})")
+            grid.set_message(f"{self.glyphs.error} Could not reach ESPN. Retrying.")
         self._tick()
 
     def _tick(self) -> None:

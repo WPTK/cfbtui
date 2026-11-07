@@ -84,7 +84,7 @@ class RankingsScreen(Screen[None]):
     RankingsScreen { layout: vertical; }
     RankingsScreen > VerticalScroll { height: 1fr; padding: 1 2; }
     RankingsScreen Horizontal { height: auto; }
-    RankingsScreen .poll { width: 1fr; height: auto; padding: 0 1; border: round $panel-lighten-2; }
+    RankingsScreen .poll { width: 1fr; height: auto; padding: 0 1; border: round $panel-lighten-2; border-title-color: $text; }
     """
 
     def __init__(
